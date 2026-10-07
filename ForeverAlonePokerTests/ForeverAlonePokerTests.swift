@@ -1,19 +1,15 @@
-//
-//  ForeverAlonePokerTests.swift
-//  ForeverAlonePokerTests
-//
-//  Created by Alberto Almeida on 07/10/26.
-//
-
 import Testing
+import PokerCore
+import PokerCoreTestSupport
 @testable import ForeverAlonePoker
 
-struct ForeverAlonePokerTests {
-
-    @Test func example() async throws {
-        // Write your test here and use APIs like `#expect(...)` to check expected conditions.
-        // Swift Testing Documentation
-        // https://developer.apple.com/documentation/testing
+/// Smoke test proving the app and its test bundle link the CORE package and
+/// its shared builders. Feature tests live next to their feature.
+struct AppLinksPokerCoreTests {
+    @Test("the app target can use PokerCore and the shared builders")
+    func linksCore() throws {
+        let state = try HandStateBuilder().start()
+        #expect(state.pot == 30)
+        #expect(state.actor == .one)
     }
-
 }

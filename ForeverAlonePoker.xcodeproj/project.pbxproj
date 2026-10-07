@@ -6,6 +6,12 @@
 	objectVersion = 110;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		C1EEB7F83076BC8F009BAFEA /* PokerCore in Frameworks */ = {isa = PBXBuildFile; productRef = C1EEB7F73076BC8F009BAFEA /* PokerCore */; };
+		C1EEB7FA3076BCAD009BAFEA /* PokerCore in Frameworks */ = {isa = PBXBuildFile; productRef = C1EEB7F93076BCAD009BAFEA /* PokerCore */; };
+		C1EEB7FC3076BCAD009BAFEA /* PokerCoreTestSupport in Frameworks */ = {isa = PBXBuildFile; productRef = C1EEB7FB3076BCAD009BAFEA /* PokerCoreTestSupport */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		C1EEB7D630769E7E009BAFEA /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -29,9 +35,22 @@
 		C1EEB7DF30769E7E009BAFEA /* ForeverAlonePokerUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ForeverAlonePokerUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		C1EEB8383076C2CA009BAFEA /* Exceptions for "ForeverAlonePoker" folder in "ForeverAlonePoker" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = C1EEB7C730769E7D009BAFEA /* ForeverAlonePoker */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		C1EEB7CA30769E7D009BAFEA /* ForeverAlonePoker */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				C1EEB8383076C2CA009BAFEA /* Exceptions for "ForeverAlonePoker" folder in "ForeverAlonePoker" target */,
+			);
 			path = ForeverAlonePoker;
 			sourceTree = "<group>";
 		};
@@ -51,11 +70,14 @@
 		C1EEB7C530769E7D009BAFEA /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
+				C1EEB7F83076BC8F009BAFEA /* PokerCore in Frameworks */,
 			);
 		};
 		C1EEB7D230769E7E009BAFEA /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
+				C1EEB7FA3076BCAD009BAFEA /* PokerCore in Frameworks */,
+				C1EEB7FC3076BCAD009BAFEA /* PokerCoreTestSupport in Frameworks */,
 			);
 		};
 		C1EEB7DC30769E7E009BAFEA /* Frameworks */ = {
@@ -72,6 +94,7 @@
 				C1EEB7CA30769E7D009BAFEA /* ForeverAlonePoker */,
 				C1EEB7D830769E7E009BAFEA /* ForeverAlonePokerTests */,
 				C1EEB7E230769E7E009BAFEA /* ForeverAlonePokerUITests */,
+				C1EEB7F63076BC8F009BAFEA /* Frameworks */,
 				C1EEB7C930769E7D009BAFEA /* Products */,
 			);
 			sourceTree = "<group>";
@@ -84,6 +107,13 @@
 				C1EEB7DF30769E7E009BAFEA /* ForeverAlonePokerUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		C1EEB7F63076BC8F009BAFEA /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -103,6 +133,9 @@
 				C1EEB7CA30769E7D009BAFEA /* ForeverAlonePoker */,
 			);
 			name = ForeverAlonePoker;
+			packageProductDependencies = (
+				C1EEB7F73076BC8F009BAFEA /* PokerCore */,
+			);
 			productName = ForeverAlonePoker;
 			productReference = C1EEB7C830769E7D009BAFEA /* ForeverAlonePoker.app */;
 			productType = "com.apple.product-type.application";
@@ -124,6 +157,10 @@
 				C1EEB7D830769E7E009BAFEA /* ForeverAlonePokerTests */,
 			);
 			name = ForeverAlonePokerTests;
+			packageProductDependencies = (
+				C1EEB7F93076BCAD009BAFEA /* PokerCore */,
+				C1EEB7FB3076BCAD009BAFEA /* PokerCoreTestSupport */,
+			);
 			productName = ForeverAlonePokerTests;
 			productReference = C1EEB7D530769E7E009BAFEA /* ForeverAlonePokerTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
@@ -181,6 +218,9 @@
 			);
 			mainGroup = C1EEB7BF30769E7D009BAFEA;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				C1EEB7F53076BC3F009BAFEA /* XCLocalSwiftPackageReference "Packages/PokerCore" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C1EEB7C930769E7D009BAFEA /* Products */;
 			projectDirPath = "";
@@ -374,6 +414,8 @@
 				DEVELOPMENT_TEAM = 426H2D8TKH;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ForeverAlonePoker/Info.plist;
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "ForeverAlonePoker uses the local network to find and play against a nearby player.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -406,6 +448,8 @@
 				DEVELOPMENT_TEAM = 426H2D8TKH;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ForeverAlonePoker/Info.plist;
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "ForeverAlonePoker uses the local network to find and play against a nearby player.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -548,6 +592,31 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		C1EEB7F53076BC3F009BAFEA /* XCLocalSwiftPackageReference "Packages/PokerCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/PokerCore;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		C1EEB7F73076BC8F009BAFEA /* PokerCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C1EEB7F53076BC3F009BAFEA /* XCLocalSwiftPackageReference "Packages/PokerCore" */;
+			productName = PokerCore;
+		};
+		C1EEB7F93076BCAD009BAFEA /* PokerCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C1EEB7F53076BC3F009BAFEA /* XCLocalSwiftPackageReference "Packages/PokerCore" */;
+			productName = PokerCore;
+		};
+		C1EEB7FB3076BCAD009BAFEA /* PokerCoreTestSupport */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C1EEB7F53076BC3F009BAFEA /* XCLocalSwiftPackageReference "Packages/PokerCore" */;
+			productName = PokerCoreTestSupport;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = C1EEB7C030769E7D009BAFEA /* Project object */;
 	validationLevel = 1;
