@@ -1,0 +1,554 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 110;
+	objects = {
+
+/* Begin PBXContainerItemProxy section */
+		C1EEB7D630769E7E009BAFEA /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C1EEB7C030769E7D009BAFEA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C1EEB7C730769E7D009BAFEA;
+			remoteInfo = ForeverAlonePoker;
+		};
+		C1EEB7E030769E7E009BAFEA /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C1EEB7C030769E7D009BAFEA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C1EEB7C730769E7D009BAFEA;
+			remoteInfo = ForeverAlonePoker;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		C1EEB7C830769E7D009BAFEA /* ForeverAlonePoker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ForeverAlonePoker.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C1EEB7D530769E7E009BAFEA /* ForeverAlonePokerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ForeverAlonePokerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		C1EEB7DF30769E7E009BAFEA /* ForeverAlonePokerUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ForeverAlonePokerUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		C1EEB7CA30769E7D009BAFEA /* ForeverAlonePoker */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = ForeverAlonePoker;
+			sourceTree = "<group>";
+		};
+		C1EEB7D830769E7E009BAFEA /* ForeverAlonePokerTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = ForeverAlonePokerTests;
+			sourceTree = "<group>";
+		};
+		C1EEB7E230769E7E009BAFEA /* ForeverAlonePokerUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = ForeverAlonePokerUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		C1EEB7C530769E7D009BAFEA /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
+		C1EEB7D230769E7E009BAFEA /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
+		C1EEB7DC30769E7E009BAFEA /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		C1EEB7BF30769E7D009BAFEA = {
+			isa = PBXGroup;
+			children = (
+				C1EEB7CA30769E7D009BAFEA /* ForeverAlonePoker */,
+				C1EEB7D830769E7E009BAFEA /* ForeverAlonePokerTests */,
+				C1EEB7E230769E7E009BAFEA /* ForeverAlonePokerUITests */,
+				C1EEB7C930769E7D009BAFEA /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		C1EEB7C930769E7D009BAFEA /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				C1EEB7C830769E7D009BAFEA /* ForeverAlonePoker.app */,
+				C1EEB7D530769E7E009BAFEA /* ForeverAlonePokerTests.xctest */,
+				C1EEB7DF30769E7E009BAFEA /* ForeverAlonePokerUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		C1EEB7C730769E7D009BAFEA /* ForeverAlonePoker */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C1EEB7E730769E7E009BAFEA /* Build configuration list for PBXNativeTarget "ForeverAlonePoker" */;
+			buildPhases = (
+				C1EEB7C430769E7D009BAFEA /* Sources */,
+				C1EEB7C530769E7D009BAFEA /* Frameworks */,
+				C1EEB7C630769E7D009BAFEA /* Resources */,
+			);
+			buildRules = (
+			);
+			fileSystemSynchronizedGroups = (
+				C1EEB7CA30769E7D009BAFEA /* ForeverAlonePoker */,
+			);
+			name = ForeverAlonePoker;
+			productName = ForeverAlonePoker;
+			productReference = C1EEB7C830769E7D009BAFEA /* ForeverAlonePoker.app */;
+			productType = "com.apple.product-type.application";
+		};
+		C1EEB7D430769E7E009BAFEA /* ForeverAlonePokerTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C1EEB7EA30769E7E009BAFEA /* Build configuration list for PBXNativeTarget "ForeverAlonePokerTests" */;
+			buildPhases = (
+				C1EEB7D130769E7E009BAFEA /* Sources */,
+				C1EEB7D230769E7E009BAFEA /* Frameworks */,
+				C1EEB7D330769E7E009BAFEA /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				C1EEB7D730769E7E009BAFEA /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				C1EEB7D830769E7E009BAFEA /* ForeverAlonePokerTests */,
+			);
+			name = ForeverAlonePokerTests;
+			productName = ForeverAlonePokerTests;
+			productReference = C1EEB7D530769E7E009BAFEA /* ForeverAlonePokerTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		C1EEB7DE30769E7E009BAFEA /* ForeverAlonePokerUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C1EEB7ED30769E7E009BAFEA /* Build configuration list for PBXNativeTarget "ForeverAlonePokerUITests" */;
+			buildPhases = (
+				C1EEB7DB30769E7E009BAFEA /* Sources */,
+				C1EEB7DC30769E7E009BAFEA /* Frameworks */,
+				C1EEB7DD30769E7E009BAFEA /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				C1EEB7E130769E7E009BAFEA /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				C1EEB7E230769E7E009BAFEA /* ForeverAlonePokerUITests */,
+			);
+			name = ForeverAlonePokerUITests;
+			productName = ForeverAlonePokerUITests;
+			productReference = C1EEB7DF30769E7E009BAFEA /* ForeverAlonePokerUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		C1EEB7C030769E7D009BAFEA /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2700;
+				LastUpgradeCheck = 2700;
+				TargetAttributes = {
+					C1EEB7C730769E7D009BAFEA = {
+						CreatedOnToolsVersion = 27.0;
+					};
+					C1EEB7D430769E7E009BAFEA = {
+						CreatedOnToolsVersion = 27.0;
+						TestTargetID = C1EEB7C730769E7D009BAFEA;
+					};
+					C1EEB7DE30769E7E009BAFEA = {
+						CreatedOnToolsVersion = 27.0;
+						TestTargetID = C1EEB7C730769E7D009BAFEA;
+					};
+				};
+			};
+			buildConfigurationList = C1EEB7C330769E7D009BAFEA /* Build configuration list for PBXProject "ForeverAlonePoker" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = C1EEB7BF30769E7D009BAFEA;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = C1EEB7C930769E7D009BAFEA /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				C1EEB7C730769E7D009BAFEA /* ForeverAlonePoker */,
+				C1EEB7D430769E7E009BAFEA /* ForeverAlonePokerTests */,
+				C1EEB7DE30769E7E009BAFEA /* ForeverAlonePokerUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		C1EEB7C630769E7D009BAFEA /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+			);
+		};
+		C1EEB7D330769E7E009BAFEA /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+			);
+		};
+		C1EEB7DD30769E7E009BAFEA /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+			);
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		C1EEB7C430769E7D009BAFEA /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+			);
+		};
+		C1EEB7D130769E7E009BAFEA /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+			);
+		};
+		C1EEB7DB30769E7E009BAFEA /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+			);
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		C1EEB7D730769E7E009BAFEA /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C1EEB7C730769E7D009BAFEA /* ForeverAlonePoker */;
+			targetProxy = C1EEB7D630769E7E009BAFEA /* PBXContainerItemProxy */;
+		};
+		C1EEB7E130769E7E009BAFEA /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C1EEB7C730769E7D009BAFEA /* ForeverAlonePoker */;
+			targetProxy = C1EEB7E030769E7E009BAFEA /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		C1EEB7E530769E7E009BAFEA /* Debug configuration for PBXProject "ForeverAlonePoker" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 426H2D8TKH;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		C1EEB7E630769E7E009BAFEA /* Release configuration for PBXProject "ForeverAlonePoker" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 426H2D8TKH;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		C1EEB7E830769E7E009BAFEA /* Debug configuration for PBXNativeTarget "ForeverAlonePoker" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 426H2D8TKH;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = Ticoxxo.ForeverAlonePoker;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		C1EEB7E930769E7E009BAFEA /* Release configuration for PBXNativeTarget "ForeverAlonePoker" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 426H2D8TKH;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = Ticoxxo.ForeverAlonePoker;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		C1EEB7EB30769E7E009BAFEA /* Debug configuration for PBXNativeTarget "ForeverAlonePokerTests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 426H2D8TKH;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = Ticoxxo.ForeverAlonePokerTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ForeverAlonePoker.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ForeverAlonePoker";
+			};
+			name = Debug;
+		};
+		C1EEB7EC30769E7E009BAFEA /* Release configuration for PBXNativeTarget "ForeverAlonePokerTests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 426H2D8TKH;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = Ticoxxo.ForeverAlonePokerTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ForeverAlonePoker.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ForeverAlonePoker";
+			};
+			name = Release;
+		};
+		C1EEB7EE30769E7E009BAFEA /* Debug configuration for PBXNativeTarget "ForeverAlonePokerUITests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 426H2D8TKH;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = Ticoxxo.ForeverAlonePokerUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = ForeverAlonePoker;
+			};
+			name = Debug;
+		};
+		C1EEB7EF30769E7E009BAFEA /* Release configuration for PBXNativeTarget "ForeverAlonePokerUITests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 426H2D8TKH;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = Ticoxxo.ForeverAlonePokerUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = ForeverAlonePoker;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		C1EEB7C330769E7D009BAFEA /* Build configuration list for PBXProject "ForeverAlonePoker" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C1EEB7E530769E7E009BAFEA /* Debug configuration for PBXProject "ForeverAlonePoker" */,
+				C1EEB7E630769E7E009BAFEA /* Release configuration for PBXProject "ForeverAlonePoker" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		C1EEB7E730769E7E009BAFEA /* Build configuration list for PBXNativeTarget "ForeverAlonePoker" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C1EEB7E830769E7E009BAFEA /* Debug configuration for PBXNativeTarget "ForeverAlonePoker" */,
+				C1EEB7E930769E7E009BAFEA /* Release configuration for PBXNativeTarget "ForeverAlonePoker" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		C1EEB7EA30769E7E009BAFEA /* Build configuration list for PBXNativeTarget "ForeverAlonePokerTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C1EEB7EB30769E7E009BAFEA /* Debug configuration for PBXNativeTarget "ForeverAlonePokerTests" */,
+				C1EEB7EC30769E7E009BAFEA /* Release configuration for PBXNativeTarget "ForeverAlonePokerTests" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		C1EEB7ED30769E7E009BAFEA /* Build configuration list for PBXNativeTarget "ForeverAlonePokerUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C1EEB7EE30769E7E009BAFEA /* Debug configuration for PBXNativeTarget "ForeverAlonePokerUITests" */,
+				C1EEB7EF30769E7E009BAFEA /* Release configuration for PBXNativeTarget "ForeverAlonePokerUITests" */,
+			);
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = C1EEB7C030769E7D009BAFEA /* Project object */;
+	validationLevel = 1;
+}
