@@ -5,10 +5,12 @@ import PokerCore
 struct CardView: View {
     let card: Card
 
+    /// The card face is always white, so the ink must be a fixed colour.
+    /// `.primary` resolves to white in dark mode and made black suits invisible.
     private var color: Color {
         switch card.suit {
         case .hearts, .diamonds: .red
-        case .clubs, .spades: .primary
+        case .clubs, .spades: .black
         }
     }
 
@@ -26,6 +28,7 @@ struct CardView: View {
             .foregroundStyle(color)
         }
         .aspectRatio(0.7, contentMode: .fit)
+        .environment(\.colorScheme, .light)
         .accessibilityLabel(Text(card.notation))
     }
 }
