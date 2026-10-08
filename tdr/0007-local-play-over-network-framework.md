@@ -39,3 +39,4 @@
 - `PasscodeKeyTests`: deterministic derivation, distinct passcodes, passcode format.
 - `PeerLinkTransportTests` (unchanged) cover everything above the link with `FakePeerLink`.
 - `NearbyDiscovery`, `NearbyLink` and `LocalLobbyModel` are verified manually on two physical devices: host sees passcode, guest finds host, wrong passcode fails cleanly, right passcode seats both players, a full hand plays.
+  - **Done 2026-10-08.** Passed on two iPhones over Wi-Fi. The only defect found was visual, not transport: `CardView` drew black suits with `.primary`, which is white in dark mode, so spades and clubs looked blank on the white card face. Fixed by pinning the ink colour and forcing a light colour scheme on the card; confirmed on-device.
