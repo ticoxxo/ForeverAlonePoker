@@ -82,6 +82,75 @@ struct IdentityStoreTests {
         store.profile.appleUserID = "sub-123"
         #expect(store.tier == .ranked)
     }
+
+    @Test("the identity carries the country so opponents and leaderboards can show it")
+    func identityCountry() throws {
+        let fixture = try Fixture(country: "MX")
+        #expect(fixture.store.identity.countryCode == "MX")
+        fixture.store.updateCountryCode("AR")
+        #expect(fixture.store.identity.countryCode == "AR")
+    }
+
+    @Test("linking an Apple account makes the Apple user id the player's identity and keeps the token")
+    func linkApple() throws {
+        let fixture = try Fixture()
+        let store = fixture.store
+        let localID = store.profile.localID.uuidString
+        #expect(store.rankedSessionToken == nil)
+        #expect(store.publicProfileSnapshot == nil)
+
+        store.linkAppleAccount(userID: "001234.abc", sessionToken: "session-1")
+        #expect(store.tier == .ranked)
+        #expect(store.identity.id == "001234.abc")
+        #expect(store.rankedSessionToken == "session-1")
+        #expect(store.publicProfileSnapshot == PublicProfileSnapshot(playerID: "001234.abc", displayName: "Player", countryCode: "MX", avatar: nil))
+
+        store.unlinkAppleAccount()
+        #expect(store.tier == .local)
+        #expect(store.identity.id == localID)
+        #expect(store.rankedSessionToken == nil)
+        #expect(store.recentMatches.isEmpty, "history untouched")
+    }
+
+    @Test("the newest online match is marked ranked when the server rates it")
+    func markRanked() throws {
+        let fixture = try Fixture()
+        let store = fixture.store
+        store.record(MatchSummary(didWin: true, opponentName: "Bob", myFinalStack: 3000, opponentFinalStack: 0, handsPlayed: 3), mode: .online)
+        store.record(MatchSummary(didWin: true, opponentName: "Ann", myFinalStack: 3000, opponentFinalStack: 0, handsPlayed: 3), mode: .local)
+        store.markLatestOnlineMatchRanked()
+        #expect(store.recentMatches.first(where: { $0.mode == .online })?.wasRanked == true)
+        #expect(store.recentMatches.first(where: { $0.mode == .local })?.wasRanked == false)
+    }
+
+    @Test("profiles created on two devices before their first sync merge into the oldest")
+    func mergesDuplicateProfiles() throws {
+        let fixture = try Fixture()
+        let store = fixture.store
+        let context = fixture.container.mainContext
+        store.record(MatchSummary(didWin: true, opponentName: "Bob", myFinalStack: 3000, opponentFinalStack: 0, handsPlayed: 3), mode: .local)
+
+        // What a CloudKit import of the other device's rows looks like.
+        let other = PlayerProfile(displayName: "Other device", countryCode: "US")
+        other.createdAt = store.profile.createdAt.addingTimeInterval(60)
+        other.appleUserID = "001234.abc"
+        other.rankedSessionToken = "session-1"
+        context.insert(other)
+        let theirMatch = MatchRecord(mode: .online, opponentName: "Carol", didWin: false, finalStack: 0, opponentFinalStack: 3000, handsPlayed: 9)
+        theirMatch.profile = other
+        context.insert(theirMatch)
+        try context.save()
+
+        let keeperID = store.profile.localID
+        store.refresh()
+        #expect(try context.fetchCount(FetchDescriptor<PlayerProfile>()) == 1)
+        #expect(store.profile.localID == keeperID)
+        #expect(store.profile.displayName == "Player", "the older profile keeps its details")
+        #expect(store.profile.appleUserID == "001234.abc", "but adopts the ranked identity")
+        #expect(store.rankedSessionToken == "session-1")
+        #expect(store.recentMatches.count == 2)
+        #expect(store.recentMatches.allSatisfy { $0.profile?.localID == keeperID })
+    }
 }
 
 @Suite("CountryFlag")

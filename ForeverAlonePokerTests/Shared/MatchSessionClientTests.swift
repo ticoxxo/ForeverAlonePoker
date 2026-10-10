@@ -50,6 +50,22 @@ struct InMemoryTransportTests {
     }
 }
 
+/// A transport the test drives by hand: records what the client sent and
+/// pushes whatever server messages the test wants.
+private final class ScriptedTransport: MatchTransport, @unchecked Sendable {
+    let incoming: AsyncStream<ServerMessage>
+    private let continuation: AsyncStream<ServerMessage>.Continuation
+    private(set) var sent: [ClientMessage] = []
+
+    init() {
+        (incoming, continuation) = AsyncStream<ServerMessage>.makeStream()
+    }
+
+    func push(_ message: ServerMessage) { continuation.yield(message) }
+    func send(_ message: ClientMessage) async throws { sent.append(message) }
+    func close() async { continuation.finish() }
+}
+
 @Suite("MatchSessionClient")
 @MainActor
 struct MatchSessionClientTests {
@@ -151,6 +167,22 @@ struct MatchSessionClientTests {
         #expect(await eventually { harness.bob.view?.opponent?.isReady == true })
         #expect(aliceSummaries.count == 1)
         #expect(bobSummaries.count == 1)
+    }
+
+    @Test("a ranked client joins with its session token and keeps the referee's rating")
+    func rankedJoin() async {
+        let transport = ScriptedTransport()
+        let client = MatchSessionClient(identity: TestPlayers.alice, transport: transport, sessionToken: "session-1")
+        var rated: [RatingUpdate] = []
+        client.onRated = { rated.append($0) }
+
+        await client.connect()
+        #expect(transport.sent == [.join(TestPlayers.alice, sessionToken: "session-1")])
+
+        let update = RatingUpdate(rating: Rating(value: 1220, matchesPlayed: 1), delta: 20)
+        transport.push(.rated(update))
+        #expect(await eventually { client.ratingUpdate == update })
+        #expect(rated == [update])
     }
 
     @Test("leaving tells the opponent and disconnects the leaver")

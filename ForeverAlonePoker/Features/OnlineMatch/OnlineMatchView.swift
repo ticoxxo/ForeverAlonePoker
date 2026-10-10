@@ -6,17 +6,28 @@ struct OnlineMatchView: View {
     @State private var model: OnlineLobbyModel
     @Environment(\.dismiss) private var dismiss
     private let onMatchFinished: (MatchSummary) -> Void
+    private let onRated: (RatingUpdate) -> Void
 
-    init(identity: PlayerIdentity, service: any RoomService, onMatchFinished: @escaping (MatchSummary) -> Void = { _ in }) {
-        _model = State(wrappedValue: OnlineLobbyModel(identity: identity, service: service))
+    init(
+        identity: PlayerIdentity,
+        service: any RoomService,
+        sessionToken: String? = nil,
+        onMatchFinished: @escaping (MatchSummary) -> Void = { _ in },
+        onRated: @escaping (RatingUpdate) -> Void = { _ in }
+    ) {
+        _model = State(wrappedValue: OnlineLobbyModel(identity: identity, service: service, sessionToken: sessionToken))
         self.onMatchFinished = onMatchFinished
+        self.onRated = onRated
     }
 
     var body: some View {
         ZStack {
             if let client = model.client {
                 TableView(client: client)
-                    .onAppear { client.onMatchFinished = onMatchFinished }
+                    .onAppear {
+                        client.onMatchFinished = onMatchFinished
+                        client.onRated = onRated
+                    }
             } else {
                 OnlineLobbyView(model: model)
             }

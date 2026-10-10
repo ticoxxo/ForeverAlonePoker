@@ -15,6 +15,10 @@ final class PlayerProfile {
     @Attribute(.externalStorage) var avatar: Data? = nil
     /// Sign in with Apple subject, set when the player opts into ranked play.
     var appleUserID: String? = nil
+    /// Server-issued bearer token sent on ranked joins (tdr/0010). Synced so
+    /// every device of the player is ranked after one sign-in; encrypted in
+    /// CloudKit because it is a credential.
+    @Attribute(.allowsCloudEncryption) var rankedSessionToken: String? = nil
     /// Base URL of the game server; empty means the built-in default (tdr/0008).
     var serverURLOverride: String = ""
     var createdAt: Date = Date()

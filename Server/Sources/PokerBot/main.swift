@@ -54,6 +54,8 @@ while true {
         print("Rejected: \(reason)")
     case .opponentLeft:
         print("Opponent left")
+    case .rated(let update):
+        print("Rated: \(update.rating.value) (\(update.delta >= 0 ? "+" : "")\(update.delta))")
     case .state(let view):
         switch view.phase {
         case .waitingForHand, .finished:
