@@ -31,7 +31,9 @@ struct HomeView: View {
                         OnlineMatchView(
                             identity: identity.identity,
                             service: HTTPRoomService(baseURL: identity.serverURL),
-                            onMatchFinished: { identity.record($0, mode: .online) }
+                            sessionToken: identity.rankedSessionToken,
+                            onMatchFinished: { identity.record($0, mode: .online) },
+                            onRated: { _ in identity.markLatestOnlineMatchRanked() }
                         )
                     } label: {
                         Label("Online match", systemImage: "globe")
@@ -46,6 +48,14 @@ struct HomeView: View {
                     #endif
                 }
 
+                Section("Rankings") {
+                    NavigationLink {
+                        LeaderboardView(service: CloudKitLeaderboardService())
+                    } label: {
+                        Label("Leaderboard", systemImage: "trophy")
+                    }
+                }
+
                 if !identity.recentMatches.isEmpty {
                     Section("Recent matches") {
                         ForEach(identity.recentMatches.prefix(5)) { match in
@@ -53,7 +63,8 @@ struct HomeView: View {
                                 opponentName: match.opponentName,
                                 didWin: match.didWin,
                                 mode: match.mode,
-                                date: match.date
+                                date: match.date,
+                                isRanked: match.wasRanked
                             )
                         }
                     }
@@ -121,6 +132,7 @@ struct MatchRecordRow: View {
     let didWin: Bool
     let mode: MatchMode
     let date: Date
+    var isRanked: Bool = false
 
     var body: some View {
         HStack {
@@ -128,7 +140,7 @@ struct MatchRecordRow: View {
                 .foregroundStyle(didWin ? .yellow : .secondary)
             VStack(alignment: .leading) {
                 Text(didWin ? "Won against \(opponentName)" : "Lost to \(opponentName)")
-                Text("\(mode.displayName) · \(date, format: .dateTime.day().month().hour().minute())")
+                Text("\(mode.displayName)\(isRanked ? " · Ranked" : "") · \(date, format: .dateTime.day().month().hour().minute())")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

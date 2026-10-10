@@ -69,7 +69,9 @@ public struct MatchRoom: Sendable {
 
     public mutating func handle(_ message: ClientMessage, from connection: ConnectionID) -> [Outbound] {
         switch message {
-        case .join(let identity):
+        case .join(let identity, _):
+            // Session tokens are verified by the server before the message
+            // reaches the room; the rules never see them.
             return join(identity, from: connection)
         case .ready:
             guard let seat = seat(of: connection) else { return [reject(connection, "Join the room first.")] }

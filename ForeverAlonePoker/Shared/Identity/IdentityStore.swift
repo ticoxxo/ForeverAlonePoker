@@ -27,9 +27,7 @@ final class IdentityStore {
     ///   defaults to the device region.
     init(context: ModelContext, defaultCountryCode: String? = nil) throws {
         self.context = context
-        var descriptor = FetchDescriptor<PlayerProfile>(sortBy: [SortDescriptor(\.createdAt)])
-        descriptor.fetchLimit = 1
-        if let existing = try context.fetch(descriptor).first {
+        if let existing = try Self.resolveProfile(in: context) {
             profile = existing
         } else {
             let created = PlayerProfile(
@@ -48,9 +46,61 @@ final class IdentityStore {
         return isCloudSyncEnabled ? .iCloud : .local
     }
 
-    /// The identity presented to opponents and authorities.
+    /// The identity presented to opponents and authorities. Ranked players are
+    /// known by their Apple user id so the server can tie them to a token.
     var identity: PlayerIdentity {
-        PlayerIdentity(id: profile.localID.uuidString, displayName: profile.displayName)
+        PlayerIdentity(
+            id: profile.appleUserID ?? profile.localID.uuidString,
+            displayName: profile.displayName,
+            countryCode: profile.countryCode
+        )
+    }
+
+    /// Sent with online joins; `nil` plays unranked.
+    var rankedSessionToken: String? {
+        profile.appleUserID == nil ? nil : profile.rankedSessionToken
+    }
+
+    /// What the public leaderboard may show about this player; `nil` unless ranked.
+    var publicProfileSnapshot: PublicProfileSnapshot? {
+        guard let playerID = profile.appleUserID else { return nil }
+        return PublicProfileSnapshot(
+            playerID: playerID,
+            displayName: profile.displayName,
+            countryCode: profile.countryCode,
+            avatar: profile.avatar
+        )
+    }
+
+    // MARK: - Sync
+
+    /// Re-reads the store after changes that did not go through this object
+    /// (CloudKit import). Merges duplicate profiles that two devices created
+    /// before their first sync: the oldest wins and keeps every match.
+    func refresh() {
+        if let resolved = try? Self.resolveProfile(in: context), resolved !== profile {
+            profile = resolved
+        }
+        refreshRecentMatches()
+    }
+
+    private static func resolveProfile(in context: ModelContext) throws -> PlayerProfile? {
+        let profiles = try context.fetch(FetchDescriptor<PlayerProfile>(sortBy: [SortDescriptor(\.createdAt)]))
+        guard let keeper = profiles.first else { return nil }
+        guard profiles.count > 1 else { return keeper }
+        for duplicate in profiles.dropFirst() {
+            for match in duplicate.matches ?? [] {
+                match.profile = keeper
+            }
+            if keeper.appleUserID == nil, let appleUserID = duplicate.appleUserID {
+                keeper.appleUserID = appleUserID
+                keeper.rankedSessionToken = duplicate.rankedSessionToken
+            }
+            if keeper.avatar == nil { keeper.avatar = duplicate.avatar }
+            context.delete(duplicate)
+        }
+        try context.save()
+        return keeper
     }
 
     // MARK: - Editing
@@ -87,6 +137,23 @@ final class IdentityStore {
         URL(string: profile.serverURLOverride) ?? HTTPRoomService.defaultBaseURL
     }
 
+    // MARK: - Ranked identity (tier 2)
+
+    /// Records a completed Sign in with Apple exchange (tdr/0010).
+    func linkAppleAccount(userID: String, sessionToken: String) {
+        profile.appleUserID = userID
+        profile.rankedSessionToken = sessionToken
+        save()
+    }
+
+    /// Back to the local or iCloud tier. History is kept.
+    func unlinkAppleAccount() {
+        guard profile.appleUserID != nil else { return }
+        profile.appleUserID = nil
+        profile.rankedSessionToken = nil
+        save()
+    }
+
     // MARK: - History
 
     func record(_ summary: MatchSummary, mode: MatchMode) {
@@ -102,6 +169,13 @@ final class IdentityStore {
         context.insert(record)
         save()
         refreshRecentMatches()
+    }
+
+    /// The server rated the match that was just recorded.
+    func markLatestOnlineMatchRanked() {
+        guard let latest = recentMatches.first(where: { $0.mode == .online }), !latest.wasRanked else { return }
+        latest.wasRanked = true
+        save()
     }
 
     var wins: Int { recentMatches.filter(\.didWin).count }

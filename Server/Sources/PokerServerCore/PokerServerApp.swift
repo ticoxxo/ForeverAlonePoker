@@ -25,6 +25,27 @@ public struct RoomInfo: ResponseCodable, Sendable, Equatable {
     }
 }
 
+/// Body of `POST /auth/apple`.
+public struct AppleSignInRequest: Codable, Sendable, Equatable {
+    public let identityToken: String
+
+    public init(identityToken: String) {
+        self.identityToken = identityToken
+    }
+}
+
+/// Reply of `POST /auth/apple`: the session token to send on ranked joins and
+/// the player id the app must use as its `PlayerIdentity.id`.
+public struct SessionIssued: ResponseCodable, Sendable, Equatable {
+    public let token: String
+    public let playerID: String
+
+    public init(token: String, playerID: String) {
+        self.token = token
+        self.playerID = playerID
+    }
+}
+
 public struct ServerConfiguration: Sendable {
     public var hostname: String
     public var port: Int
@@ -51,6 +72,23 @@ public func buildApplication(
 
     router.get("health") { _, _ in
         "OK"
+    }
+
+    // Sign in with Apple exchange (tdr/0010): the app sends Apple's identity
+    // token once; we verify it and hand back our own long-lived session token.
+    router.post("auth/apple") { request, context in
+        guard let ranked = registry.ranked else {
+            throw HTTPError(.serviceUnavailable, message: "Ranked play is not enabled on this server.")
+        }
+        let body = try await request.decode(as: AppleSignInRequest.self, context: context)
+        let playerID: String
+        do {
+            playerID = try await ranked.verifier.verify(identityToken: body.identityToken)
+        } catch {
+            context.logger.info("Rejected Apple identity token: \(error)")
+            throw HTTPError(.unauthorized, message: "Apple could not verify this sign-in.")
+        }
+        return SessionIssued(token: try await ranked.sessions.issue(playerID: playerID), playerID: playerID)
     }
 
     router.post("rooms") { _, _ in

@@ -1,6 +1,6 @@
 # 0006. Start as a default user in SwiftData; grow into iCloud and ranked identities without migration
 
-- **Status:** Accepted (tiers 1 and 2 planned; schema and tier 0 implemented)
+- **Status:** Accepted (tier 0 implemented here; tiers 1 and 2 implemented per tdr/0010)
 - **Date:** 2026-10-07
 - **Feature / area:** `ForeverAlonePoker/Shared/Persistence`, `ForeverAlonePoker/Shared/Identity`, `Features/Home`, `Features/Profile`; later `Features/Leaderboard`, `Server/Sources/PokerServer/{Identity,Rankings}`
 
@@ -41,3 +41,9 @@ The app must be playable immediately with no sign-in, and later offer an account
 - `CountryFlagTests`: region code to flag and name.
 - `MatchSessionClientTests/reportsFinishedMatch`: the finish callback fires exactly once per match with the final stacks.
 - Tier 1 and 2 behaviour is verified when implemented (two devices on one iCloud account; CloudKit Dashboard for leaderboard entries).
+
+## Notes
+
+### 2026-10-08
+
+Tiers 1 and 2 are implemented; the details that differ from the plan above (server session tokens instead of Apple's identity token on every join, protocol version 2, duplicate-profile merge, record names and fields) are in tdr/0010.

@@ -24,6 +24,7 @@ struct TableView: View {
             StatusBanner(
                 status: status,
                 outcome: view.flatMap { HandOutcome(result: $0.lastResult, seat: $0.seat) },
+                ratingUpdate: client.ratingUpdate,
                 onReady: { Task { await client.ready() } }
             )
             Spacer(minLength: 0)
@@ -76,6 +77,8 @@ struct TableFelt: View {
 struct StatusBanner: View {
     let status: TableStatus
     let outcome: HandOutcome?
+    /// Shown with the match result once the server has rated a ranked match.
+    var ratingUpdate: RatingUpdate? = nil
     let onReady: () -> Void
 
     var body: some View {
@@ -103,6 +106,10 @@ struct StatusBanner: View {
             case .matchOver(let youWon):
                 Text(youWon ? "You won the match!" : "You lost the match.")
                     .font(.title2.bold())
+                if let ratingUpdate {
+                    Text("Rating \(ratingUpdate.rating.value, format: .number) (\(ratingUpdate.delta, format: .number.sign(strategy: .always())))")
+                        .font(.subheadline)
+                }
                 Button("Rematch", action: onReady)
                     .buttonStyle(.borderedProminent)
             case .opponentLeft:

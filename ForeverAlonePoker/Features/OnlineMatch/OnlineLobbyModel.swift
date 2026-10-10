@@ -16,10 +16,13 @@ final class OnlineLobbyModel {
     private(set) var phase: Phase = .idle
     private(set) var client: MatchSessionClient?
     private let service: any RoomService
+    /// Ranked session token (tdr/0010); `nil` plays unranked.
+    private let sessionToken: String?
 
-    init(identity: PlayerIdentity, service: any RoomService) {
+    init(identity: PlayerIdentity, service: any RoomService, sessionToken: String? = nil) {
         self.identity = identity
         self.service = service
+        self.sessionToken = sessionToken
     }
 
     var roomCode: String? {
@@ -62,7 +65,7 @@ final class OnlineLobbyModel {
     }
 
     private func connect(to code: String) async {
-        let client = MatchSessionClient(identity: identity, transport: service.makeTransport(roomCode: code))
+        let client = MatchSessionClient(identity: identity, transport: service.makeTransport(roomCode: code), sessionToken: sessionToken)
         self.client = client
         phase = .connected(roomCode: code)
         await client.connect()

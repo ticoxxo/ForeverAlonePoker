@@ -201,6 +201,29 @@ struct ProtocolTests {
         #expect(decoded.map(\.message) == messages)
     }
 
+    @Test("a ranked join carries the session token and the identity's country")
+    func rankedJoin() throws {
+        let identity = PlayerIdentity(id: "001234.abc", displayName: "Ana", countryCode: "MX")
+        let message = ClientMessage.join(identity, sessionToken: "token-1")
+        let data = try JSONEncoder().encode(ClientEnvelope(message))
+        let decoded = try JSONDecoder().decode(ClientEnvelope.self, from: data)
+        #expect(decoded.message == message)
+        #expect(ClientMessage.join(TestPlayers.alice) == .join(TestPlayers.alice, sessionToken: nil), "unranked joins carry no token")
+        #expect(TestPlayers.alice.countryCode == "")
+    }
+
+    @Test("rating updates round-trip")
+    func ratingUpdate() throws {
+        let update = RatingUpdate(rating: Rating(value: 1218, matchesPlayed: 1), delta: 18)
+        let data = try JSONEncoder().encode(ServerEnvelope(.rated(update)))
+        #expect(try JSONDecoder().decode(ServerEnvelope.self, from: data).message == .rated(update))
+    }
+
+    @Test("the protocol version was bumped for the ranked fields")
+    func version() {
+        #expect(ProtocolVersion.current == 2)
+    }
+
     @Test("the match authority serialises room access")
     func authority() async {
         let authority = MatchAuthority(room: MatchRoomBuilder().build())

@@ -29,6 +29,12 @@ final class MatchSessionClient {
     /// record it (the client itself knows nothing about persistence).
     var onMatchFinished: ((MatchSummary) -> Void)?
     private var reportedFinishedHand: Int?
+    /// The referee's verdict after a ranked match (tdr/0010); `nil` otherwise
+    /// and cleared when the next match starts.
+    private(set) var ratingUpdate: RatingUpdate?
+    var onRated: ((RatingUpdate) -> Void)?
+    /// Sent with the join; `nil` plays unranked.
+    private let sessionToken: String?
 
     var seat: Seat? {
         if case .seated(let seat, _) = connection { return seat }
@@ -43,9 +49,10 @@ final class MatchSessionClient {
     private var assignedSeat: (seat: Seat, roomCode: String)?
     private let maxEvents = 50
 
-    init(identity: PlayerIdentity, transport: any MatchTransport) {
+    init(identity: PlayerIdentity, transport: any MatchTransport, sessionToken: String? = nil) {
         self.identity = identity
         self.transport = transport
+        self.sessionToken = sessionToken
     }
 
     // MARK: - Lifecycle
@@ -56,7 +63,7 @@ final class MatchSessionClient {
         connection = .connecting
         opponentLeft = false
         startReceiving()
-        await send(.join(identity))
+        await send(.join(identity, sessionToken: sessionToken))
     }
 
     func leave() async {
@@ -130,12 +137,16 @@ final class MatchSessionClient {
             lastRejection = reason
         case .opponentLeft:
             opponentLeft = true
+        case .rated(let update):
+            ratingUpdate = update
+            onRated?(update)
         }
     }
 
     private func reportIfFinished(_ view: PlayerView) {
         guard case .finished(let winner) = view.phase else {
             reportedFinishedHand = nil
+            ratingUpdate = nil
             return
         }
         // A finished match keeps sending the same hand number; report it once.
