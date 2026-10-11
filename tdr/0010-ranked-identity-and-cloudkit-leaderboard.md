@@ -62,4 +62,4 @@ Constraints: clients never run rules or write competitive data (tdr/0003); Apple
 1. `cloudkit.pem` was committed to the repository root in `da60c2f` (merged to `main`), so that key is compromised: anyone with repo access could sign `LeaderboardEntry` writes. Revoke it in CloudKit Console, Tokens & Keys, Server-to-Server Keys, and register a replacement.
 2. Generate the replacement outside the working tree (e.g. `~/.config/pokerserver/cloudkit.pem`; run step 4 of the 2026-10-08 notes from that directory, not the repo). Untracking the file does not remove it from git history.
 3. Give the key to the server without putting it in the repo or the image: the env var `CLOUDKIT_PRIVATE_KEY` (PEM contents) from the host's secret manager, or a Docker secret mounted at `/run/secrets/cloudkit.pem` with `CLOUDKIT_PRIVATE_KEY_PATH=/run/secrets/cloudkit.pem`.
-4. `.gitignore` now ignores `*.pem` and `*.p8` as a safety net.
+4. `.gitignore` ignores `cloudkit.pem`, `*.pem` and `*.p8` as a safety net.

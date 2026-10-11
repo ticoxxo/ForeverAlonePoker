@@ -60,15 +60,29 @@ public struct ServerConfiguration: Sendable {
 
 /// Builds the Hummingbird application. Separate from `main` so tests can run
 /// it in-process.
+///
+/// - Parameter store: the skin store's files and signing key (tdr/0012);
+///   `nil` answers 503 on `/store/catalog` and serves no skin files.
 public func buildApplication(
     configuration: ServerConfiguration = ServerConfiguration(),
-    registry: RoomRegistry = RoomRegistry()
+    registry: RoomRegistry = RoomRegistry(),
+    store: StoreConfiguration? = nil
 ) -> some ApplicationProtocol {
     var logger = Logger(label: "PokerServer")
     logger.logLevel = configuration.logLevel
 
     let router = Router(context: BasicWebSocketRequestContext.self)
     router.middlewares.add(LogRequestsMiddleware(.debug))
+    if let store {
+        // Skin artwork. In production the manifest's assetBaseURL points at a
+        // CDN instead and this only serves development.
+        router.middlewares.add(FileMiddleware(
+            store.skinsDirectory.path,
+            urlBasePath: "/skins",
+            cacheControl: .init([(MediaType(type: .image), [.maxAge(60 * 60 * 24 * 30)])])
+        ))
+    }
+    let catalogs = store.map { CatalogService(manifestURL: $0.manifestURL, signer: $0.signer) }
 
     router.get("health") { _, _ in
         "OK"
@@ -89,6 +103,22 @@ public func buildApplication(
             throw HTTPError(.unauthorized, message: "Apple could not verify this sign-in.")
         }
         return SessionIssued(token: try await ranked.sessions.issue(playerID: playerID), playerID: playerID)
+    }
+
+    // Skin catalog (tdr/0012): the manifest as signed bytes. Clients revalidate
+    // with If-None-Match; publishing a new manifest needs no restart.
+    router.get("store/catalog") { request, context -> Response in
+        guard let catalogs else {
+            throw HTTPError(.serviceUnavailable, message: "The skin store is not configured on this server.")
+        }
+        let published = try await catalogs.current()
+        return try await request.ifNoneMatch(
+            headers: [.cacheControl: "no-cache"],
+            eTag: published.etag,
+            context: context
+        ) {
+            published.catalog
+        }
     }
 
     router.post("rooms") { _, _ in

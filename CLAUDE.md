@@ -15,16 +15,21 @@ Packages/PokerCore/            CORE: pure engine, Swift 6, no UI/network imports
   Sources/PokerCore/           Cards, HandEvaluation, Hand, Match, Protocol, Authority
   Sources/PokerCoreTestSupport Builders shared by every test target (tdr/0002)
   Tests/PokerCoreTests/
+Packages/SkinKit/              Pure skin model: slots, catalog, loadout, resolver (tdr/0011); reads PokerCore, never the reverse
+  Sources/SkinKitTestSupport   SkinCatalogBuilder, LoadoutBuilder
 ForeverAlonePoker/             app target (files auto-included)
   App/                         @main entry and routing only
-  Shared/                      Transport, Session, Persistence, Identity, DesignSystem
+  Shared/                      Transport, Session, Persistence, Identity, DesignSystem, Skins (store, StoreKit, catalog, downloads)
   Features/<Name>/             one folder per user-facing feature
 ForeverAlonePokerTests/        Swift Testing; imports PokerCoreTestSupport
 ForeverAlonePokerUITests/      XCTest smoke tests
 Server/                        Hummingbird package depending on ../Packages/PokerCore (tdr/0008)
-  Sources/PokerServerCore/     rooms, registry, REST + WebSocket routes (library, tested)
+  Sources/PokerServerCore/     rooms, registry, REST + WebSocket routes, Store/ (signed skin catalog, tdr/0012)
   Sources/PokerServer/         executable (HOST/PORT env)
   Sources/PokerBot/            dev opponent: joins a room and checks/calls
+  Sources/SkinPublisher/       dev tool: artwork -> SkinAssets + manifest.json, keygen
+  SkinAssets/                  remote skins served at /skins (Spanish set, red backs)
+StoreKit/SkinStore.storekit    local StoreKit configuration for the skin products
   Tests/PokerServerTests/
 tdr/                           decision records
 ```
@@ -47,10 +52,16 @@ Single scheme `ForeverAlonePoker`; targets: `ForeverAlonePoker`, `ForeverAlonePo
 # CORE package (fastest feedback; run after every engine change)
 swift test --package-path Packages/PokerCore
 
+# Skin model package
+swift test --package-path Packages/SkinKit
+
 # Server package
 swift test --package-path Server
 swift run --package-path Server PokerServer            # listens on 0.0.0.0:8080
 swift run --package-path Server PokerBot [ROOMCODE]    # omit the code to create a room and print it
+swift run --package-path Server SkinPublisher import <artwork-dir>   # artist PNGs -> Server/SkinAssets/<item>/<slot>.png
+swift run --package-path Server SkinPublisher manifest              # rehash and bump Server/SkinAssets/manifest.json
+swift run --package-path Server SkinPublisher keygen                # catalog signing key pair (private half is a server secret)
 # Docker image (build context = repo root): docker build -f Server/Dockerfile -t pokerserver .
 
 # Build the app
@@ -82,6 +93,9 @@ Use `xcrun simctl list devices available` to pick a valid simulator name if `iPh
 - **SwiftData in tests:** keep the `ModelContainer` alive for the whole test (see `Fixture` in `IdentityStoreTests`); a model whose container was released asserts on property access.
 - **CloudKit mirroring traps without the entitlement.** `Persistence.store()` only tries `cloudKitDatabase: .private(...)` when `Persistence.isCloudEligible` (not a test host, `disableCloudSync` default unset). Building with `CODE_SIGNING_ALLOWED=NO` (useful when signing is blocked) produces an unsigned app: unit tests still work because the test host is detected, but do not run such a build as an app with cloud enabled.
 - **Signing needs the capabilities registered.** `ForeverAlonePoker.entitlements` carries iCloud/CloudKit, Push and Sign in with Apple; Xcode registers them on the App ID with automatic signing, which fails until the current Program License Agreement is accepted on developer.apple.com.
+- **Skins never reach the game.** Cards read `@Environment(\.cardSkin)`; ownership comes only from StoreKit entitlements, never SwiftData; prices come only from the App Store (`Product.displayPrice`), never the catalog. Every fallback goes through `SkinResolver` (tdr/0011, tdr/0012).
+- **SkinKit is a second local package** linked through Xcode's UI like PokerCore: `SkinKit` to the app, `SkinKit` + `SkinKitTestSupport` to `ForeverAlonePokerTests`.
+- **Skin artwork is PNG** (750×1050). SVG masters cannot be rendered at runtime on iOS (no public renderer; CoreSVG drops `<text>`). Jokers are never shipped.
 - **Ranked play on the server is opt-in by environment** (`SESSION_SECRET`, `CLOUDKIT_KEY_ID`, `CLOUDKIT_PRIVATE_KEY[_PATH]`, see tdr/0010). Without them every match is unranked and `POST /auth/apple` answers 503.
 - **Test frameworks differ by target:** unit tests use Swift Testing with `@testable import ForeverAlonePoker`; UI tests use XCTest/XCUIApplication.
 - Bundle ID prefix: `Ticoxxo.ForeverAlonePoker`. Planned iCloud container: `iCloud.Ticoxxo.ForeverAlonePoker`.

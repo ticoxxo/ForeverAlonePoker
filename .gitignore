@@ -12,6 +12,7 @@ Package.resolved
 # macOS
 .DS_Store
 
-# Secrets (keys must live outside the repo, see tdr/0010)
+# Secrets: CloudKit server-to-server key (tdr/0010). Keep outside the repo.
+cloudkit.pem
 *.pem
 *.p8
