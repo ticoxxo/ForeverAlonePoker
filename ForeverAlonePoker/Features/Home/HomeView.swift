@@ -48,6 +48,14 @@ struct HomeView: View {
                     #endif
                 }
 
+                Section("Customize") {
+                    NavigationLink {
+                        SkinStoreView()
+                    } label: {
+                        Label("Card store", systemImage: "suit.spade")
+                    }
+                }
+
                 Section("Rankings") {
                     NavigationLink {
                         LeaderboardView(service: CloudKitLeaderboardService())

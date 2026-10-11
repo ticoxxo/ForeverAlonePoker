@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking  // URLSession lives here on Linux.
+#endif
 import PokerCore
 import PokerServerCore
 
@@ -7,7 +10,9 @@ import PokerServerCore
 //   swift run PokerBot <ROOMCODE> [http://host:port]
 // Omit the code to create a new room and print it.
 
+#if canImport(Darwin)
 setbuf(stdout, nil)  // Unbuffered so the room code shows up immediately when piped.
+#endif
 
 let arguments = CommandLine.arguments.dropFirst()
 let baseURL = URL(string: arguments.dropFirst().first ?? "http://localhost:8080")!
@@ -26,6 +31,7 @@ if let given = arguments.first {
 } else {
     code = try await createRoom()
     print("Created room \(code)")
+    fflush(nil)  // Linux cannot touch `stdout` under strict concurrency; flush everything instead.
 }
 
 var components = URLComponents(url: baseURL.appending(path: "rooms/\(code)/ws"), resolvingAgainstBaseURL: false)!

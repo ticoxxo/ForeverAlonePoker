@@ -1,0 +1,12 @@
+{
+  "images": [
+    {
+      "filename": "skin-default-front-8s.png",
+      "idiom": "universal"
+    }
+  ],
+  "info": {
+    "author": "xcode",
+    "version": 1
+  }
+}

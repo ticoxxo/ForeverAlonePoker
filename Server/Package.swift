@@ -13,6 +13,8 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../Packages/PokerCore"),
+        // Skin catalog model shared with the app (tdr/0012).
+        .package(path: "../Packages/SkinKit"),
         .package(url: "https://github.com/hummingbird-project/hummingbird.git", from: "2.0.0"),
         .package(url: "https://github.com/hummingbird-project/hummingbird-websocket.git", from: "2.0.0"),
         // Sign in with Apple identity tokens and our own session tokens (tdr/0010).
@@ -27,6 +29,7 @@ let package = Package(
             name: "PokerServerCore",
             dependencies: [
                 .product(name: "PokerCore", package: "PokerCore"),
+                .product(name: "SkinKit", package: "SkinKit"),
                 .product(name: "Hummingbird", package: "hummingbird"),
                 .product(name: "HummingbirdWebSocket", package: "hummingbird-websocket"),
                 .product(name: "JWTKit", package: "jwt-kit"),
@@ -48,11 +51,21 @@ let package = Package(
                 .product(name: "PokerCore", package: "PokerCore"),
             ]
         ),
+        // Turns artwork folders into the signed skin catalog (tdr/0012).
+        .executableTarget(
+            name: "SkinPublisher",
+            dependencies: [
+                "PokerServerCore",
+                .product(name: "SkinKit", package: "SkinKit"),
+            ]
+        ),
         .testTarget(
             name: "PokerServerTests",
             dependencies: [
                 "PokerServerCore",
                 .product(name: "PokerCoreTestSupport", package: "PokerCore"),
+                .product(name: "SkinKit", package: "SkinKit"),
+                .product(name: "SkinKitTestSupport", package: "SkinKit"),
                 .product(name: "HummingbirdTesting", package: "hummingbird"),
                 .product(name: "HummingbirdWSTesting", package: "hummingbird-websocket"),
                 .product(name: "JWTKit", package: "jwt-kit"),
