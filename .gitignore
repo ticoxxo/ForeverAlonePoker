@@ -11,3 +11,7 @@ Package.resolved
 
 # macOS
 .DS_Store
+
+# Secrets (keys must live outside the repo, see tdr/0010)
+*.pem
+*.p8
