@@ -1,0 +1,328 @@
+{
+  "assetBaseURL" : "/skins/",
+  "catalogVersion" : 1,
+  "items" : [
+    {
+      "assets" : {
+        "back" : {
+          "bytes" : 260097,
+          "path" : "red_check/back.png",
+          "sha256" : "8139b8140587662f47ca1cf4d7146ed4fbdbcf0345326ee6abfb3b4a1ef16588"
+        }
+      },
+      "id" : "red_check",
+      "kind" : "cardBack",
+      "names" : {
+        "en" : "Red check",
+        "es" : "Cuadros rojos"
+      },
+      "preview" : {
+        "bytes" : 260097,
+        "path" : "red_check/back.png",
+        "sha256" : "8139b8140587662f47ca1cf4d7146ed4fbdbcf0345326ee6abfb3b4a1ef16588"
+      },
+      "productID" : "fap.skin.red_check"
+    },
+    {
+      "assets" : {
+        "back" : {
+          "bytes" : 200508,
+          "path" : "red_rosette/back.png",
+          "sha256" : "7df7821169d720ebbfdd081186b14d76cd9112472412cf147c3b6f686e9feb88"
+        }
+      },
+      "id" : "red_rosette",
+      "kind" : "cardBack",
+      "names" : {
+        "en" : "Red rosette",
+        "es" : "Roseta roja"
+      },
+      "preview" : {
+        "bytes" : 200508,
+        "path" : "red_rosette/back.png",
+        "sha256" : "7df7821169d720ebbfdd081186b14d76cd9112472412cf147c3b6f686e9feb88"
+      },
+      "productID" : "fap.skin.red_rosette"
+    },
+    {
+      "assets" : {
+        "front.2c" : {
+          "bytes" : 37689,
+          "path" : "spanish_001/front.2c.png",
+          "sha256" : "7823b41aa2c7b1329fb2ca3d2ad308af2e9b9fd23cda2abdb15799475bc8f47e"
+        },
+        "front.2d" : {
+          "bytes" : 49515,
+          "path" : "spanish_001/front.2d.png",
+          "sha256" : "597432962b4f8134c03e4f308b9577d377f8dced74374899fcdb2af604698547"
+        },
+        "front.2h" : {
+          "bytes" : 38308,
+          "path" : "spanish_001/front.2h.png",
+          "sha256" : "353deea4be2c635183a1962ddac0e843d961e9323a96550091f2fcdc9feb0b82"
+        },
+        "front.2s" : {
+          "bytes" : 33247,
+          "path" : "spanish_001/front.2s.png",
+          "sha256" : "fe4625bb1690cca8c8a706641731b27efc0418bce0e8d63cf5b2687ad0b969bf"
+        },
+        "front.3c" : {
+          "bytes" : 46235,
+          "path" : "spanish_001/front.3c.png",
+          "sha256" : "2fa9ee66c68d9762b150479cd7955a68b9d1c7ca883d3d7eb81b93ece2854af2"
+        },
+        "front.3d" : {
+          "bytes" : 60498,
+          "path" : "spanish_001/front.3d.png",
+          "sha256" : "2ca399ad6291cb7909dcfbd1d6a379315ae3dcdae2721e83b9f1d17a180d44f7"
+        },
+        "front.3h" : {
+          "bytes" : 47627,
+          "path" : "spanish_001/front.3h.png",
+          "sha256" : "daa64ba92d69e00b1283f187d447516e1d610437fbecab58e0a361146fad4f0e"
+        },
+        "front.3s" : {
+          "bytes" : 39884,
+          "path" : "spanish_001/front.3s.png",
+          "sha256" : "f7fdc83b85524fb28769a164ada929a22c252fa46f063acd66f508fa33f00ca0"
+        },
+        "front.4c" : {
+          "bytes" : 41544,
+          "path" : "spanish_001/front.4c.png",
+          "sha256" : "a27a2ef9acfa67a074ff33421db993752b2d87e3099280f8b9420cc04bf88611"
+        },
+        "front.4d" : {
+          "bytes" : 56695,
+          "path" : "spanish_001/front.4d.png",
+          "sha256" : "1fda290749d002f7a30b82b6bd512422a38773099bcce88ea6fd5bbad54f6727"
+        },
+        "front.4h" : {
+          "bytes" : 42613,
+          "path" : "spanish_001/front.4h.png",
+          "sha256" : "bbb667c006b98cc48b44ebcffe6eba6530870814b4dc5a666e1c5984201d45f7"
+        },
+        "front.4s" : {
+          "bytes" : 35732,
+          "path" : "spanish_001/front.4s.png",
+          "sha256" : "c4f7a39a1e71c76453899bf670c3f2a4e64c0977803048680d6a14f5d0b37b2a"
+        },
+        "front.5c" : {
+          "bytes" : 48396,
+          "path" : "spanish_001/front.5c.png",
+          "sha256" : "432c0ac10d3501fcf0c04ca0616967dc96341a128f3d8790701ad2627e34a74b"
+        },
+        "front.5d" : {
+          "bytes" : 65412,
+          "path" : "spanish_001/front.5d.png",
+          "sha256" : "4d6b64f444273c277452b74c4b6e37bf34ebb3017f3d3976a41af7a2382b81ba"
+        },
+        "front.5h" : {
+          "bytes" : 50923,
+          "path" : "spanish_001/front.5h.png",
+          "sha256" : "a8a6fc4b3cf8a32f5d65e613d697bb70fe11074d508a78d1a3f84ec2f62d34f9"
+        },
+        "front.5s" : {
+          "bytes" : 40856,
+          "path" : "spanish_001/front.5s.png",
+          "sha256" : "353d51fb1b167cfa464decca06278923980fda63b0e6569b43a4a53f37bcdefa"
+        },
+        "front.6c" : {
+          "bytes" : 51754,
+          "path" : "spanish_001/front.6c.png",
+          "sha256" : "6f821dc28ef89ab146d05635ca3149beeff628b8011a7046fdf0bf1af6ebbc27"
+        },
+        "front.6d" : {
+          "bytes" : 70424,
+          "path" : "spanish_001/front.6d.png",
+          "sha256" : "219adb6d00051279e8744024b83e70f75de33ec9b9057dc7ec08d7adfa7bb79c"
+        },
+        "front.6h" : {
+          "bytes" : 54617,
+          "path" : "spanish_001/front.6h.png",
+          "sha256" : "4dd0e956dcfd6d35856eb8ac194bc12fec39c19bf29d96f83cb511dd098be0bc"
+        },
+        "front.6s" : {
+          "bytes" : 43495,
+          "path" : "spanish_001/front.6s.png",
+          "sha256" : "438188c566c03ced5d28e9ce27e476b4a213e905549cfbd1635457ad090d5038"
+        },
+        "front.7c" : {
+          "bytes" : 55373,
+          "path" : "spanish_001/front.7c.png",
+          "sha256" : "375b3bf31dd0a5717de356ff99a8bf9ae863e1133d790ef4d71733294154948d"
+        },
+        "front.7d" : {
+          "bytes" : 77323,
+          "path" : "spanish_001/front.7d.png",
+          "sha256" : "84a51af10b73c05032ca6f811e6e98a46d72e8f2f2501aa9c9b657acf3d29a41"
+        },
+        "front.7h" : {
+          "bytes" : 58695,
+          "path" : "spanish_001/front.7h.png",
+          "sha256" : "2cc4cffee4a7c259c19af6b4da9e23dae642d75317f3bbf923a3ba2ae943299a"
+        },
+        "front.7s" : {
+          "bytes" : 47373,
+          "path" : "spanish_001/front.7s.png",
+          "sha256" : "f71ae3238753c1bf2f0e9ec689816ee303020b576d9a11bc24856255879ec956"
+        },
+        "front.8c" : {
+          "bytes" : 64246,
+          "path" : "spanish_001/front.8c.png",
+          "sha256" : "c611b92c90e9173b88d875fe7ab639516ba696e0a2480047521ecc8594fef910"
+        },
+        "front.8d" : {
+          "bytes" : 91013,
+          "path" : "spanish_001/front.8d.png",
+          "sha256" : "f79e03760c69efd20c3fe7a1775e1362a3da464ad54066679d4d77add8bd6cc3"
+        },
+        "front.8h" : {
+          "bytes" : 67841,
+          "path" : "spanish_001/front.8h.png",
+          "sha256" : "543785ea6f0122765e0542c7dd41809a7f0f2421c92a062359f0c0cad3d04b02"
+        },
+        "front.8s" : {
+          "bytes" : 54498,
+          "path" : "spanish_001/front.8s.png",
+          "sha256" : "f284ac53a9fdfb05d910eed521f79b550c22bd3b47180f2ae9fe9542f309f2d3"
+        },
+        "front.9c" : {
+          "bytes" : 63038,
+          "path" : "spanish_001/front.9c.png",
+          "sha256" : "be8e6b024fe61c26bfca52d0eac53a57c43dc06efd0b8782e3e9bda6649a62af"
+        },
+        "front.9d" : {
+          "bytes" : 86113,
+          "path" : "spanish_001/front.9d.png",
+          "sha256" : "c6befc34433f42e05ac97b3b4701b8e3c9d89d8e39086d1adca6e5ad81973425"
+        },
+        "front.9h" : {
+          "bytes" : 65451,
+          "path" : "spanish_001/front.9h.png",
+          "sha256" : "8110a0f9c80ba49dd6978dca287b8212828a4eb86c8041cbf977362b143b5a77"
+        },
+        "front.9s" : {
+          "bytes" : 52660,
+          "path" : "spanish_001/front.9s.png",
+          "sha256" : "426b6b0e79d75c7f9f2babbc96660d0ac487496bd587a78e383aac51e93c3bcf"
+        },
+        "front.Ac" : {
+          "bytes" : 53996,
+          "path" : "spanish_001/front.Ac.png",
+          "sha256" : "79feaaaf8b6da2b27c1c23a74ecde73929d6658f1642498e142f20a17cfa7fa1"
+        },
+        "front.Ad" : {
+          "bytes" : 67750,
+          "path" : "spanish_001/front.Ad.png",
+          "sha256" : "e01352c66a87a51d1382c00125200e97372d3ca17b8de131e973cb4d79721485"
+        },
+        "front.Ah" : {
+          "bytes" : 52582,
+          "path" : "spanish_001/front.Ah.png",
+          "sha256" : "3cd708434f4b5e287cf5fae9c56ff6417469540cdac210cee974b8c0859a3740"
+        },
+        "front.As" : {
+          "bytes" : 49159,
+          "path" : "spanish_001/front.As.png",
+          "sha256" : "a869f43d7bfedfba0aa981a044942584beec31832668f15070545a02b72b83b3"
+        },
+        "front.Jc" : {
+          "bytes" : 89610,
+          "path" : "spanish_001/front.Jc.png",
+          "sha256" : "12666ed7f9be99913f1ffc87d0b5bb279c0113831b58625728d70f6ece9c17f9"
+        },
+        "front.Jd" : {
+          "bytes" : 93677,
+          "path" : "spanish_001/front.Jd.png",
+          "sha256" : "f764c3b9e07df364beb6cf1df826a1d9bcb32676d42ea93c3bdc88e3187b5285"
+        },
+        "front.Jh" : {
+          "bytes" : 88506,
+          "path" : "spanish_001/front.Jh.png",
+          "sha256" : "928d08fb22a9ccc5a4fed53be9f37911caba3e2e84900cb7c8d0cca1149b4ff9"
+        },
+        "front.Js" : {
+          "bytes" : 87289,
+          "path" : "spanish_001/front.Js.png",
+          "sha256" : "7ba13db2162c85c0e7b8b1fae6340751b276f2b746f86865fe184648074f5194"
+        },
+        "front.Kc" : {
+          "bytes" : 127047,
+          "path" : "spanish_001/front.Kc.png",
+          "sha256" : "70165c1de47990115daf905c8d6f44c6093e2578e7009f003456f8908a1cf677"
+        },
+        "front.Kd" : {
+          "bytes" : 130747,
+          "path" : "spanish_001/front.Kd.png",
+          "sha256" : "d1d055126cb963d178a3cdb4ee7185eb5cd7dc6547511d0d4091b5fd564f0915"
+        },
+        "front.Kh" : {
+          "bytes" : 128308,
+          "path" : "spanish_001/front.Kh.png",
+          "sha256" : "f84365c79529e0f364e9558999ff65018e6a8e9515af596837a4be1dd04ef6d6"
+        },
+        "front.Ks" : {
+          "bytes" : 125478,
+          "path" : "spanish_001/front.Ks.png",
+          "sha256" : "8b05494d68db968eed203900d7216c8c9cae8a53359dcb674d315c7be0b9ca61"
+        },
+        "front.Qc" : {
+          "bytes" : 125499,
+          "path" : "spanish_001/front.Qc.png",
+          "sha256" : "3b7d9ad37ba9204e398fb7a9d9a6c1f828a38e5bdb8113f2f2979e761e3542df"
+        },
+        "front.Qd" : {
+          "bytes" : 126676,
+          "path" : "spanish_001/front.Qd.png",
+          "sha256" : "4d5dc0d9ebed891759a6e5c3fc64c23bec9e866a961d198525ca5ca70a5a09ae"
+        },
+        "front.Qh" : {
+          "bytes" : 124136,
+          "path" : "spanish_001/front.Qh.png",
+          "sha256" : "37021fa7d1343ff0b1fad0e76214474cd2fca90aa941e48c6208f7642033a2c0"
+        },
+        "front.Qs" : {
+          "bytes" : 122488,
+          "path" : "spanish_001/front.Qs.png",
+          "sha256" : "5bba03c49b8a43b9f20225746f00ee342b74cf8b5b78c375a20c84c5f77a5932"
+        },
+        "front.Tc" : {
+          "bytes" : 70374,
+          "path" : "spanish_001/front.Tc.png",
+          "sha256" : "67d424023bf7072d63c5234284b0b0cf2bce9c0271548d90a87f3a20e45305a9"
+        },
+        "front.Td" : {
+          "bytes" : 96301,
+          "path" : "spanish_001/front.Td.png",
+          "sha256" : "257529c6533b2fda6ba38c44970a1f76e778391e08676c9f670aff7af2558df3"
+        },
+        "front.Th" : {
+          "bytes" : 73179,
+          "path" : "spanish_001/front.Th.png",
+          "sha256" : "e04adcf267ef2bab5bd7aa5ab41d9e17311a2eeb3c1687ebd38aa0b473bcd97e"
+        },
+        "front.Ts" : {
+          "bytes" : 58804,
+          "path" : "spanish_001/front.Ts.png",
+          "sha256" : "b91eb81715b7c1c4f6a222f7830735c7c68dd63c107849690607a68cf071e96a"
+        }
+      },
+      "badge" : "New",
+      "id" : "spanish_001",
+      "kind" : "cardFront",
+      "names" : {
+        "en" : "Spanish",
+        "es" : "Española"
+      },
+      "preview" : {
+        "bytes" : 49159,
+        "path" : "spanish_001/front.As.png",
+        "sha256" : "a869f43d7bfedfba0aa981a044942584beec31832668f15070545a02b72b83b3"
+      },
+      "productID" : "fap.skin.spanish_001.set",
+      "sellsSingleCards" : true
+    }
+  ],
+  "publishedAt" : "2026-10-11T21:27:58Z",
+  "schemaVersion" : 1
+}

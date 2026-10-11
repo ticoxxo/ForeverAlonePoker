@@ -23,5 +23,17 @@ case (_, usesCloudKit: true)?:
     startupLogger.info("Ranked play enabled; leaderboard in CloudKit container \(environment[RankedServices.EnvironmentKey.container] ?? RankedServices.defaultContainer).")
 }
 
-let app = buildApplication(configuration: configuration, registry: RoomRegistry(ranked: ranked?.services))
+// Skin store (tdr/0012): SKINS_DIR (default SkinAssets or Server/SkinAssets),
+// CATALOG_SIGNING_KEY and CATALOG_KEY_ID.
+let store = try StoreConfiguration.fromEnvironment(environment)
+switch store {
+case nil:
+    startupLogger.info("Skin store disabled: no \(StoreConfiguration.EnvironmentKey.skinsDirectory) with a manifest.json.")
+case let store? where store.signer == nil:
+    startupLogger.warning("Skin store serving \(store.skinsDirectory.path) UNSIGNED; release builds of the app refuse it. Set \(StoreConfiguration.EnvironmentKey.signingKey).")
+case let store?:
+    startupLogger.info("Skin store serving \(store.skinsDirectory.path), signed with key \(store.signer?.keyID ?? "").")
+}
+
+let app = buildApplication(configuration: configuration, registry: RoomRegistry(ranked: ranked?.services), store: store)
 try await app.runService()
