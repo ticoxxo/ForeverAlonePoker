@@ -2,6 +2,7 @@ import Foundation
 import SwiftData
 import Testing
 import PokerCore
+import SkinKit
 @testable import ForeverAlonePoker
 
 /// Keeps the container alive for the duration of a test: a model whose
@@ -171,5 +172,38 @@ struct CountryFlagTests {
         #expect(codes.contains("MX"))
         #expect(codes.allSatisfy { $0.count == 2 })
         #expect(CountryFlag.name(for: "MX", locale: Locale(identifier: "en_US")) == "Mexico")
+    }
+
+    @Test("the skin loadout is stored on the profile and stamped")
+    func loadout() throws {
+        let fixture = try Fixture()
+        let store = fixture.store
+        #expect(store.loadout == Loadout())
+        var loadout = Loadout()
+        loadout[.cardBack] = "red_check"
+        store.updateLoadout(loadout)
+        #expect(store.loadout == loadout)
+        #expect(store.profile.cosmeticLoadoutUpdatedAt > .distantPast)
+        let reopened = try IdentityStore(context: fixture.container.mainContext)
+        #expect(reopened.loadout[.cardBack] == "red_check")
+    }
+
+    @Test("merging duplicate profiles keeps the most recently changed loadout")
+    func mergesNewestLoadout() throws {
+        let fixture = try Fixture()
+        let context = fixture.container.mainContext
+        let duplicate = PlayerProfile(displayName: "Other device")
+        duplicate.createdAt = fixture.store.profile.createdAt.addingTimeInterval(60)
+        var loadout = Loadout()
+        loadout[.cardBack] = "red_rosette"
+        duplicate.cosmeticLoadout = try JSONEncoder().encode(loadout)
+        duplicate.cosmeticLoadoutUpdatedAt = Date()
+        context.insert(duplicate)
+        try context.save()
+
+        fixture.store.refresh()
+
+        #expect(fixture.store.loadout[.cardBack] == "red_rosette")
+        #expect(try context.fetchCount(FetchDescriptor<PlayerProfile>()) == 1)
     }
 }

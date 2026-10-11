@@ -21,6 +21,12 @@ final class PlayerProfile {
     @Attribute(.allowsCloudEncryption) var rankedSessionToken: String? = nil
     /// Base URL of the game server; empty means the built-in default (tdr/0008).
     var serverURLOverride: String = ""
+    /// JSON `Loadout` (SkinKit): the skin chosen for each card face and the
+    /// back (tdr/0011). Synced so every device shows the same cards. Ownership
+    /// is never stored here; it comes from App Store entitlements.
+    var cosmeticLoadout: Data? = nil
+    /// When the loadout last changed; the newest wins when duplicate profiles merge.
+    var cosmeticLoadoutUpdatedAt: Date = Date.distantPast
     var createdAt: Date = Date()
     @Relationship(deleteRule: .cascade, inverse: \MatchRecord.profile)
     var matches: [MatchRecord]? = nil

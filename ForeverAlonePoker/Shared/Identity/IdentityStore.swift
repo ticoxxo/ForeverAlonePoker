@@ -2,11 +2,12 @@ import Foundation
 import Observation
 import SwiftData
 import PokerCore
+import SkinKit
 
 /// Owns the player's profile and match history. Creates the default user on
 /// first launch and is the single place that writes to the store.
 @Observable
-final class IdentityStore {
+final class IdentityStore: LoadoutPersisting {
     /// How far the player has opted into accounts (tdr/0006).
     enum Tier: Equatable {
         /// Default user, data on this device only.
@@ -97,6 +98,10 @@ final class IdentityStore {
                 keeper.rankedSessionToken = duplicate.rankedSessionToken
             }
             if keeper.avatar == nil { keeper.avatar = duplicate.avatar }
+            if duplicate.cosmeticLoadoutUpdatedAt > keeper.cosmeticLoadoutUpdatedAt {
+                keeper.cosmeticLoadout = duplicate.cosmeticLoadout
+                keeper.cosmeticLoadoutUpdatedAt = duplicate.cosmeticLoadoutUpdatedAt
+            }
             context.delete(duplicate)
         }
         try context.save()
@@ -135,6 +140,21 @@ final class IdentityStore {
     /// The game server to use for online play.
     var serverURL: URL {
         URL(string: profile.serverURLOverride) ?? HTTPRoomService.defaultBaseURL
+    }
+
+    // MARK: - Skins (tdr/0011)
+
+    /// The player's skin choices; empty (all defaults) until they pick one.
+    var loadout: Loadout {
+        guard let data = profile.cosmeticLoadout else { return Loadout() }
+        return (try? JSONDecoder().decode(Loadout.self, from: data)) ?? Loadout()
+    }
+
+    func updateLoadout(_ loadout: Loadout) {
+        guard loadout != self.loadout else { return }
+        profile.cosmeticLoadout = try? JSONEncoder().encode(loadout)
+        profile.cosmeticLoadoutUpdatedAt = Date()
+        save()
     }
 
     // MARK: - Ranked identity (tier 2)
