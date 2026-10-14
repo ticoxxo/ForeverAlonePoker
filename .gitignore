@@ -11,3 +11,17 @@ Package.resolved
 
 # macOS
 .DS_Store
+
+# Secrets: keys, certificates, provisioning, environment files
+*.pem
+*.p8
+*.p12
+*.key
+*.cer
+*.mobileprovision
+*.provisionprofile
+.env
+.env.*
+!.env.example
+*.secret
+secrets/
