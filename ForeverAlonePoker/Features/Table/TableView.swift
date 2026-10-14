@@ -18,6 +18,10 @@ struct TableView: View {
                     revealedCards: revealedOpponentCards,
                     showsCards: view.street != nil && view.opponent?.hasFolded == false
                 )
+                // The opponent's cards never use our skin. Until their loadout
+                // travels with the protocol (tdr/0012) we know nothing about
+                // it, and unknown means the default.
+                .environment(\.cardSkin, .standard)
             }
             Spacer(minLength: 0)
             BoardView(community: view?.community ?? [], pot: collectedPot, street: view?.street)
