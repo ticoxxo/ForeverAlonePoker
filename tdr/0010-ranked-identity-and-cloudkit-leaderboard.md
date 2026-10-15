@@ -56,3 +56,10 @@ Constraints: clients never run rules or write competitive data (tdr/0003); Apple
 3. CloudKit Console, container `iCloud.Ticoxxo.ForeverAlonePoker`, Development schema: record types `LeaderboardEntry` (`displayName` String, `countryCode` String, `rating` Int64, `matchesPlayed` Int64, `wins` Int64, `losses` Int64, `updatedAt` Date/Time) and `PublicProfile` (`displayName` String, `countryCode` String, `avatar` Asset). Indexes: `LeaderboardEntry.rating` SORTABLE, `LeaderboardEntry.countryCode` QUERYABLE, `recordName` QUERYABLE on both. Security roles: `_world` Read on both; `_icloud` Create and `_creator` Write on `PublicProfile`; no `_icloud` Create or Write on `LeaderboardEntry`.
 4. CloudKit Console, Tokens & Keys, Server-to-Server Keys: create one from the public half of an EC P-256 key (`openssl ecparam -name prime256v1 -genkey -noout -out cloudkit.pem; openssl ec -in cloudkit.pem -pubout`), note the Key ID.
 5. Run the server with `SESSION_SECRET`, `CLOUDKIT_KEY_ID`, `CLOUDKIT_PRIVATE_KEY_PATH=cloudkit.pem` (and `CLOUDKIT_ENVIRONMENT=production` once the schema is deployed).
+
+### 2026-10-11. Server-to-server key must live outside the repo
+
+1. `cloudkit.pem` was committed to the repository root in `da60c2f` (merged to `main`), so that key is compromised: anyone with repo access could sign `LeaderboardEntry` writes. Revoke it in CloudKit Console, Tokens & Keys, Server-to-Server Keys, and register a replacement.
+2. Generate the replacement outside the working tree (e.g. `~/.config/pokerserver/cloudkit.pem`; run step 4 of the 2026-10-08 notes from that directory, not the repo). Untracking the file does not remove it from git history.
+3. Give the key to the server without putting it in the repo or the image: the env var `CLOUDKIT_PRIVATE_KEY` (PEM contents) from the host's secret manager, or a Docker secret mounted at `/run/secrets/cloudkit.pem` with `CLOUDKIT_PRIVATE_KEY_PATH=/run/secrets/cloudkit.pem`.
+4. `.gitignore` ignores `cloudkit.pem`, `*.pem` and `*.p8` as a safety net.
