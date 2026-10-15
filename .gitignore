@@ -15,4 +15,15 @@ Package.resolved
 # Secrets: CloudKit server-to-server key (tdr/0010). Keep outside the repo.
 cloudkit.pem
 *.pem
+# Other keys, certificates, provisioning profiles and environment files
 *.p8
+*.p12
+*.key
+*.cer
+*.mobileprovision
+*.provisionprofile
+.env
+.env.*
+!.env.example
+*.secret
+secrets/

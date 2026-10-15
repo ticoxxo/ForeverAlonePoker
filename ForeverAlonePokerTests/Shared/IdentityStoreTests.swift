@@ -152,27 +152,6 @@ struct IdentityStoreTests {
         #expect(store.recentMatches.count == 2)
         #expect(store.recentMatches.allSatisfy { $0.profile?.localID == keeperID })
     }
-}
-
-@Suite("CountryFlag")
-struct CountryFlagTests {
-    @Test("two-letter codes become regional indicator flags", arguments: [("MX", "🇲🇽"), ("us", "🇺🇸"), ("JP", "🇯🇵")])
-    func flags(code: String, expected: String) {
-        #expect(CountryFlag.emoji(for: code) == expected)
-    }
-
-    @Test("anything else yields no flag", arguments: ["", "M", "MEX", "1X", "🇲🇽"])
-    func invalid(code: String) {
-        #expect(CountryFlag.emoji(for: code) == "")
-    }
-
-    @Test("region list contains only two-letter codes")
-    func regions() {
-        let codes = CountryFlag.allRegionCodes(locale: Locale(identifier: "en_US"))
-        #expect(codes.contains("MX"))
-        #expect(codes.allSatisfy { $0.count == 2 })
-        #expect(CountryFlag.name(for: "MX", locale: Locale(identifier: "en_US")) == "Mexico")
-    }
 
     @Test("the skin loadout is stored on the profile and stamped")
     func loadout() throws {
@@ -205,5 +184,26 @@ struct CountryFlagTests {
 
         #expect(fixture.store.loadout[.cardBack] == "red_rosette")
         #expect(try context.fetchCount(FetchDescriptor<PlayerProfile>()) == 1)
+    }
+}
+
+@Suite("CountryFlag")
+struct CountryFlagTests {
+    @Test("two-letter codes become regional indicator flags", arguments: [("MX", "🇲🇽"), ("us", "🇺🇸"), ("JP", "🇯🇵")])
+    func flags(code: String, expected: String) {
+        #expect(CountryFlag.emoji(for: code) == expected)
+    }
+
+    @Test("anything else yields no flag", arguments: ["", "M", "MEX", "1X", "🇲🇽"])
+    func invalid(code: String) {
+        #expect(CountryFlag.emoji(for: code) == "")
+    }
+
+    @Test("region list contains only two-letter codes")
+    func regions() {
+        let codes = CountryFlag.allRegionCodes(locale: Locale(identifier: "en_US"))
+        #expect(codes.contains("MX"))
+        #expect(codes.allSatisfy { $0.count == 2 })
+        #expect(CountryFlag.name(for: "MX", locale: Locale(identifier: "en_US")) == "Mexico")
     }
 }

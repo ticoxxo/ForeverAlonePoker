@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C12D0265307D49A100123C4D /* SkinKit in Frameworks */ = {isa = PBXBuildFile; productRef = C12D0264307D49A100123C4D /* SkinKit */; };
+		C12D0267307D49A100123C4D /* SkinKitTestSupport in Frameworks */ = {isa = PBXBuildFile; productRef = C12D0266307D49A100123C4D /* SkinKitTestSupport */; };
+		C12D0269307D4A8100123C4D /* SkinKit in Frameworks */ = {isa = PBXBuildFile; productRef = C12D0268307D4A8100123C4D /* SkinKit */; };
 		C1EEB7F83076BC8F009BAFEA /* PokerCore in Frameworks */ = {isa = PBXBuildFile; productRef = C1EEB7F73076BC8F009BAFEA /* PokerCore */; };
 		C1EEB7FA3076BCAD009BAFEA /* PokerCore in Frameworks */ = {isa = PBXBuildFile; productRef = C1EEB7F93076BCAD009BAFEA /* PokerCore */; };
 		C1EEB7FC3076BCAD009BAFEA /* PokerCoreTestSupport in Frameworks */ = {isa = PBXBuildFile; productRef = C1EEB7FB3076BCAD009BAFEA /* PokerCoreTestSupport */; };
@@ -30,6 +33,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		C12D026A307D4F0F00123C4D /* SkinStore.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = SkinStore.storekit; sourceTree = "<group>"; };
 		C1EEB7C830769E7D009BAFEA /* ForeverAlonePoker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ForeverAlonePoker.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C1EEB7D530769E7E009BAFEA /* ForeverAlonePokerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ForeverAlonePokerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C1EEB7DF30769E7E009BAFEA /* ForeverAlonePokerUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ForeverAlonePokerUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -70,14 +74,17 @@
 		C1EEB7C530769E7D009BAFEA /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
+				C12D0265307D49A100123C4D /* SkinKit in Frameworks */,
 				C1EEB7F83076BC8F009BAFEA /* PokerCore in Frameworks */,
 			);
 		};
 		C1EEB7D230769E7E009BAFEA /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
+				C12D0269307D4A8100123C4D /* SkinKit in Frameworks */,
 				C1EEB7FA3076BCAD009BAFEA /* PokerCore in Frameworks */,
 				C1EEB7FC3076BCAD009BAFEA /* PokerCoreTestSupport in Frameworks */,
+				C12D0267307D49A100123C4D /* SkinKitTestSupport in Frameworks */,
 			);
 		};
 		C1EEB7DC30769E7E009BAFEA /* Frameworks */ = {
@@ -91,6 +98,7 @@
 		C1EEB7BF30769E7D009BAFEA = {
 			isa = PBXGroup;
 			children = (
+				C12D026A307D4F0F00123C4D /* SkinStore.storekit */,
 				C1EEB7CA30769E7D009BAFEA /* ForeverAlonePoker */,
 				C1EEB7D830769E7E009BAFEA /* ForeverAlonePokerTests */,
 				C1EEB7E230769E7E009BAFEA /* ForeverAlonePokerUITests */,
@@ -135,6 +143,7 @@
 			name = ForeverAlonePoker;
 			packageProductDependencies = (
 				C1EEB7F73076BC8F009BAFEA /* PokerCore */,
+				C12D0264307D49A100123C4D /* SkinKit */,
 			);
 			productName = ForeverAlonePoker;
 			productReference = C1EEB7C830769E7D009BAFEA /* ForeverAlonePoker.app */;
@@ -160,6 +169,8 @@
 			packageProductDependencies = (
 				C1EEB7F93076BCAD009BAFEA /* PokerCore */,
 				C1EEB7FB3076BCAD009BAFEA /* PokerCoreTestSupport */,
+				C12D0266307D49A100123C4D /* SkinKitTestSupport */,
+				C12D0268307D4A8100123C4D /* SkinKit */,
 			);
 			productName = ForeverAlonePokerTests;
 			productReference = C1EEB7D530769E7E009BAFEA /* ForeverAlonePokerTests.xctest */;
@@ -220,6 +231,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				C1EEB7F53076BC3F009BAFEA /* XCLocalSwiftPackageReference "Packages/PokerCore" */,
+				C12D0263307D49A100123C4D /* XCLocalSwiftPackageReference "Packages/SkinKit" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C1EEB7C930769E7D009BAFEA /* Products */;
@@ -486,7 +498,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 426H2D8TKH;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				IPHONEOS_DEPLOYMENT_TARGET = "$(RECOMMENDED_IPHONEOS_DEPLOYMENT_TARGET)";
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = Ticoxxo.ForeverAlonePokerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -508,7 +520,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 426H2D8TKH;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				IPHONEOS_DEPLOYMENT_TARGET = "$(RECOMMENDED_IPHONEOS_DEPLOYMENT_TARGET)";
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = Ticoxxo.ForeverAlonePokerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -600,6 +612,10 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
+		C12D0263307D49A100123C4D /* XCLocalSwiftPackageReference "Packages/SkinKit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/SkinKit;
+		};
 		C1EEB7F53076BC3F009BAFEA /* XCLocalSwiftPackageReference "Packages/PokerCore" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/PokerCore;
@@ -607,6 +623,19 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		C12D0264307D49A100123C4D /* SkinKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = SkinKit;
+		};
+		C12D0266307D49A100123C4D /* SkinKitTestSupport */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = SkinKitTestSupport;
+		};
+		C12D0268307D4A8100123C4D /* SkinKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C12D0263307D49A100123C4D /* XCLocalSwiftPackageReference "Packages/SkinKit" */;
+			productName = SkinKit;
+		};
 		C1EEB7F73076BC8F009BAFEA /* PokerCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = C1EEB7F53076BC3F009BAFEA /* XCLocalSwiftPackageReference "Packages/PokerCore" */;
