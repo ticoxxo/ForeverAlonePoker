@@ -9,7 +9,7 @@ import SkinKitTestSupport
 /// A store over fakes with the Spanish set and the red check back in the remote catalog.
 @MainActor
 private struct Fixture {
-    static let spanish = SkinCatalogBuilder.cardSet("spanish_001", sellsSingleCards: true)
+    static let spanish = SkinCatalogBuilder.cardSet("spanish_001")
     static let redCheck = SkinCatalogBuilder.back("red_check")
     static let remote = SkinCatalogBuilder().with(spanish).with(redCheck).build()
 
@@ -26,7 +26,6 @@ private struct Fixture {
         assets = FakeAssets(preinstalled: preinstalled)
         purchases.catalogProducts = [
             FakePurchases.product(ProductIDs.set("spanish_001"), price: "0.99"),
-            FakePurchases.product(ProductIDs.card("spanish_001", card("As")), price: "0.29"),
             FakePurchases.product(ProductIDs.single("red_check"), price: "0.99"),
         ]
         store = SkinStore(
@@ -74,24 +73,44 @@ struct SkinStoreTests {
     @Test("owned files are downloaded and unowned ones are not")
     func downloadsOwned() async {
         let fixture = Fixture()
-        fixture.purchases.entitlements = [ProductIDs.card("spanish_001", card("As"))]
+        fixture.purchases.entitlements = [ProductIDs.single("red_check")]
         await fixture.store.start()
-        #expect(fixture.store.installed == [AssetKey(item: "spanish_001", slot: ace)])
-        #expect(await fixture.assets.requests == [URL(string: "https://cdn.test/spanish_001/front.As.png")!])
+        #expect(fixture.store.installed == [AssetKey(item: "red_check", slot: .cardBack)])
+        #expect(await fixture.assets.requests == [URL(string: "https://cdn.test/red_check/back.png")!])
     }
 
-    @Test("equipping shows the downloaded file, but only on the cards the player owns")
-    func equipOwnedOnly() async {
+    @Test("a set that was not bought cannot be equipped")
+    func equipUnowned() async {
         let fixture = Fixture()
-        fixture.purchases.entitlements = [ProductIDs.card("spanish_001", card("As"))]
         await fixture.store.start()
 
         fixture.store.equipAll(Fixture.spanish)
 
-        #expect(fixture.loadout.loadout[ace] == "spanish_001")
-        #expect(fixture.loadout.loadout[king] == nil)
+        #expect(fixture.loadout.loadout[ace] == nil)
+        #expect(fixture.store.myCardSkin.source(for: ace) == .bundled("skin-default-front-As"))
+    }
+
+    @Test("a bought set downloads and shows every card once equipped")
+    func equipOwnedSet() async {
+        let fixture = Fixture()
+        await fixture.store.start()
+        await fixture.store.purchase(ProductIDs.set("spanish_001"))
+
+        fixture.store.equipAll(Fixture.spanish)
+
+        #expect(fixture.store.ownsAll(of: Fixture.spanish))
+        #expect(fixture.store.installed.count == 52)
         #expect(fixture.store.myCardSkin.source(for: ace) == .file(URL(filePath: "/skins/spanish_001/front.As.png"), fallback: "skin-default-front-As"))
-        #expect(fixture.store.myCardSkin.source(for: king) == .bundled("skin-default-front-Kd"))
+        #expect(fixture.store.myCardSkin.source(for: king) == .file(URL(filePath: "/skins/spanish_001/front.Kd.png"), fallback: "skin-default-front-Kd"))
+    }
+
+    @Test("a single-card entitlement unlocks nothing: cards are sold only with the set")
+    func singleCardEntitlementIgnored() async {
+        let fixture = Fixture()
+        fixture.purchases.entitlements = ["fap.skin.spanish_001.card.As"]
+        await fixture.store.start()
+        #expect(!fixture.store.owns(ace, of: Fixture.spanish))
+        #expect(fixture.store.installed.isEmpty)
     }
 
     @Test("a file that failed to download shows the default until a later sync")
@@ -181,15 +200,6 @@ struct SkinStoreTests {
         let skin = fixture.store.opponentCardSkin(["back": "red_check", "front.As": "spanish_001"])
         #expect(skin.source(for: .cardBack) == .file(URL(filePath: "/skins/red_check/back.png"), fallback: "skin-navy_check-back"))
         #expect(skin.source(for: ace) == .bundled("skin-default-front-As"))
-    }
-
-    @Test("the set's savings are computed in the storefront currency over the cards still missing")
-    func savings() async {
-        let fixture = Fixture()
-        fixture.purchases.entitlements = [ProductIDs.card("spanish_001", card("As"))]
-        await fixture.store.start()
-        // 51 missing cards × $0.29 − $0.99 = $13.80
-        #expect(fixture.store.setSavings(for: Fixture.spanish) == Decimal(string: "13.80")!.formatted(.currency(code: "USD")))
     }
 
     @Test("a storefront change reloads prices")

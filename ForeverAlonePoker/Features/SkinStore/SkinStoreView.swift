@@ -87,12 +87,8 @@ private struct SkinItemRow: View {
 
     private var status: String {
         if item.isDefault { return String(localized: "Free") }
-        let owned = store.ownedCount(of: item)
-        if owned == item.slots.count { return String(localized: "Owned") }
+        if store.ownsAll(of: item) { return String(localized: "Owned") }
         let price = store.product(item.productID)?.displayPrice
-        if owned > 0 {
-            return String(localized: "\(owned) of \(item.slots.count) cards owned")
-        }
         return price.map { String(localized: "Full set \($0)") } ?? String(localized: "Unavailable")
     }
 }

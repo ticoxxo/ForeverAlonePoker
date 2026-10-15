@@ -125,7 +125,6 @@ final class SkinStore {
 
     func owns(_ slot: CosmeticSlot, of item: SkinItem) -> Bool { ownership.owns(slot, of: item) }
     func ownsAll(of item: SkinItem) -> Bool { ownership.ownsAll(of: item) }
-    func ownedCount(of item: SkinItem) -> Int { ownership.ownedSlots(of: item).count }
 
     /// Whether the slot currently shows this item for the player.
     func isShowing(_ item: SkinItem, in slot: CosmeticSlot) -> Bool {
@@ -133,20 +132,6 @@ final class SkinStore {
     }
 
     func product(_ id: String?) -> StoreProduct? { id.flatMap { products[$0] } }
-
-    func cardProduct(_ item: SkinItem, _ card: Card) -> StoreProduct? {
-        item.sellsSingleCards ? products[ProductIDs.card(item.id, card)] : nil
-    }
-
-    /// "Save $13.10 over buying the cards you're missing", in the storefront currency.
-    func setSavings(for item: SkinItem) -> String? {
-        guard let set = product(item.productID),
-              let single = item.slots.lazy.compactMap(\.card).compactMap({ self.cardProduct(item, $0) }).first
-        else { return nil }
-        let remaining = item.slots.count - ownedCount(of: item)
-        let savings = SetPricing.savings(setPrice: set.price, cardPrice: single.price, cardsRemaining: remaining)
-        return savings > 0 ? savings.formatted(set.priceFormatStyle) : nil
-    }
 
     // MARK: - Choosing skins
 

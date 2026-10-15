@@ -18,14 +18,10 @@ public struct Ownership: Hashable, Sendable {
         guard item.assets[slot] != nil else { return false }
         if ownsEverything || item.isDefault { return true }
         guard let productID = item.productID else { return true }  // free item
-        if productIDs.contains(productID) { return true }
-        if item.sellsSingleCards, let card = slot.card {
-            return productIDs.contains(ProductIDs.card(item.id, card))
-        }
-        return false
+        return productIDs.contains(productID)
     }
 
-    /// Whether every slot of the item is owned (e.g. the set was bought).
+    /// Whether every slot of the item is owned (the item was bought).
     public func ownsAll(of item: SkinItem) -> Bool {
         item.slots.allSatisfy { owns($0, of: item) }
     }

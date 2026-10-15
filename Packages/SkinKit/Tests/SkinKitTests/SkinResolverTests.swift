@@ -10,7 +10,7 @@ struct SkinResolverTests {
     private let king = CosmeticSlot.cardFront(card("Kd"))
     private let resolver = SkinResolver(catalog: SkinCatalog.builtIn.merging(
         SkinCatalogBuilder()
-            .with(SkinCatalogBuilder.cardSet("spanish_001", sellsSingleCards: true))
+            .with(SkinCatalogBuilder.cardSet("spanish_001"))
             .with(SkinCatalogBuilder.back("red_check"))
             .build()
     ))
@@ -34,11 +34,11 @@ struct SkinResolverTests {
         #expect(resolved?.isDefault == false)
     }
 
-    @Test("a single card purchase unlocks only that card")
-    func singleCard() {
+    @Test("a set that was not bought shows none of its cards")
+    func setNotBought() {
         let loadout = LoadoutBuilder().equip("spanish_001", on: [ace, king]).build()
-        let ownership = Ownership(productIDs: [ProductIDs.card("spanish_001", card("As"))])
-        #expect(resolver.resolve(ace, loadout: loadout, ownership: ownership, installed: spanishInstalled)?.item.id == "spanish_001")
+        let ownership = Ownership(productIDs: [ProductIDs.single("red_check")])
+        #expect(resolver.resolve(ace, loadout: loadout, ownership: ownership, installed: spanishInstalled)?.item.id == SkinCatalog.defaultFrontID)
         #expect(resolver.resolve(king, loadout: loadout, ownership: ownership, installed: spanishInstalled)?.item.id == SkinCatalog.defaultFrontID)
     }
 
@@ -77,11 +77,12 @@ struct SkinResolverTests {
         #expect(resolver.resolve(.mat, loadout: Loadout(), ownership: .everything, installed: []) == nil)
     }
 
-    @Test("owned slots of a set reflect set and single card purchases")
+    @Test("a set is owned all or nothing")
     func ownedSlots() {
-        let set = SkinCatalogBuilder.cardSet("spanish_001", sellsSingleCards: true)
+        let set = SkinCatalogBuilder.cardSet("spanish_001")
         #expect(Ownership.none.ownedSlots(of: set).isEmpty)
-        #expect(Ownership(productIDs: [ProductIDs.card("spanish_001", card("As"))]).ownedSlots(of: set) == [ace])
+        #expect(Ownership(productIDs: ["fap.skin.spanish_001.card.As"]).ownedSlots(of: set).isEmpty, "single-card products unlock nothing")
         #expect(Ownership(productIDs: [ProductIDs.set("spanish_001")]).ownedSlots(of: set).count == 52)
+        #expect(Ownership(productIDs: [ProductIDs.set("spanish_001")]).ownsAll(of: set))
     }
 }
