@@ -56,6 +56,9 @@ final class FakePurchases: PurchaseService, @unchecked Sendable {
     var catalogProducts: [StoreProduct] = []
     var entitlements: Set<String> = []
     var nextOutcome: PurchaseOutcomeScript = .purchase
+    /// `false` mimics StoreKit leaving a just-verified purchase out of
+    /// `currentEntitlements` for a while (seen in Xcode's StoreKit testing).
+    var listsPurchasesImmediately = true
     private(set) var finishedTransactions: [String] = []
     private(set) var purchasedTokens: [UUID] = []
     private(set) var syncCount = 0
@@ -81,7 +84,7 @@ final class FakePurchases: PurchaseService, @unchecked Sendable {
         purchasedTokens.append(accountToken)
         switch nextOutcome {
         case .purchase:
-            entitlements.insert(productID)
+            if listsPurchasesImmediately { entitlements.insert(productID) }
             return .purchased(finish: { [weak self] in self?.finishedTransactions.append(productID) })
         case .pending: return .pending
         case .cancel: return .cancelled
@@ -93,8 +96,8 @@ final class FakePurchases: PurchaseService, @unchecked Sendable {
     func sync() async throws { syncCount += 1 }
 
     /// Simulates a transaction arriving outside a purchase (refund, Ask to Buy).
-    func deliverUpdate(productID: String) {
-        updatesContinuation.yield(EntitlementUpdate(productID: productID, finish: { [weak self] in
+    func deliverUpdate(productID: String, isRevoked: Bool = false) {
+        updatesContinuation.yield(EntitlementUpdate(productID: productID, isRevoked: isRevoked, finish: { [weak self] in
             self?.finishedTransactions.append(productID)
         }))
     }

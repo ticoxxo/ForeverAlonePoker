@@ -127,3 +127,15 @@ A strategy note (`skin-assets-strategy.md`) recommended keeping art out of the b
   - approve an Ask to Buy and refund from Xcode's Transaction Manager;
   - change the storefront to check currency;
   - run `swift run --package-path Server PokerServer` with the default `Server/SkinAssets`.
+
+## Notes
+
+### 2026-10-16: purchases show without a relaunch
+
+Bought items did not appear in the store until the app was relaunched: after `.purchased`, `currentEntitlements` could still leave out the transaction StoreKit had just verified (reliably so in Xcode's StoreKit testing), and in-app purchases never come back through `Transaction.updates`, so nothing refreshed the view later.
+
+- `SkinStore` keeps the ids of verified purchases and non-revoked updates that `currentEntitlements` does not list yet, for this session only, and adds them to `Ownership`. Each id is dropped as soon as StoreKit lists it, or when an update for it is revoked. Ownership is still never persisted, and `currentEntitlements` stays the source of truth across launches.
+- `EntitlementUpdate` carries `isRevoked` (`revocationDate != nil`) so a refund removes such a grant.
+- A completed purchase equips the item on every slot it covers (a set on all 52 cards, a back on the back). Files show as they download, the default until then; per-slot equipping (tdr/0011) is unchanged.
+- Pull to refresh in the store also refreshes entitlements.
+- Tests: `SkinStoreTests` (a back or a set unlocks and downloads before StoreKit lists it, a purchase is equipped, an approved update grants before it is listed, a refund revokes an unlisted purchase).

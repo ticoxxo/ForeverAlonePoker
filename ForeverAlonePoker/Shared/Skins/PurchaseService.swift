@@ -28,6 +28,8 @@ nonisolated enum PurchaseOutcome: Sendable {
 /// an Ask to Buy approval, a refund or revocation.
 nonisolated struct EntitlementUpdate: Sendable {
     let productID: String
+    /// Refunded or revoked: the product is no longer owned.
+    let isRevoked: Bool
     let finish: @Sendable () async -> Void
 }
 
@@ -117,7 +119,11 @@ nonisolated final class StoreKitPurchaseService: PurchaseService {
                 for await result in Transaction.updates {
                     switch result {
                     case .verified(let transaction):
-                        continuation.yield(EntitlementUpdate(productID: transaction.productID, finish: { await transaction.finish() }))
+                        continuation.yield(EntitlementUpdate(
+                            productID: transaction.productID,
+                            isRevoked: transaction.revocationDate != nil,
+                            finish: { await transaction.finish() }
+                        ))
                     case .unverified(let transaction, _):
                         await transaction.finish()
                     }

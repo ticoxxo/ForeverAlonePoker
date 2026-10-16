@@ -137,6 +137,68 @@ struct SkinStoreTests {
         #expect(fixture.store.purchaseStates.isEmpty)
     }
 
+    @Test("a bought card back shows as owned at once, even before StoreKit lists it")
+    func purchaseBeforeListed() async {
+        let fixture = Fixture()
+        await fixture.store.start()
+        fixture.purchases.listsPurchasesImmediately = false
+
+        await fixture.store.purchase(ProductIDs.single("red_check"))
+
+        #expect(fixture.store.owns(.cardBack, of: Fixture.redCheck))
+        #expect(fixture.store.installed.contains(AssetKey(item: "red_check", slot: .cardBack)))
+    }
+
+    @Test("a bought set unlocks and downloads every card at once, even before StoreKit lists it")
+    func setPurchaseBeforeListed() async {
+        let fixture = Fixture()
+        await fixture.store.start()
+        fixture.purchases.listsPurchasesImmediately = false
+
+        await fixture.store.purchase(ProductIDs.set("spanish_001"))
+
+        #expect(fixture.store.ownsAll(of: Fixture.spanish))
+        #expect(fixture.store.installed.count == 52)
+    }
+
+    @Test("a purchase is equipped on every slot it covers")
+    func purchaseEquips() async {
+        let fixture = Fixture()
+        await fixture.store.start()
+
+        await fixture.store.purchase(ProductIDs.set("spanish_001"))
+
+        #expect(fixture.store.isShowing(Fixture.spanish, in: ace))
+        #expect(fixture.store.myCardSkin.source(for: king) == .file(URL(filePath: "/skins/spanish_001/front.Kd.png"), fallback: "skin-default-front-Kd"))
+    }
+
+    @Test("an approved update grants at once, even before StoreKit lists it")
+    func updateBeforeListed() async {
+        let fixture = Fixture()
+        await fixture.store.start()
+        let observing = Task { await fixture.store.observeTransactions() }
+        defer { observing.cancel() }
+
+        fixture.purchases.deliverUpdate(productID: ProductIDs.single("red_check"))
+
+        #expect(await eventually { fixture.store.owns(.cardBack, of: Fixture.redCheck) })
+        #expect(await eventually { fixture.store.installed.contains(AssetKey(item: "red_check", slot: .cardBack)) })
+    }
+
+    @Test("a refund revokes a purchase StoreKit had not listed yet")
+    func refundBeforeListed() async {
+        let fixture = Fixture()
+        await fixture.store.start()
+        fixture.purchases.listsPurchasesImmediately = false
+        await fixture.store.purchase(ProductIDs.single("red_check"))
+        let observing = Task { await fixture.store.observeTransactions() }
+        defer { observing.cancel() }
+
+        fixture.purchases.deliverUpdate(productID: ProductIDs.single("red_check"), isRevoked: true)
+
+        #expect(await eventually { !fixture.store.owns(.cardBack, of: Fixture.redCheck) })
+    }
+
     @Test("Ask to Buy leaves the purchase pending until the App Store approves it")
     func pending() async {
         let fixture = Fixture()
@@ -182,7 +244,7 @@ struct SkinStoreTests {
         let observing = Task { await fixture.store.observeTransactions() }
         defer { observing.cancel() }
         fixture.purchases.entitlements = []
-        fixture.purchases.deliverUpdate(productID: ProductIDs.single("red_check"))
+        fixture.purchases.deliverUpdate(productID: ProductIDs.single("red_check"), isRevoked: true)
 
         #expect(await eventually { fixture.store.myCardSkin.source(for: .cardBack) == .bundled("skin-navy_check-back") })
         #expect(fixture.loadout.loadout[.cardBack] == "red_check", "it comes back if the player buys it again")
