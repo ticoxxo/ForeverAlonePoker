@@ -10,13 +10,17 @@ public struct SeatState: Codable, Sendable, Hashable {
     /// Whether the player has voluntarily acted on the current street. Posting
     /// a blind does not count, which is what gives the big blind its option.
     public var hasActedThisStreet: Bool
+    /// The seat had no chips when the hand began (empty or busted) and is not
+    /// dealt in. It counts as folded for every rule.
+    public var isSittingOut: Bool
 
     public init(stack: Chips) {
         self.stack = stack
         holeCards = []
         streetCommitted = 0
         totalCommitted = 0
-        hasFolded = false
+        isSittingOut = stack == 0
+        hasFolded = stack == 0
         hasActedThisStreet = false
     }
 
@@ -26,6 +30,7 @@ public struct SeatState: Codable, Sendable, Hashable {
 }
 
 public enum HandEndReason: Codable, Sendable, Hashable {
+    /// Everyone else folded; `by` is the seat whose fold ended the hand.
     case fold(by: Seat)
     case showdown
 }
@@ -43,33 +48,56 @@ public struct ShownHand: Codable, Sendable, Hashable {
     }
 }
 
+/// One pot at showdown: the main pot first, then each side pot.
+public struct PotResult: Codable, Sendable, Hashable {
+    public let amount: Chips
+    /// Seats still in the hand that covered this pot.
+    public let eligible: [Seat]
+    /// Seats that split it (more than one for a chop).
+    public let winners: [Seat]
+
+    public init(amount: Chips, eligible: [Seat], winners: [Seat]) {
+        self.amount = amount
+        self.eligible = eligible
+        self.winners = winners
+    }
+}
+
 /// How a finished hand paid out.
 public struct HandResult: Codable, Sendable, Hashable {
     public let reason: HandEndReason
-    /// One seat, or both for a chop.
+    /// Every seat that won chips from another player (any pot), in seat
+    /// order. More than one for a chop or when side pots go different ways.
     public let winners: [Seat]
     /// Chips returned to each seat from the pot, indexed by `Seat.rawValue`.
     /// Includes refunds of uncalled chips.
     public let payouts: [Chips]
     /// Hands revealed at showdown; empty when the hand ended on a fold.
     public let shownHands: [ShownHand]
+    /// Contested pots at showdown, main pot first; empty when the hand ended
+    /// on a fold. Uncalled chips returned to a single player are not a pot.
+    public let pots: [PotResult]
 
-    public init(reason: HandEndReason, winners: [Seat], payouts: [Chips], shownHands: [ShownHand]) {
+    public init(reason: HandEndReason, winners: [Seat], payouts: [Chips], shownHands: [ShownHand], pots: [PotResult] = []) {
         self.reason = reason
         self.winners = winners
         self.payouts = payouts
         self.shownHands = shownHands
+        self.pots = pots
     }
 
     public func payout(for seat: Seat) -> Chips { payouts[seat.rawValue] }
 }
 
 /// Complete, unredacted state of a single hand. Only the authority (server or
-/// Multipeer host) ever holds this; clients receive a `PlayerView`.
+/// hosting device) ever holds this; clients receive a `PlayerView`.
 public struct HandState: Codable, Sendable, Hashable {
     public let handNumber: Int
     public let button: Seat
     public let blinds: Blinds
+    /// Heads-up the button; otherwise the first seat dealt in after it.
+    public let smallBlindSeat: Seat
+    public let bigBlindSeat: Seat
     public internal(set) var seats: [SeatState]
     public internal(set) var deck: Deck
     public internal(set) var community: [Card]
@@ -82,10 +110,12 @@ public struct HandState: Codable, Sendable, Hashable {
     public internal(set) var minRaiseIncrement: Chips
     public internal(set) var result: HandResult?
 
-    init(handNumber: Int, button: Seat, blinds: Blinds, seats: [SeatState], deck: Deck) {
+    init(handNumber: Int, button: Seat, blinds: Blinds, smallBlindSeat: Seat, bigBlindSeat: Seat, seats: [SeatState], deck: Deck) {
         self.handNumber = handNumber
         self.button = button
         self.blinds = blinds
+        self.smallBlindSeat = smallBlindSeat
+        self.bigBlindSeat = bigBlindSeat
         self.seats = seats
         self.deck = deck
         community = []
@@ -103,9 +133,12 @@ public struct HandState: Codable, Sendable, Hashable {
 
     public var isOver: Bool { result != nil }
     public var pot: Chips { seats.reduce(0) { $0 + $1.totalCommitted } }
-    /// Heads-up: the button posts the small blind.
-    public var smallBlindSeat: Seat { button }
-    public var bigBlindSeat: Seat { button.opponent }
+    /// Every seat at the table, dealt in or not, in clockwise order.
+    public var allSeats: [Seat] { Seat.all(count: seats.count) }
+    /// Seats dealt into this hand.
+    public var dealtSeats: [Seat] { allSeats.filter { !self[$0].isSittingOut } }
+    /// Seats that have not folded (including all-in players).
+    public var liveSeats: [Seat] { allSeats.filter { !self[$0].hasFolded } }
 
     /// Chips `seat` must add to match the current bet.
     public func amountToCall(for seat: Seat) -> Chips {

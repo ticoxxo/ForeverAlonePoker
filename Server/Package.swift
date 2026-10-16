@@ -71,6 +71,7 @@ let package = Package(
                 .product(name: "JWTKit", package: "jwt-kit"),
                 .product(name: "Crypto", package: "swift-crypto"),
                 .product(name: "_CryptoExtras", package: "swift-crypto"),
+                .product(name: "NIOCore", package: "swift-nio"),
             ]
         ),
     ]

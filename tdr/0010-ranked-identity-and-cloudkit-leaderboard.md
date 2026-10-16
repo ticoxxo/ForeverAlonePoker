@@ -63,3 +63,7 @@ Constraints: clients never run rules or write competitive data (tdr/0003); Apple
 2. Generate the replacement outside the working tree (e.g. `~/.config/pokerserver/cloudkit.pem`; run step 4 of the 2026-10-08 notes from that directory, not the repo). Untracking the file does not remove it from git history.
 3. Give the key to the server without putting it in the repo or the image: the env var `CLOUDKIT_PRIVATE_KEY` (PEM contents) from the host's secret manager, or a Docker secret mounted at `/run/secrets/cloudkit.pem` with `CLOUDKIT_PRIVATE_KEY_PATH=/run/secrets/cloudkit.pem`.
 4. `.gitignore` ignores `cloudkit.pem`, `*.pem` and `*.p8` as a safety net.
+
+## Notes
+
+- 2026-10-16: tables of two to six players, the host-run lobby and multiway Elo are decided in tdr/0013, which supersedes the heads-up-only parts of this record.

@@ -183,7 +183,9 @@ final class IdentityStore: LoadoutPersisting {
             didWin: summary.didWin,
             finalStack: summary.myFinalStack,
             opponentFinalStack: summary.opponentFinalStack,
-            handsPlayed: summary.handsPlayed
+            handsPlayed: summary.handsPlayed,
+            place: summary.place,
+            playerCount: summary.playerCount
         )
         record.profile = profile
         context.insert(record)

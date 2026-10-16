@@ -2,35 +2,48 @@ import SwiftUI
 import PokerCore
 
 /// The poker table. Works identically for local and online play because it
-/// only ever talks to a `MatchSessionClient`.
+/// only ever talks to a `MatchSessionClient`. Heads-up the opponent sits
+/// across; at a bigger table the others fan out over the top (tdr/0013).
 struct TableView: View {
     let client: MatchSessionClient
+    @State private var avatars = AvatarLoader()
 
     private var view: PlayerView? { client.view }
-    private var status: TableStatus { TableStatus.make(view: view, opponentLeft: client.opponentLeft) }
+    private var status: TableStatus { TableStatus.make(view: view, departure: client.lastDeparture) }
 
     var body: some View {
         VStack(spacing: 16) {
             if let view {
-                OpponentSeatView(
-                    summary: view.opponent,
-                    isOnButton: view.button == view.seat.opponent,
-                    revealedCards: revealedOpponentCards,
-                    showsCards: view.street != nil && view.opponent?.hasFolded == false
-                )
-                // The opponent's cards never use our skin. Until their loadout
-                // travels with the protocol (tdr/0012) we know nothing about
-                // it, and unknown means the default.
-                .environment(\.cardSkin, .standard)
+                if view.table.maxPlayers > TableSize.minPlayers {
+                    OpponentsRing(view: view, avatars: avatars)
+                        .frame(height: 200)
+                        .task(id: view.players.map(\.playerID)) {
+                            await avatars.load(view.players.map(\.playerID))
+                        }
+                } else {
+                    OpponentSeatView(
+                        summary: view.opponent,
+                        isOnButton: view.opponent.map { view.button == $0.seat } ?? false,
+                        revealedCards: view.opponent.map { revealedCards(for: $0.seat, in: view) } ?? [],
+                        showsCards: view.street != nil && view.opponent?.hasFolded == false,
+                        isActing: view.actor != nil && view.actor == view.opponent?.seat
+                    )
+                }
             }
             Spacer(minLength: 0)
             BoardView(community: view?.community ?? [], pot: collectedPot, street: view?.street)
             StatusBanner(
                 status: status,
                 outcome: view.flatMap { HandOutcome(result: $0.lastResult, seat: $0.seat) },
+                winnerName: winnerName,
                 ratingUpdate: client.ratingUpdate,
                 onReady: { Task { await client.ready() } }
             )
+            if let table = view?.table, table.isRankedCapable, !table.isEloEnabled {
+                Text("Elo gain disabled for this game")
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.8))
+            }
             Spacer(minLength: 0)
             MySeatView(
                 summary: view?.me,
@@ -55,13 +68,49 @@ struct TableView: View {
     /// front of each seat instead, so they are not counted twice.
     private var collectedPot: Chips {
         guard let view else { return 0 }
-        return view.pot - view.me.streetCommitted - (view.opponent?.streetCommitted ?? 0)
+        return view.pot - view.me.streetCommitted - view.players.reduce(0) { $0 + $1.streetCommitted }
     }
 
-    /// Opponent cards are only known after a showdown.
-    private var revealedOpponentCards: [Card] {
-        guard let view, view.lastResult?.reason == .showdown, view.phase != .inHand else { return [] }
-        return view.lastResult?.shownHands.first { $0.seat == view.seat.opponent }?.holeCards ?? []
+    /// Who the outcome names when this player lost.
+    private var winnerName: String {
+        guard let view, let seat = HandOutcome(result: view.lastResult, seat: view.seat)?.winner else { return "" }
+        return view.player(at: seat)?.name ?? ""
+    }
+}
+
+/// Another player's cards are only known after a showdown.
+func revealedCards(for seat: Seat, in view: PlayerView) -> [Card] {
+    guard view.lastResult?.reason == .showdown, view.phase != .inHand else { return [] }
+    return view.lastResult?.shownHands.first { $0.seat == seat }?.holeCards ?? []
+}
+
+/// The other players of a bigger table, placed by `SeatLayout`. Their cards
+/// never use our skin: until loadouts travel with the protocol (tdr/0012) we
+/// know nothing about theirs, and unknown means the default.
+private struct OpponentsRing: View {
+    let view: PlayerView
+    let avatars: AvatarLoader
+
+    var body: some View {
+        GeometryReader { geometry in
+            let positions = SeatLayout.positions(count: view.players.count)
+            ZStack {
+                ForEach(view.players.indices, id: \.self) { index in
+                    let player = view.players[index]
+                    let point = positions[index]
+                    CompactSeatView(
+                        summary: player,
+                        avatar: avatars.avatar(for: player.playerID),
+                        isOnButton: view.button == player.seat && view.street != nil,
+                        isActing: view.actor == player.seat,
+                        revealedCards: revealedCards(for: player.seat, in: view),
+                        showsCards: view.street != nil && !player.hasFolded && !player.isBusted
+                    )
+                    .position(x: point.x * geometry.size.width, y: point.y * geometry.size.height)
+                }
+            }
+        }
+        .environment(\.cardSkin, .standard)
     }
 }
 
@@ -81,6 +130,8 @@ struct TableFelt: View {
 struct StatusBanner: View {
     let status: TableStatus
     let outcome: HandOutcome?
+    /// Name of the player the outcome credits when this player lost.
+    var winnerName: String = ""
     /// Shown with the match result once the server has rated a ranked match.
     var ratingUpdate: RatingUpdate? = nil
     let onReady: () -> Void
@@ -90,34 +141,49 @@ struct StatusBanner: View {
         // crossfading old and new text over each other.
         VStack(spacing: 8) {
             if let outcome, showsOutcome {
-                OutcomeText(outcome: outcome)
+                OutcomeText(outcome: outcome, winnerName: winnerName)
             }
             switch status {
             case .connecting:
                 ProgressView("Connecting…")
             case .waitingForOpponent:
-                ProgressView("Waiting for an opponent…")
+                ProgressView("Waiting for players…")
             case .readyPrompt:
                 Button("Ready for the next hand", action: onReady)
                     .buttonStyle(.borderedProminent)
-            case .waitingForOpponentReady:
-                ProgressView("Waiting for your opponent…")
+            case .waitingForOthersReady:
+                ProgressView("Waiting for the others…")
             case .yourTurn:
                 Text("Your turn")
                     .font(.headline)
-            case .opponentsTurn:
-                Text("Opponent is thinking…")
-            case .matchOver(let youWon):
-                Text(youWon ? "You won the match!" : "You lost the match.")
-                    .font(.title2.bold())
+            case .othersTurn(let name):
+                if name.isEmpty {
+                    Text("Opponent is thinking…")
+                } else {
+                    Text("\(name) is thinking…")
+                }
+            case .spectating:
+                Text("You are out. Watching the rest of the match.")
+                    .font(.headline)
+            case .matchOver(let youWon, let place):
+                if youWon {
+                    Text("You won the match!")
+                        .font(.title2.bold())
+                } else if let place, place > TableSize.minPlayers {
+                    Text("You finished \(place.formatted(.number)).")
+                        .font(.title2.bold())
+                } else {
+                    Text("You lost the match.")
+                        .font(.title2.bold())
+                }
                 if let ratingUpdate {
                     Text("Rating \(ratingUpdate.rating.value, format: .number) (\(ratingUpdate.delta, format: .number.sign(strategy: .always())))")
                         .font(.subheadline)
                 }
                 Button("Rematch", action: onReady)
                     .buttonStyle(.borderedProminent)
-            case .opponentLeft:
-                Text("Your opponent left the table.")
+            case .playerLeft(let name):
+                Text("\(name) left the table.")
                     .font(.headline)
             }
         }
@@ -130,7 +196,7 @@ struct StatusBanner: View {
 
     private var showsOutcome: Bool {
         switch status {
-        case .readyPrompt, .waitingForOpponentReady, .matchOver: true
+        case .readyPrompt, .waitingForOthersReady, .spectating, .matchOver: true
         default: false
         }
     }
@@ -138,6 +204,7 @@ struct StatusBanner: View {
 
 private struct OutcomeText: View {
     let outcome: HandOutcome
+    let winnerName: String
 
     var body: some View {
         switch outcome.kind {
@@ -147,13 +214,14 @@ private struct OutcomeText: View {
             if let category = outcome.category {
                 Text("You won \(outcome.amount, format: .number) with \(category.displayName)")
             } else {
-                Text("Opponent folded. You won \(outcome.amount, format: .number)")
+                Text("Everyone else folded. You won \(outcome.amount, format: .number)")
             }
         case .youLost:
+            let name = winnerName.isEmpty ? String(localized: "Opponent") : winnerName
             if let category = outcome.category {
-                Text("Opponent won \(outcome.amount, format: .number) with \(category.displayName)")
+                Text("\(name) won \(outcome.amount, format: .number) with \(category.displayName)")
             } else {
-                Text("You folded. Opponent won \(outcome.amount, format: .number)")
+                Text("\(name) won \(outcome.amount, format: .number)")
             }
         }
     }

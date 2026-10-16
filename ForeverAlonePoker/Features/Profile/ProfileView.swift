@@ -62,7 +62,9 @@ struct ProfileView: View {
                             didWin: match.didWin,
                             mode: match.mode,
                             date: match.date,
-                            isRanked: match.wasRanked
+                            isRanked: match.wasRanked,
+                            place: match.place,
+                            playerCount: match.playerCount
                         )
                     }
                 }

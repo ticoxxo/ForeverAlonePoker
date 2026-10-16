@@ -67,6 +67,30 @@ public enum EloCalculator {
         )
     }
 
+    /// New ratings after a match of three or more players (tdr/0013): the
+    /// winner is scored as beating each loser. Every loser takes their full
+    /// head-to-head loss against the winner; the winner's K-factor is shared
+    /// across the pairings so winning a bigger table moves them about as much
+    /// as one heads-up win against the field's average. With one loser this is
+    /// exactly `update(player:opponent:outcome: .win)`.
+    public static func updateMultiway(
+        winner: Rating,
+        losers: [Rating]
+    ) -> (winner: Rating, losers: [Rating]) {
+        guard !losers.isEmpty else { return (winner, []) }
+        let winnerK = Double(kFactor(for: winner)) / Double(losers.count)
+        var winnerGain = 0.0
+        var updatedLosers: [Rating] = []
+        for loser in losers {
+            let expected = expectedScore(rating: winner.value, opponent: loser.value)
+            winnerGain += winnerK * (1 - expected)
+            let loserDelta = round(Double(kFactor(for: loser)) * (0 - (1 - expected)))
+            updatedLosers.append(Rating(value: loser.value + Int(loserDelta), matchesPlayed: loser.matchesPlayed + 1))
+        }
+        let updatedWinner = Rating(value: winner.value + Int(round(winnerGain)), matchesPlayed: winner.matchesPlayed + 1)
+        return (updatedWinner, updatedLosers)
+    }
+
     // MARK: - Math without Foundation
 
     /// 10^x for real x. CORE deliberately imports nothing beyond the standard

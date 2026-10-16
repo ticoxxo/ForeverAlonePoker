@@ -7,20 +7,30 @@ import PokerCore
 /// Every message, local or remote, goes through the same `MatchAuthority`, and
 /// its replies are routed back to whichever connection should receive them.
 ///
-/// Used by tests and previews (two local players), and by the Multipeer host
-/// (host local, guest remote). The Hummingbird server does the equivalent with
+/// Used by tests and previews (local players), and by the nearby host (host
+/// local, guests remote). The Hummingbird server does the equivalent with
 /// WebSockets and does not use this type.
+///
+/// When the host starts a table of three or more (tdr/0013) the first hand is
+/// dealt once every connection, including guests still completing their
+/// handshake (`expectRemote`), has taken a seat, or after `graceInterval`.
 actor HostedTable {
+    nonisolated static let defaultGraceInterval: Duration = .seconds(5)
+
     let authority: MatchAuthority
     private var locals: [ConnectionID: AsyncStream<ServerMessage>.Continuation] = [:]
     private var remotes: [ConnectionID: @Sendable (ServerMessage) -> Void] = [:]
+    private var expected: Set<ConnectionID> = []
+    private let graceInterval: Duration
+    private var graceTask: Task<Void, Never>?
 
-    init(authority: MatchAuthority) {
+    init(authority: MatchAuthority, graceInterval: Duration = HostedTable.defaultGraceInterval) {
         self.authority = authority
+        self.graceInterval = graceInterval
     }
 
-    init(room: MatchRoom) {
-        self.init(authority: MatchAuthority(room: room))
+    init(room: MatchRoom, graceInterval: Duration = HostedTable.defaultGraceInterval) {
+        self.init(authority: MatchAuthority(room: room), graceInterval: graceInterval)
     }
 
     // MARK: - Local connections
@@ -34,6 +44,7 @@ actor HostedTable {
     fileprivate func send(_ message: ClientMessage, from id: ConnectionID) async throws {
         guard locals[id] != nil else { throw TransportError.notConnected }
         deliver(await authority.handle(message, from: id))
+        if case .startMatch = message { await scheduleBegin() }
     }
 
     fileprivate func close(_ id: ConnectionID) async {
@@ -44,20 +55,61 @@ actor HostedTable {
 
     // MARK: - Remote connections
 
+    /// A guest is connecting (handshake in progress). Counted as still joining
+    /// during the start grace period until it attaches or is forgotten.
+    func expectRemote(_ id: ConnectionID) {
+        expected.insert(id)
+    }
+
+    func forgetRemote(_ id: ConnectionID) {
+        expected.remove(id)
+    }
+
     /// Registers a remote player. `deliver` is called, in order, with every
     /// message the authority addresses to this connection.
     func attachRemote(id: ConnectionID, deliver: @escaping @Sendable (ServerMessage) -> Void) {
+        expected.remove(id)
         remotes[id] = deliver
     }
 
     func receiveRemote(_ message: ClientMessage, from id: ConnectionID) async {
         guard remotes[id] != nil else { return }
         deliver(await authority.handle(message, from: id))
+        if case .startMatch = message { await scheduleBegin() }
     }
 
     func detachRemote(_ id: ConnectionID) async {
+        expected.remove(id)
         guard remotes.removeValue(forKey: id) != nil else { return }
         deliver(await authority.disconnect(id))
+    }
+
+    // MARK: - Starting
+
+    private func scheduleBegin() async {
+        guard graceTask == nil, await authority.isStarting else { return }
+        let grace = graceInterval
+        graceTask = Task { [weak self] in
+            guard let self else { return }
+            let outbound = await self.authority.beginAfterGrace(grace: grace) { [weak self] in
+                await self?.joiningConnections() ?? []
+            }
+            await self.finishBegin(outbound)
+        }
+    }
+
+    private func joiningConnections() -> Set<ConnectionID> {
+        Set(locals.keys).union(remotes.keys).union(expected)
+    }
+
+    private func finishBegin(_ outbound: [Outbound]) {
+        graceTask = nil
+        deliver(outbound)
+    }
+
+    /// Waits for a pending start to deal. For tests.
+    func waitForStart() async {
+        await graceTask?.value
     }
 
     // MARK: - Delivery

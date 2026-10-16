@@ -2,6 +2,7 @@ import Foundation
 import Hummingbird
 import HummingbirdWebSocket
 import Logging
+import NIOCore
 import PokerCore
 
 /// Response bodies for the small REST surface.
@@ -17,11 +18,32 @@ public struct RoomInfo: ResponseCodable, Sendable, Equatable {
     public let code: String
     public let seatsTaken: Int
     public let connected: Int
+    public let maxPlayers: Int
 
-    public init(code: String, seatsTaken: Int, connected: Int) {
+    public init(code: String, seatsTaken: Int, connected: Int, maxPlayers: Int) {
         self.code = code
         self.seatsTaken = seatsTaken
         self.connected = connected
+        self.maxPlayers = maxPlayers
+    }
+}
+
+/// Optional body of `POST /rooms` (tdr/0013). No body means heads-up.
+public struct CreateRoomRequest: Codable, Sendable, Equatable {
+    public let maxPlayers: Int?
+
+    public init(maxPlayers: Int?) {
+        self.maxPlayers = maxPlayers
+    }
+
+    /// The table size asked for, or `nil` when the body is not acceptable.
+    static func maxPlayers(from body: ByteBuffer) -> Int? {
+        guard body.readableBytes > 0 else { return TableSize.minPlayers }
+        guard let request = try? JSONDecoder().decode(CreateRoomRequest.self, from: Data(body.readableBytesView)) else {
+            return nil
+        }
+        let size = request.maxPlayers ?? TableSize.minPlayers
+        return TableSize.range.contains(size) ? size : nil
     }
 }
 
@@ -121,8 +143,12 @@ public func buildApplication(
         }
     }
 
-    router.post("rooms") { _, _ in
-        let room = await registry.create()
+    router.post("rooms") { request, _ in
+        let body = try await request.body.collect(upTo: 1024)
+        guard let maxPlayers = CreateRoomRequest.maxPlayers(from: body) else {
+            throw HTTPError(.badRequest, message: "maxPlayers must be between \(TableSize.minPlayers) and \(TableSize.maxPlayers).")
+        }
+        let room = await registry.create(configuration: MatchConfiguration(maxPlayers: maxPlayers))
         return RoomCreated(code: room.code)
     }
 
@@ -130,7 +156,12 @@ public func buildApplication(
         let code = RoomCode.normalize(try context.parameters.require("code"))
         guard let room = await registry.room(code) else { throw HTTPError(.notFound) }
         let snapshot = await room.authority.room
-        return RoomInfo(code: code, seatsTaken: snapshot.players.count, connected: await room.connectionCount)
+        return RoomInfo(
+            code: code,
+            seatsTaken: snapshot.players.count,
+            connected: await room.connectionCount,
+            maxPlayers: snapshot.maxPlayers
+        )
     }
 
     router.ws("rooms/{code}/ws") { _, context in

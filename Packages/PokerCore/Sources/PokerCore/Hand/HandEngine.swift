@@ -11,19 +11,27 @@ public enum HandError: Error, Equatable, Sendable {
     case cannotGoAllIn
 }
 
-/// Pure heads-up No-Limit Hold'em rules. Every function takes a state and
-/// returns a new state plus the events that explain the transition; nothing is
-/// mutated in place and nothing is random (the deck is supplied pre-shuffled).
+/// Pure No-Limit Hold'em rules for two to six seats (tdr/0013). Every
+/// function takes a state and returns a new state plus the events that explain
+/// the transition; nothing is mutated in place and nothing is random (the deck
+/// is supplied pre-shuffled).
 ///
-/// Dealing order is fixed so rigged decks are predictable: seat one's two hole
-/// cards, seat two's two hole cards, then community cards in street order. No
-/// burn cards are used.
+/// Seats with no chips sit the hand out. Heads-up the button posts the small
+/// blind and acts first before the flop; with three or more players the two
+/// seats after the button post the blinds and the seat after the big blind
+/// acts first. After the flop the first live seat after the button acts first.
+///
+/// Dealing order is fixed so rigged decks are predictable: two hole cards to
+/// each seat dealt in, in seat order (seat one's two, then the next seat's
+/// two, ...), then community cards in street order. No burn cards are used.
 public enum HandEngine {
     // MARK: - Starting a hand
 
     /// Posts blinds, deals hole cards and determines who acts first.
-    /// If a blind puts a player all-in and no betting is possible, the board is
-    /// run out immediately and the returned state is already finished.
+    /// `stacks` has one entry per seat; a seat with 0 chips sits out. At least
+    /// two seats must have chips and the button must be one of them. If a blind
+    /// puts a player all-in and no betting is possible, the board is run out
+    /// immediately and the returned state is already finished.
     public static func start(
         handNumber: Int,
         button: Seat,
@@ -31,26 +39,43 @@ public enum HandEngine {
         blinds: Blinds,
         deck: Deck
     ) throws -> (state: HandState, events: [GameEvent]) {
-        guard stacks.count == Seat.allCases.count, stacks.allSatisfy({ $0 > 0 }) else {
+        guard TableSize.range.contains(stacks.count),
+              stacks.allSatisfy({ $0 >= 0 }),
+              stacks.filter({ $0 > 0 }).count >= 2,
+              button.rawValue < stacks.count,
+              stacks[button.rawValue] > 0
+        else {
             throw HandError.invalidStacks
+        }
+        let dealtIn = Seat.all(count: stacks.count).filter { stacks[$0.rawValue] > 0 }
+        let smallBlind: Seat
+        let bigBlind: Seat
+        if dealtIn.count == 2 {
+            smallBlind = button
+            bigBlind = nextSeat(after: button, in: stacks.count) { stacks[$0.rawValue] > 0 }
+        } else {
+            smallBlind = nextSeat(after: button, in: stacks.count) { stacks[$0.rawValue] > 0 }
+            bigBlind = nextSeat(after: smallBlind, in: stacks.count) { stacks[$0.rawValue] > 0 }
         }
         var state = HandState(
             handNumber: handNumber,
             button: button,
             blinds: blinds,
+            smallBlindSeat: smallBlind,
+            bigBlindSeat: bigBlind,
             seats: stacks.map(SeatState.init(stack:)),
             deck: deck
         )
         var events: [GameEvent] = [.handStarted(handNumber: handNumber, button: button)]
 
-        let smallPosted = commit(&state, seat: state.smallBlindSeat, upTo: blinds.small)
-        events.append(.blindPosted(seat: state.smallBlindSeat, kind: .small, amount: smallPosted))
-        let bigPosted = commit(&state, seat: state.bigBlindSeat, upTo: blinds.big)
-        events.append(.blindPosted(seat: state.bigBlindSeat, kind: .big, amount: bigPosted))
+        let smallPosted = commit(&state, seat: smallBlind, upTo: blinds.small)
+        events.append(.blindPosted(seat: smallBlind, kind: .small, amount: smallPosted))
+        let bigPosted = commit(&state, seat: bigBlind, upTo: blinds.big)
+        events.append(.blindPosted(seat: bigBlind, kind: .big, amount: bigPosted))
         state.currentBet = max(smallPosted, bigPosted)
         state.minRaiseIncrement = blinds.big
 
-        for seat in Seat.allCases {
+        for seat in dealtIn {
             state[seat].holeCards = try state.deck.deal(2)
         }
         events.append(.holeCardsDealt)
@@ -74,15 +99,16 @@ public enum HandEngine {
         var events: [GameEvent] = []
         let legal = legalActions(in: state, for: seat)
         let toCall = state.amountToCall(for: seat)
-        let opponent = seat.opponent
 
         switch action {
         case .fold:
             state[seat].hasFolded = true
             state[seat].hasActedThisStreet = true
             events.append(.acted(seat: seat, action: .fold, chips: 0))
-            endByFold(&state, folded: seat, events: &events)
-            return (state, events)
+            if state.liveSeats.count == 1 {
+                endByFold(&state, folded: seat, events: &events)
+                return (state, events)
+            }
 
         case .check:
             guard legal.canCheck else { throw HandError.cannotCheckFacingBet(toCall: toCall) }
@@ -118,33 +144,41 @@ public enum HandEngine {
         case .allIn:
             guard state[seat].canAct else { throw HandError.cannotGoAllIn }
             let total = state[seat].streetCommitted + state[seat].stack
-            let added = commit(&state, seat: seat, upTo: state[seat].stack)
             if total > state.currentBet {
                 // An all-in for more than the current bet is a bet or raise,
                 // even when it is smaller than the normal minimum.
-                guard state[opponent].canAct else { throw HandError.cannotGoAllIn }
+                guard othersCanAct(state, besides: seat) else { throw HandError.cannotGoAllIn }
+                let added = commit(&state, seat: seat, upTo: state[seat].stack)
                 registerAggression(&state, by: seat, newTotal: total)
+                events.append(.acted(seat: seat, action: .allIn, chips: added))
             } else {
                 // All-in for the current bet or less is a (short) call.
+                let added = commit(&state, seat: seat, upTo: state[seat].stack)
                 state[seat].hasActedThisStreet = true
+                events.append(.acted(seat: seat, action: .allIn, chips: added))
             }
-            events.append(.acted(seat: seat, action: .allIn, chips: added))
         }
 
         try progress(&state, after: seat, events: &events)
         return (state, events)
     }
 
-    /// Ends the hand as a fold by `seat` even when it is not their turn (the
-    /// player left the table). The opponent takes the whole pot.
+    /// Folds `seat` even when it is not their turn (the player left or dropped).
+    /// When one player remains they take the pot; otherwise play continues. A
+    /// seat that already folded (or sits out) changes nothing.
     public static func forfeit(_ seat: Seat, in state: HandState) throws -> (state: HandState, events: [GameEvent]) {
         guard !state.isOver else { throw HandError.handIsOver }
+        guard !state[seat].hasFolded else { return (state, []) }
         var state = state
         var events: [GameEvent] = []
         state[seat].hasFolded = true
         state[seat].hasActedThisStreet = true
         events.append(.acted(seat: seat, action: .fold, chips: 0))
-        endByFold(&state, folded: seat, events: &events)
+        if state.liveSeats.count == 1 {
+            endByFold(&state, folded: seat, events: &events)
+        } else if state.actor == seat || streetIsClosed(state) {
+            try progress(&state, after: state.actor ?? seat, events: &events)
+        }
         return (state, events)
     }
 
@@ -153,7 +187,6 @@ public enum HandEngine {
     public static func legalActions(in state: HandState, for seat: Seat) -> LegalActions {
         guard !state.isOver, state.actor == seat else { return .none }
         let me = state[seat]
-        let opponent = state[seat.opponent]
         let toCall = state.amountToCall(for: seat)
         var legal = LegalActions(canFold: true)
 
@@ -163,8 +196,8 @@ public enum HandEngine {
             legal.callAmount = min(toCall, me.stack)
         }
 
-        // Betting and raising are only meaningful if the opponent can still respond.
-        guard opponent.canAct, me.stack > toCall else { return legal }
+        // Betting and raising are only meaningful if someone can still respond.
+        guard othersCanAct(state, besides: seat), me.stack > toCall else { return legal }
 
         let maxTotal = me.streetCommitted + me.stack
         if state.currentBet == 0 {
@@ -180,6 +213,16 @@ public enum HandEngine {
 
     // MARK: - Internals
 
+    /// The first seat clockwise after `seat` (wrapping, `seat` itself last)
+    /// that satisfies `matches`.
+    static func nextSeat(after seat: Seat, in count: Int, where matches: (Seat) -> Bool) -> Seat {
+        for step in 1...count {
+            let candidate = seat.advanced(by: step, tableSize: count)
+            if matches(candidate) { return candidate }
+        }
+        return seat
+    }
+
     /// Moves up to `amount` chips from the seat's stack into the pot and returns
     /// what was actually moved (less when the stack is short).
     @discardableResult
@@ -191,19 +234,20 @@ public enum HandEngine {
         return added
     }
 
-    /// Records a bet or raise to `newTotal` and reopens the action for the opponent.
+    /// Records a bet or raise to `newTotal` and reopens the action for everyone else.
     private static func registerAggression(_ state: inout HandState, by seat: Seat, newTotal: Chips) {
         let increment = newTotal - state.currentBet
         if increment >= state.minRaiseIncrement {
             state.minRaiseIncrement = increment
         }
         state.currentBet = newTotal
-        state[seat].hasActedThisStreet = true
-        state[seat.opponent].hasActedThisStreet = false
+        for other in state.allSeats {
+            state[other].hasActedThisStreet = other == seat
+        }
     }
 
-    private static func firstToAct(on street: Street, button: Seat) -> Seat {
-        street == .preflop ? button : button.opponent
+    private static func othersCanAct(_ state: HandState, besides seat: Seat) -> Bool {
+        state.allSeats.contains { $0 != seat && state[$0].canAct }
     }
 
     /// At least two players can still put chips in.
@@ -221,18 +265,15 @@ public enum HandEngine {
     }
 
     private static func streetIsClosed(_ state: HandState) -> Bool {
-        Seat.allCases.allSatisfy { !needsToAct(state, seat: $0) }
+        state.allSeats.allSatisfy { !needsToAct(state, seat: $0) }
     }
 
+    /// The next seat clockwise that owes an action. A street opens after the
+    /// big blind preflop and after the button on later streets.
     private static func nextActor(_ state: HandState, after last: Seat?) -> Seat? {
-        let order: [Seat]
-        if let last {
-            order = [last.opponent, last]
-        } else {
-            let first = firstToAct(on: state.street, button: state.button)
-            order = [first, first.opponent]
-        }
-        return order.first { needsToAct(state, seat: $0) }
+        let anchor = last ?? (state.street == .preflop ? state.bigBlindSeat : state.button)
+        let candidate = nextSeat(after: anchor, in: state.seats.count) { needsToAct(state, seat: $0) }
+        return needsToAct(state, seat: candidate) ? candidate : nil
     }
 
     /// Decides who acts next, or advances streets (running the board out when
@@ -249,7 +290,7 @@ public enum HandEngine {
             state.street = next
             state.currentBet = 0
             state.minRaiseIncrement = state.blinds.big
-            for seat in Seat.allCases {
+            for seat in state.allSeats {
                 state[seat].streetCommitted = 0
                 state[seat].hasActedThisStreet = false
             }
@@ -263,8 +304,8 @@ public enum HandEngine {
     }
 
     private static func endByFold(_ state: inout HandState, folded: Seat, events: inout [GameEvent]) {
-        let winner = folded.opponent
-        var payouts = [Chips](repeating: 0, count: Seat.allCases.count)
+        let winner = state.liveSeats[0]
+        var payouts = [Chips](repeating: 0, count: state.seats.count)
         payouts[winner.rawValue] = state.pot
         state[winner].stack += state.pot
         state.actor = nil
@@ -274,7 +315,8 @@ public enum HandEngine {
     }
 
     private static func showdown(_ state: inout HandState, events: inout [GameEvent]) {
-        let shown = Seat.allCases.map { seat in
+        let live = state.liveSeats
+        let shown = live.map { seat in
             ShownHand(
                 seat: seat,
                 holeCards: state[seat].holeCards,
@@ -282,27 +324,55 @@ public enum HandEngine {
             )
         }
         events.append(.showdown(hands: shown))
+        let ranks = Dictionary(uniqueKeysWithValues: shown.map { ($0.seat, $0.rank) })
 
+        let count = state.seats.count
         let committed = state.seats.map(\.totalCommitted)
-        let contested = 2 * committed.min()!
-        var payouts = [Chips](repeating: 0, count: Seat.allCases.count)
-        // Uncalled chips go back to whoever put them in.
-        for seat in Seat.allCases {
-            payouts[seat.rawValue] += committed[seat.rawValue] - committed.min()!
+        var payouts = [Chips](repeating: 0, count: count)
+        var pots: [PotResult] = []
+        var winners = Set<Seat>()
+
+        // Each distinct commitment of a live player caps one pot: the main pot
+        // first, then side pots. Folded players' chips feed the pots they reach.
+        let levels = Set(live.map { committed[$0.rawValue] }).sorted()
+        var previous: Chips = 0
+        for level in levels {
+            let amount = committed.reduce(0) { $0 + max(0, min($1, level) - previous) }
+            let eligible = live.filter { committed[$0.rawValue] >= level }
+            previous = level
+            guard amount > 0 else { continue }
+            if eligible.count == 1 {
+                // Nobody matched these chips: they go back uncalled.
+                payouts[eligible[0].rawValue] += amount
+                continue
+            }
+            let best = eligible.compactMap { ranks[$0] }.max()!
+            let potWinners = eligible.filter { ranks[$0] == best }
+            // Odd chips go to the first winners clockwise from the button.
+            let ordered = potWinners.sorted {
+                distance(from: state.button, to: $0, count: count) < distance(from: state.button, to: $1, count: count)
+            }
+            let share = amount / ordered.count
+            let oddChips = amount % ordered.count
+            for (index, winner) in ordered.enumerated() {
+                payouts[winner.rawValue] += share + (index < oddChips ? 1 : 0)
+            }
+            winners.formUnion(potWinners)
+            pots.append(PotResult(amount: amount, eligible: eligible, winners: potWinners))
         }
 
-        let best = shown.map(\.rank).max()!
-        let winners = shown.filter { $0.rank == best }.map(\.seat)
-        // `contested` is always even, so a chop never leaves an odd chip.
-        for winner in winners {
-            payouts[winner.rawValue] += contested / winners.count
-        }
-        for seat in Seat.allCases {
+        for seat in state.allSeats {
             state[seat].stack += payouts[seat.rawValue]
         }
         state.actor = nil
-        let result = HandResult(reason: .showdown, winners: winners, payouts: payouts, shownHands: shown)
+        let result = HandResult(reason: .showdown, winners: winners.sorted(), payouts: payouts, shownHands: shown, pots: pots)
         state.result = result
         events.append(.handEnded(result))
+    }
+
+    /// Steps clockwise from the button to `seat` (1 for the seat after it).
+    private static func distance(from button: Seat, to seat: Seat, count: Int) -> Int {
+        let steps = (seat.rawValue - button.rawValue + count) % count
+        return steps == 0 ? count : steps
     }
 }

@@ -4,8 +4,10 @@ import PokerCore
 /// outcome. Defaults describe an unremarkable hand: equal 1500 stacks, 10/20
 /// blinds, seat one on the button, and a dry board with no straight or flush.
 ///
-/// Deal order matches `HandEngine`: seat one's hole cards, seat two's, then the
-/// board. Any cards not specified are filled from the remaining deck.
+/// Deal order matches `HandEngine`: each seat with chips in seat order, then the
+/// board. Any cards not specified are filled from the remaining deck. Pass more
+/// stacks for a multiway table (`.stacks(1500, 1500, 1500)`); seats three to six
+/// default to small pairs that lose to the default hands.
 public struct HandStateBuilder {
     public var handNumber = 1
     public var button: Seat = .one
@@ -14,6 +16,10 @@ public struct HandStateBuilder {
     public var holeCards: [Seat: [Card]] = [
         .one: cards("Ah Kh"),
         .two: cards("Qs Qd"),
+        .three: cards("8c 8d"),
+        .four: cards("5c 5d"),
+        .five: cards("3c 3d"),
+        .six: cards("6c 6h"),
     ]
     public var board: [Card] = cards("2c 7d Ts 4h 9s")
 
@@ -21,7 +27,8 @@ public struct HandStateBuilder {
 
     public func handNumber(_ value: Int) -> Self { with { $0.handNumber = value } }
     public func button(_ seat: Seat) -> Self { with { $0.button = seat } }
-    public func stacks(_ one: Chips, _ two: Chips) -> Self { with { $0.stacks = [one, two] } }
+    /// One stack per seat, seat one first; 0 seats a player who sits out.
+    public func stacks(_ values: Chips...) -> Self { with { $0.stacks = values } }
     public func blinds(small: Chips, big: Chips) -> Self { with { $0.blinds = Blinds(small: small, big: big) } }
     public func holeCards(_ seat: Seat, _ notation: String) -> Self { with { $0.holeCards[seat] = cards(notation) } }
     /// Flop, turn and river in order, e.g. `"2c 7d Ts 4h 9s"`.
@@ -29,7 +36,8 @@ public struct HandStateBuilder {
 
     /// The deck the engine will deal from.
     public func deck() -> Deck {
-        Deck.rigged(holeCards[.one]! + holeCards[.two]! + board)
+        let dealtIn = Seat.all(count: stacks.count).filter { stacks[$0.rawValue] > 0 }
+        return Deck.rigged(dealtIn.flatMap { holeCards[$0] ?? [] } + board)
     }
 
     /// Starts the hand. Blinds are posted and hole cards dealt.

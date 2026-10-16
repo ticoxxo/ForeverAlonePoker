@@ -10,8 +10,8 @@ nonisolated enum RoomServiceError: Error, Equatable {
 
 /// Creating and finding rooms on the server, and opening the transport to one.
 nonisolated protocol RoomService: Sendable {
-    /// Creates a room and returns its code.
-    func createRoom() async throws -> String
+    /// Creates a room seating `maxPlayers` (tdr/0013) and returns its code.
+    func createRoom(maxPlayers: Int) async throws -> String
     /// Throws `roomNotFound` when the code is unknown.
     func checkRoom(_ code: String) async throws
     func makeTransport(roomCode: String) -> any MatchTransport
@@ -32,9 +32,11 @@ nonisolated struct HTTPRoomService: RoomService {
     /// IPv4, costing a refused connection before the fallback.
     static let defaultBaseURL = URL(string: "http://127.0.0.1:8080")!
 
-    func createRoom() async throws -> String {
+    func createRoom(maxPlayers: Int) async throws -> String {
         var request = URLRequest(url: baseURL.appending(path: "rooms"))
         request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(CreateRoom(maxPlayers: maxPlayers))
         let (data, response) = try await session.data(for: request)
         try Self.ensureOK(response)
         guard let created = try? JSONDecoder().decode(RoomCreated.self, from: data) else {
@@ -75,5 +77,9 @@ nonisolated struct HTTPRoomService: RoomService {
 
     private struct RoomCreated: Decodable {
         let code: String
+    }
+
+    private struct CreateRoom: Encodable {
+        let maxPlayers: Int
     }
 }

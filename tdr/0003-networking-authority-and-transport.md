@@ -47,3 +47,7 @@ Hummingbird is a Swift server framework; Postgres is a database. They are not al
 - App: `MatchSessionClient` tests over `InMemoryTransport` play a scripted hand end to end (step 6).
 - Server: HummingbirdTesting drives two WebSocket clients through a hand (step 10).
 - Manual: local play needs two physical devices; online play needs the server running and two simulators.
+
+## Notes
+
+- 2026-10-16: tables of two to six players, the host-run lobby and multiway Elo are decided in tdr/0013, which supersedes the heads-up-only parts of this record.

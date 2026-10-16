@@ -72,7 +72,9 @@ struct HomeView: View {
                                 didWin: match.didWin,
                                 mode: match.mode,
                                 date: match.date,
-                                isRanked: match.wasRanked
+                                isRanked: match.wasRanked,
+                                place: match.place,
+                                playerCount: match.playerCount
                             )
                         }
                     }
@@ -113,41 +115,27 @@ struct PlayerCard: View {
     }
 }
 
-struct AvatarView: View {
-    let data: Data?
-    let size: CGFloat
-
-    var body: some View {
-        Group {
-            if let data, let image = UIImage(data: data) {
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFill()
-            } else {
-                Image(systemName: "person.crop.circle.fill")
-                    .resizable()
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .frame(width: size, height: size)
-        .clipShape(Circle())
-        .accessibilityLabel(Text("Profile picture"))
-    }
-}
-
 struct MatchRecordRow: View {
     let opponentName: String
     let didWin: Bool
     let mode: MatchMode
     let date: Date
     var isRanked: Bool = false
+    var place: Int = 0
+    var playerCount: Int = 2
 
     var body: some View {
         HStack {
             Image(systemName: didWin ? "trophy.fill" : "xmark.circle")
                 .foregroundStyle(didWin ? .yellow : .secondary)
             VStack(alignment: .leading) {
-                Text(didWin ? "Won against \(opponentName)" : "Lost to \(opponentName)")
+                if didWin {
+                    Text("Won against \(opponentName)")
+                } else if playerCount > 2, place > 0 {
+                    Text("Finished \(place.formatted(.number)) of \(playerCount.formatted(.number)) against \(opponentName)")
+                } else {
+                    Text("Lost to \(opponentName)")
+                }
                 Text("\(mode.displayName)\(isRanked ? " · Ranked" : "") · \(date, format: .dateTime.day().month().hour().minute())")
                     .font(.caption)
                     .foregroundStyle(.secondary)

@@ -29,3 +29,7 @@ World and country rankings (tdr/0006) need a rating. The server publishes it aft
 ## Test strategy
 
 `RatingTests` in `PokerCoreTests`: expected score bounds and symmetry, math helper accuracy, half-K exchange between equals, provisional vs established K, upset pays more than a routine win, loss mirrors win, draw between equals is neutral, conservation with equal K, `Comparable`.
+
+## Notes
+
+- 2026-10-16: tables of two to six players, the host-run lobby and multiway Elo are decided in tdr/0013, which supersedes the heads-up-only parts of this record.

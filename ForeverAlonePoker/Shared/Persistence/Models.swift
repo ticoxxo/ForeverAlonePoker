@@ -64,6 +64,10 @@ final class MatchRecord {
     var handsPlayed: Int = 0
     var date: Date = Date()
     var wasRanked: Bool = false
+    /// Finishing position (1 for a win); 0 for records from before tables
+    /// of more than two (tdr/0013).
+    var place: Int = 0
+    var playerCount: Int = 2
     var profile: PlayerProfile? = nil
 
     init(
@@ -73,6 +77,8 @@ final class MatchRecord {
         finalStack: Int,
         opponentFinalStack: Int,
         handsPlayed: Int,
+        place: Int = 0,
+        playerCount: Int = 2,
         date: Date = Date()
     ) {
         modeRawValue = mode.rawValue
@@ -81,6 +87,8 @@ final class MatchRecord {
         self.finalStack = finalStack
         self.opponentFinalStack = opponentFinalStack
         self.handsPlayed = handsPlayed
+        self.place = place
+        self.playerCount = playerCount
         self.date = date
     }
 

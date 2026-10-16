@@ -28,32 +28,43 @@ public actor RankingService {
         self.store = store
     }
 
-    /// Rates one finished match and stores both rows. Returns what each player
-    /// should be told.
+    /// Rates one finished heads-up match and stores both rows. Returns what
+    /// each player should be told.
     public func record(winner: RankedPlayer, loser: RankedPlayer) async throws -> (winner: RatingUpdate, loser: RatingUpdate) {
-        let existing = try await store.entries(for: [winner.playerID, loser.playerID])
-        var winnerEntry = existing[winner.playerID] ?? LeaderboardEntry(playerID: winner.playerID, displayName: winner.displayName, countryCode: winner.countryCode)
-        var loserEntry = existing[loser.playerID] ?? LeaderboardEntry(playerID: loser.playerID, displayName: loser.displayName, countryCode: loser.countryCode)
+        let result = try await record(winner: winner, losers: [loser])
+        return (result.winner, result.losers[0])
+    }
 
-        let updated = EloCalculator.update(player: winnerEntry.rating, opponent: loserEntry.rating, outcome: .win)
-        let winnerDelta = updated.player.value - winnerEntry.rating.value
-        let loserDelta = updated.opponent.value - loserEntry.rating.value
+    /// Rates one finished match of any size (tdr/0013): the winner gains and
+    /// every loser drops. Stores every row and returns what each player should
+    /// be told, losers in the order given.
+    public func record(winner: RankedPlayer, losers: [RankedPlayer]) async throws -> (winner: RatingUpdate, losers: [RatingUpdate]) {
+        let existing = try await store.entries(for: [winner.playerID] + losers.map(\.playerID))
+        func entry(for player: RankedPlayer) -> LeaderboardEntry {
+            var entry = existing[player.playerID]
+                ?? LeaderboardEntry(playerID: player.playerID, displayName: player.displayName, countryCode: player.countryCode)
+            entry.displayName = player.displayName
+            entry.countryCode = player.countryCode
+            return entry
+        }
+        var winnerEntry = entry(for: winner)
+        var loserEntries = losers.map(entry(for:))
 
-        winnerEntry.rating = updated.player
+        let updated = EloCalculator.updateMultiway(winner: winnerEntry.rating, losers: loserEntries.map(\.rating))
+        let winnerUpdate = RatingUpdate(rating: updated.winner, delta: updated.winner.value - winnerEntry.rating.value)
+        winnerEntry.rating = updated.winner
         winnerEntry.wins += 1
-        winnerEntry.displayName = winner.displayName
-        winnerEntry.countryCode = winner.countryCode
 
-        loserEntry.rating = updated.opponent
-        loserEntry.losses += 1
-        loserEntry.displayName = loser.displayName
-        loserEntry.countryCode = loser.countryCode
+        var loserUpdates: [RatingUpdate] = []
+        for index in loserEntries.indices {
+            let rating = updated.losers[index]
+            loserUpdates.append(RatingUpdate(rating: rating, delta: rating.value - loserEntries[index].rating.value))
+            loserEntries[index].rating = rating
+            loserEntries[index].losses += 1
+        }
 
-        try await store.save([winnerEntry, loserEntry])
-        return (
-            RatingUpdate(rating: winnerEntry.rating, delta: winnerDelta),
-            RatingUpdate(rating: loserEntry.rating, delta: loserDelta)
-        )
+        try await store.save([winnerEntry] + loserEntries)
+        return (winnerUpdate, loserUpdates)
     }
 }
 

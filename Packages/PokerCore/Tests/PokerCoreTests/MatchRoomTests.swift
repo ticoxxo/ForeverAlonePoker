@@ -5,15 +5,16 @@ import PokerCoreTestSupport
 
 @Suite("MatchRoom: seating")
 struct MatchRoomSeatingTests {
-    @Test("first player is welcomed and waits; second player fills the room")
+    @Test("first player is welcomed into the lobby as host; second player fills the room")
     func joining() {
         var room = MatchRoomBuilder().code("ABC123").build()
 
         let first = room.handle(.join(TestPlayers.alice), from: TestPlayers.aliceConnection)
-        #expect(first.messages(for: TestPlayers.aliceConnection) == [
-            .welcome(seat: .one, roomCode: "ABC123"),
-            .waitingForOpponent,
-        ])
+        #expect(first.messages(for: TestPlayers.aliceConnection).first == .welcome(seat: .one, roomCode: "ABC123"))
+        let lobby = first.latestView(for: TestPlayers.aliceConnection)
+        #expect(lobby?.phase == .lobby)
+        #expect(lobby?.isHost == true)
+        #expect(lobby?.players.isEmpty == true)
         #expect(!room.isFull)
 
         let second = room.handle(.join(TestPlayers.bob), from: TestPlayers.bobConnection)
@@ -23,13 +24,13 @@ struct MatchRoomSeatingTests {
         #expect(room.isFull)
     }
 
-    @Test("a third player is rejected")
-    func roomFull() {
+    @Test("a third player is turned away from a heads-up match")
+    func headsUpFull() {
         var room = MatchRoomBuilder().build()
         _ = room.handle(.join(TestPlayers.alice), from: TestPlayers.aliceConnection)
         _ = room.handle(.join(TestPlayers.bob), from: TestPlayers.bobConnection)
         let out = room.handle(.join(TestPlayers.carol), from: TestPlayers.carolConnection)
-        #expect(out.rejections(for: TestPlayers.carolConnection) == ["Room is full."])
+        #expect(out.rejections(for: TestPlayers.carolConnection) == ["The game has already started."])
     }
 
     @Test("messages before joining are rejected")
@@ -39,20 +40,24 @@ struct MatchRoomSeatingTests {
         #expect(out.rejections(for: TestPlayers.aliceConnection) == ["Join the room first."])
     }
 
-    @Test("nothing is dealt until both players are ready")
-    func readyGate() {
+    @Test("a heads-up table deals as soon as the second player sits down")
+    func headsUpStartsByItself() {
         var room = MatchRoomBuilder().build()
         _ = room.handle(.join(TestPlayers.alice), from: TestPlayers.aliceConnection)
-        _ = room.handle(.join(TestPlayers.bob), from: TestPlayers.bobConnection)
+        #expect(room.phase == .lobby)
 
-        let one = room.handle(.ready, from: TestPlayers.aliceConnection)
-        #expect(room.match.phase == .waitingForHand)
-        #expect(one.latestView(for: TestPlayers.bobConnection)?.opponent?.isReady == true)
-
-        let both = room.handle(.ready, from: TestPlayers.bobConnection)
-        #expect(room.match.phase == .inHand)
+        let both = room.handle(.join(TestPlayers.bob), from: TestPlayers.bobConnection)
+        #expect(room.phase == .inHand)
         #expect(both.events(for: TestPlayers.aliceConnection).first == .handStarted(handNumber: 1, button: .one))
         #expect(both.events(for: TestPlayers.bobConnection) == both.events(for: TestPlayers.aliceConnection), "events are public and identical")
+    }
+
+    @Test("ready during a hand is ignored")
+    func readyDuringHand() {
+        var room = MatchRoomBuilder().build()
+        room.seatAliceAndBobAndDeal()
+        #expect(room.handle(.ready, from: TestPlayers.aliceConnection).isEmpty)
+        #expect(room.players[.one]?.isReady == false)
     }
 }
 
@@ -153,10 +158,11 @@ struct MatchRoomPlayTests {
         room.seatAliceAndBobAndDeal()
         let out = room.handle(.leave, from: TestPlayers.bobConnection)
 
-        #expect(out.messages(for: TestPlayers.aliceConnection).contains(.opponentLeft))
+        #expect(out.messages(for: TestPlayers.aliceConnection).contains(.playerLeft(seat: .two, name: "Bob")))
         let view = try #require(out.latestView(for: TestPlayers.aliceConnection))
         #expect(view.me.stack == 1520, "Alice collects the 30 in blinds")
         #expect(view.opponent == nil)
+        #expect(view.phase == .finished(winner: .one), "the last player left wins")
         #expect(!room.isFull)
         #expect(out.messages(for: TestPlayers.bobConnection).isEmpty)
     }
@@ -170,7 +176,7 @@ struct MatchRoomPlayTests {
         #expect(room.isFull, "seat is held")
 
         let stranger = room.handle(.join(TestPlayers.carol), from: TestPlayers.carolConnection)
-        #expect(stranger.rejections(for: TestPlayers.carolConnection) == ["Room is full."])
+        #expect(stranger.rejections(for: TestPlayers.carolConnection) == ["The game has already started."])
 
         let newConnection = ConnectionID("conn-bob-2")
         let back = room.handle(.join(TestPlayers.bob), from: newConnection)
@@ -219,9 +225,15 @@ struct ProtocolTests {
         #expect(try JSONDecoder().decode(ServerEnvelope.self, from: data).message == .rated(update))
     }
 
-    @Test("the protocol version was bumped for the ranked fields")
+    @Test("the protocol version was bumped for multiway tables")
     func version() {
-        #expect(ProtocolVersion.current == 2)
+        #expect(ProtocolVersion.current == 3)
+    }
+
+    @Test("seats travel as bare integers")
+    func seatWireFormat() throws {
+        #expect(String(decoding: try JSONEncoder().encode(Seat.three), as: UTF8.self) == "2")
+        #expect(try JSONDecoder().decode(Seat.self, from: Data("5".utf8)) == .six)
     }
 
     @Test("the match authority serialises room access")
@@ -229,8 +241,6 @@ struct ProtocolTests {
         let authority = MatchAuthority(room: MatchRoomBuilder().build())
         _ = await authority.handle(.join(TestPlayers.alice), from: TestPlayers.aliceConnection)
         _ = await authority.handle(.join(TestPlayers.bob), from: TestPlayers.bobConnection)
-        _ = await authority.handle(.ready, from: TestPlayers.aliceConnection)
-        _ = await authority.handle(.ready, from: TestPlayers.bobConnection)
         let view = await authority.view(for: .one)
         #expect(view.isMyTurn)
         #expect(view.holeCards.count == 2)

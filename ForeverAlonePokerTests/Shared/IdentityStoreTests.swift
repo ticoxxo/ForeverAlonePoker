@@ -74,6 +74,18 @@ struct IdentityStoreTests {
         #expect(store.losses == 1)
     }
 
+    @Test("a multiway finish keeps the place and the table size")
+    func recordsPlace() throws {
+        let fixture = try Fixture()
+        let store = fixture.store
+        store.record(MatchSummary(
+            didWin: false, opponentName: "Bob, Carol and Dave", myFinalStack: 0,
+            opponentFinalStack: 6000, handsPlayed: 40, place: 3, playerCount: 4
+        ), mode: .local)
+        #expect(store.recentMatches.first?.place == 3)
+        #expect(store.recentMatches.first?.playerCount == 4)
+    }
+
     @Test("ranked tier follows the Apple user id")
     func tier() throws {
         let fixture = try Fixture()

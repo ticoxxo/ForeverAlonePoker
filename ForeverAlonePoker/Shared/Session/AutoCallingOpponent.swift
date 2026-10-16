@@ -21,8 +21,10 @@ final class AutoCallingOpponent {
                 try? await Task.sleep(for: .milliseconds(400))
                 guard let view = client.view else { continue }
                 switch view.phase {
+                case .lobby:
+                    continue
                 case .waitingForHand, .finished:
-                    if !view.me.isReady, view.opponent != nil { await client.ready() }
+                    if !view.me.isReady, !view.players.isEmpty { await client.ready() }
                 case .inHand:
                     guard view.isMyTurn else { continue }
                     if view.legalActions.canCheck {

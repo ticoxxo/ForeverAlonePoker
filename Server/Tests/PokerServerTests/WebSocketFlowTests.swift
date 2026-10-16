@@ -34,7 +34,7 @@ struct HTTPTests {
             try await client.execute(uri: "/rooms/abc234", method: .get) { response in
                 #expect(response.status == .ok)
                 let info = try JSONDecoder().decode(RoomInfo.self, from: response.body)
-                #expect(info == RoomInfo(code: "ABC234", seatsTaken: 0, connected: 0))
+                #expect(info == RoomInfo(code: "ABC234", seatsTaken: 0, connected: 0, maxPlayers: 2))
             }
             try await client.execute(uri: "/rooms/ZZZZZZ", method: .get) { response in
                 #expect(response.status == .notFound)
@@ -92,23 +92,18 @@ struct WebSocketFlowTests {
                 let alice = MessageReader(aliceIn)
                 try await Wire.send(.join(TestPlayers.alice), to: aliceOut)
                 #expect(try await alice.next() == .welcome(seat: .one, roomCode: "ABC234"))
-                #expect(try await alice.next() == .waitingForOpponent)
+                #expect(try await alice.nextState()?.phase == .lobby)
 
                 try await client.ws("/rooms/ABC234/ws") { bobIn, bobOut, _ in
                     let bob = MessageReader(bobIn)
                     try await Wire.send(.join(TestPlayers.bob), to: bobOut)
                     #expect(try await bob.next() == .welcome(seat: .two, roomCode: "ABC234"))
 
-                    let aliceView = try await alice.nextState()
-                    let bobView = try await bob.nextState()
-                    #expect(aliceView?.opponent?.name == "Bob")
-                    #expect(bobView?.opponent?.name == "Alice")
-
-                    try await Wire.send(.ready, to: aliceOut)
-                    try await Wire.send(.ready, to: bobOut)
-
+                    // Heads-up deals as soon as the second player sits down.
                     let dealtAlice = try await alice.nextState { $0.phase == .inHand }
                     let dealtBob = try await bob.nextState { $0.phase == .inHand }
+                    #expect(dealtAlice?.opponent?.name == "Bob")
+                    #expect(dealtBob?.opponent?.name == "Alice")
                     #expect(dealtAlice?.holeCards == cards("As Kd"))
                     #expect(dealtBob?.holeCards == cards("7c 2h"))
                     #expect(dealtAlice?.isMyTurn == true)
@@ -121,12 +116,9 @@ struct WebSocketFlowTests {
                     #expect(bobAfter?.lastResult?.winners == [.two])
                 }
 
-                // Bob's socket closed: Alice is told and the seat is held.
-                var sawOpponentLeft = false
-                while !sawOpponentLeft, let message = try await alice.next() {
-                    if message == .opponentLeft { sawOpponentLeft = true }
-                }
-                #expect(sawOpponentLeft)
+                // Bob's socket closed: Alice sees him disconnected and the seat is held.
+                let dropped = try await alice.nextState { $0.opponent?.isConnected == false }
+                #expect(dropped?.opponent?.name == "Bob")
             }
         }
     }

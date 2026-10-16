@@ -22,7 +22,7 @@ struct OnlineMatchView: View {
 
     var body: some View {
         ZStack {
-            if let client = model.client {
+            if model.isPlaying, let client = model.client {
                 TableView(client: client)
                     .onAppear {
                         client.onMatchFinished = onMatchFinished
@@ -85,18 +85,20 @@ struct RoomCodeBadge: View {
 }
 
 struct OnlineLobbyView: View {
-    let model: OnlineLobbyModel
+    @Bindable var model: OnlineLobbyModel
     @State private var code = ""
+    @State private var avatars = AvatarLoader()
 
     var body: some View {
         List {
             switch model.phase {
             case .idle:
+                TableSizeSection(maxPlayers: $model.maxPlayers, isEnabled: true)
                 Section {
                     Button {
-                        Task { await model.createRoom() }
+                        Task { await model.searchOpponents() }
                     } label: {
-                        Label("Create a table", systemImage: "plus.circle")
+                        Label("Search opponents", systemImage: "magnifyingglass")
                     }
                 } footer: {
                     Text("You get a 6-character code to share. The server referees the match.")
@@ -121,11 +123,46 @@ struct OnlineLobbyView: View {
                         Text("Contacting the server…")
                     }
                 }
-            case .connected:
-                Section {
-                    HStack {
-                        ProgressView()
-                        Text("Taking your seat…")
+            case .connected(let roomCode):
+                if let client = model.client, let view = client.view, view.phase == .lobby {
+                    Section {
+                        Text("Share the code \(roomCode) with your opponents.")
+                    }
+                    TableSizeSection(maxPlayers: .constant(view.table.maxPlayers), isEnabled: false)
+                    LobbyPlayersSection(view: view, avatars: avatars)
+                    Section {
+                        if view.table.isStarting {
+                            WaitingRow(text: "Starting…")
+                        } else if client.isHost {
+                            Button {
+                                Task { await model.startGame() }
+                            } label: {
+                                Label("Start game", systemImage: "play.fill")
+                            }
+                            .disabled(view.players.filter(\.isConnected).isEmpty)
+                        } else {
+                            WaitingRow(text: "Waiting for the host to start…")
+                        }
+                    } footer: {
+                        if client.isHost {
+                            Text("Start whenever you like. Players still connecting get a few seconds to sit down.")
+                        }
+                    }
+                    if let rejection = client.lastRejection {
+                        Section {
+                            Label(rejection, systemImage: "exclamationmark.triangle")
+                                .foregroundStyle(.orange)
+                        }
+                    }
+                } else {
+                    Section {
+                        WaitingRow(text: "Taking your seat…")
+                    }
+                    if let rejection = model.client?.lastRejection {
+                        Section {
+                            Label(rejection, systemImage: "exclamationmark.triangle")
+                                .foregroundStyle(.orange)
+                        }
                     }
                 }
             case .failed(let reason):
@@ -135,6 +172,17 @@ struct OnlineLobbyView: View {
                     Button("Try again") { model.reset() }
                 }
             }
+        }
+    }
+}
+
+private struct WaitingRow: View {
+    let text: LocalizedStringKey
+
+    var body: some View {
+        HStack {
+            ProgressView()
+            Text(text)
         }
     }
 }

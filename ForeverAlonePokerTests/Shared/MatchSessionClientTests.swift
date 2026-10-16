@@ -3,6 +3,14 @@ import PokerCore
 import PokerCoreTestSupport
 @testable import ForeverAlonePoker
 
+/// Skips events up to the next state snapshot.
+private func nextState(_ iterator: inout AsyncStream<ServerMessage>.AsyncIterator) async -> PlayerView? {
+    while let message = await iterator.next() {
+        if case .state(let view) = message { return view }
+    }
+    return nil
+}
+
 @Suite("InMemoryTransport")
 struct InMemoryTransportTests {
     @Test("routes the authority's replies to the connection that should receive them")
@@ -14,22 +22,16 @@ struct InMemoryTransportTests {
         try await alice.send(.join(TestPlayers.alice))
         var aliceMessages = alice.incoming.makeAsyncIterator()
         #expect(await aliceMessages.next() == .welcome(seat: .one, roomCode: "ROOM42"))
-        #expect(await aliceMessages.next() == .waitingForOpponent)
+        #expect(await nextState(&aliceMessages)?.phase == .lobby)
 
         try await bob.send(.join(TestPlayers.bob))
         var bobMessages = bob.incoming.makeAsyncIterator()
         #expect(await bobMessages.next() == .welcome(seat: .two, roomCode: "ROOM42"))
-        guard case .state(let bobView) = await bobMessages.next() else {
-            Issue.record("expected a state for Bob")
-            return
-        }
-        #expect(bobView.seat == .two)
-        guard case .state(let aliceView) = await aliceMessages.next() else {
-            Issue.record("expected a state for Alice")
-            return
-        }
-        #expect(aliceView.seat == .one)
-        #expect(aliceView.opponent?.name == "Bob")
+        let bobView = await nextState(&bobMessages)
+        #expect(bobView?.seat == .two)
+        let aliceView = await nextState(&aliceMessages)
+        #expect(aliceView?.seat == .one)
+        #expect(aliceView?.opponent?.name == "Bob")
     }
 
     @Test("closing finishes the stream and tells the authority")
@@ -69,14 +71,15 @@ private final class ScriptedTransport: MatchTransport, @unchecked Sendable {
 @Suite("MatchSessionClient")
 @MainActor
 struct MatchSessionClientTests {
-    @Test("connecting seats the player and reports waiting until the opponent arrives")
+    @Test("connecting seats the player in the lobby until the opponent arrives")
     func connecting() async {
         let harness = await SessionHarness()
         #expect(harness.alice.connection == .idle)
 
         await harness.alice.connect()
-        #expect(await eventually { harness.alice.connection == .waitingForOpponent })
-        #expect(harness.alice.view == nil)
+        #expect(await eventually { harness.alice.isInLobby })
+        #expect(harness.alice.isHost, "the first player to sit down hosts")
+        #expect(harness.alice.view?.players.isEmpty == true)
 
         await harness.bob.connect()
         #expect(await eventually { harness.alice.view?.opponent?.name == "Bob" })
@@ -85,7 +88,7 @@ struct MatchSessionClientTests {
         #expect(harness.alice.seat == .one)
     }
 
-    @Test("both ready deals a hand and only the button may act")
+    @Test("the second player sitting down deals a heads-up hand; only the button may act")
     func dealing() async {
         let harness = await SessionHarness()
         #expect(await harness.deal())
@@ -195,5 +198,48 @@ struct MatchSessionClientTests {
         #expect(await eventually { harness.alice.opponentLeft })
         #expect(harness.alice.view?.opponent == nil)
         #expect(harness.alice.view?.me.stack == 1520, "Alice collects the blinds")
+    }
+
+    @Test("a bigger table: the host starts it and every player is dealt in")
+    func multiwayStart() async {
+        let table = HostedTable(room: MatchRoomBuilder().maxPlayers(3).build(), graceInterval: .seconds(30))
+        let alice = MatchSessionClient(identity: TestPlayers.alice, transport: await table.connect(id: TestPlayers.aliceConnection))
+        let bob = MatchSessionClient(identity: TestPlayers.bob, transport: await table.connect(id: TestPlayers.bobConnection))
+        let carol = MatchSessionClient(identity: TestPlayers.carol, transport: await table.connect(id: TestPlayers.carolConnection))
+        await alice.connect()
+        await bob.connect()
+        #expect(await eventually { alice.view?.players.count == 1 })
+        #expect(alice.isInLobby, "a bigger table waits for the host")
+
+        await bob.startMatch()
+        #expect(await eventually { bob.lastRejection == "Only the host can start the game." })
+
+        await alice.startMatch()
+        #expect(await eventually { alice.view?.table.isStarting == true })
+        // Carol's connection is open but she has not sat down: the grace period waits for her.
+        await carol.connect()
+        await table.waitForStart()
+        #expect(await eventually { carol.view?.phase == .inHand && alice.view?.phase == .inHand })
+        #expect(carol.view?.players.map(\.name) == ["Alice", "Bob"])
+        #expect(alice.view?.holeCards.count == 2)
+    }
+
+    @Test("a player leaving a bigger table is named to the others")
+    func departureNamed() async {
+        let table = HostedTable(room: MatchRoomBuilder().maxPlayers(3).build(), graceInterval: .zero)
+        let alice = MatchSessionClient(identity: TestPlayers.alice, transport: await table.connect(id: TestPlayers.aliceConnection))
+        let bob = MatchSessionClient(identity: TestPlayers.bob, transport: await table.connect(id: TestPlayers.bobConnection))
+        let carol = MatchSessionClient(identity: TestPlayers.carol, transport: await table.connect(id: TestPlayers.carolConnection))
+        await alice.connect()
+        await bob.connect()
+        await carol.connect()
+        #expect(await eventually { alice.view?.players.count == 2 })
+        await alice.startMatch()
+        await table.waitForStart()
+        #expect(await eventually { alice.view?.phase == .inHand })
+
+        await carol.leave()
+        #expect(await eventually { alice.lastDeparture == "Carol" })
+        #expect(!alice.opponentLeft, "Bob is still at the table")
     }
 }
