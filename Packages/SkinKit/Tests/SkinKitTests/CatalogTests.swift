@@ -39,7 +39,7 @@ struct SkinCatalogTests {
         let spanish = try #require(catalog.item("spanish_001"))
         #expect(spanish.name(for: "es") == "Española")
         #expect(spanish.name(for: "fr") == "Spanish", "falls back to English")
-        #expect(spanish.sellsSingleCards)
+        #expect(spanish.productID == "fap.skin.spanish_001.set", "the retired sellsSingleCards key is ignored")
         #expect(spanish.assets[.cardFront(card("As"))]?.path == "spanish_001/front.As.png")
     }
 
@@ -63,7 +63,7 @@ struct SkinCatalogTests {
     @Test("encoding then decoding gives the same catalog")
     func roundTrip() throws {
         let catalog = SkinCatalogBuilder()
-            .with(SkinCatalogBuilder.cardSet("spanish_001", sellsSingleCards: true))
+            .with(SkinCatalogBuilder.cardSet("spanish_001"))
             .with(SkinCatalogBuilder.back("red_check"))
             .build()
         let decoded = try SkinCatalog.decode(from: catalog.encoded())

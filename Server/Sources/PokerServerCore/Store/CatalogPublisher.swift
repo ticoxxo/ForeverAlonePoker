@@ -20,7 +20,6 @@ public enum CatalogPublisher {
         var kind: CosmeticKind?
         var names: [String: String]?
         var productID: String?
-        var sellsSingleCards: Bool?
         var minAppVersion: AppVersion?
         var badge: String?
     }
@@ -87,7 +86,6 @@ public enum CatalogPublisher {
                 kind: kind,
                 names: metadata.names ?? ["en": id.rawValue],
                 productID: productID,
-                sellsSingleCards: metadata.sellsSingleCards ?? (kind == .cardFront),
                 assets: assets,
                 preview: preview,
                 minAppVersion: metadata.minAppVersion,

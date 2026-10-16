@@ -70,20 +70,15 @@ struct AssetNamingTests {
 
 @Suite("ProductIDs")
 struct ProductIDsTests {
-    @Test("sets, single cards and single items follow one scheme")
+    @Test("sets and single items follow one scheme")
     func scheme() {
         #expect(ProductIDs.set("spanish_001") == "fap.skin.spanish_001.set")
-        #expect(ProductIDs.card("spanish_001", card("Ts")) == "fap.skin.spanish_001.card.Ts")
         #expect(ProductIDs.single("red_check") == "fap.skin.red_check")
     }
 
-    @Test("a set that sells single cards offers 53 products")
+    @Test("a set is sold as one product, never card by card")
     func allForSet() {
-        let item = SkinCatalogBuilder.cardSet("spanish_001", sellsSingleCards: true)
-        let ids = ProductIDs.all(for: item)
-        #expect(ids.count == 53)
-        #expect(ids.first == "fap.skin.spanish_001.set")
-        #expect(ids.contains("fap.skin.spanish_001.card.As"))
+        #expect(ProductIDs.all(for: SkinCatalogBuilder.cardSet("spanish_001")) == ["fap.skin.spanish_001.set"])
     }
 
     @Test("a free item has no products")
@@ -99,18 +94,5 @@ struct AppVersionTests {
         #expect(AppVersion("1.10") > AppVersion("1.9"))
         #expect(AppVersion("2") == AppVersion("2.0.0"))
         #expect(AppVersion("1.2.3") < AppVersion("1.3"))
-    }
-}
-
-@Suite("SetPricing")
-struct SetPricingTests {
-    @Test("the set saves the difference over the cards still missing")
-    func savings() {
-        #expect(SetPricing.savings(setPrice: 0.99, cardPrice: 0.29, cardsRemaining: 52) == Decimal(string: "14.09"))
-    }
-
-    @Test("no savings when the remaining cards are cheaper than the set")
-    func noSavings() {
-        #expect(SetPricing.savings(setPrice: 0.99, cardPrice: 0.29, cardsRemaining: 3) == 0)
     }
 }

@@ -1,33 +1,39 @@
 # 0012. Sell skins with StoreKit 2 and deliver them through a signed remote catalog
 
-- **Status:** Accepted (opponent loadout over the protocol: planned, see 6)
+- **Status:** Accepted (opponent loadout over the protocol: planned, see 6). Amended 2026-10-15: card fronts are sold only as whole sets.
 - **Date:** 2026-10-11
 - **Feature / area:** `ForeverAlonePoker/Shared/Skins`, `ForeverAlonePoker/Features/SkinStore`, `Server/Sources/PokerServerCore/Store`, `Server/Sources/SkinPublisher`, `Server/SkinAssets`, `StoreKit/SkinStore.storekit`
 
 ## Context
 
-The store sells card-face sets (or single cards) and card backs, and must work with these constraints:
+The store sells card-face sets and card backs, and must work with these constraints:
 - Adding a set, changing a price or running a sale must not require an app update.
-- Prices are $0.99 per set and per back, and $0.29 per card.
+- Prices are $0.99 per set and per back.
 - Prices are set remotely by a separate project.
 - The store must handle currency per user and comply with Apple's rules.
 
 A strategy note (`skin-assets-strategy.md`) recommended keeping art out of the binary, delivering it remotely with checksums, and putting the models in a Swift package. Several facts constrain the rest:
 
 - **Price points.** In-app purchase prices are App Store Connect price points. The lowest in the US is **$0.29**, so 25 cents isn't possible. Prices and scheduled price changes (sales with start and end dates) are set in App Store Connect, by hand or through the **App Store Connect API**, which is how "another project" sets prices. Our servers can't charge a different amount.
-- **Commission.** Apple keeps **15%** (Small Business Program, under $1M a year) or **30%**; card-processing percentages don't apply. A $5 pack nets about $4.25 or $3.50. Where Apple remits VAT/GST, proceeds are calculated after tax. A $0.29 card nets about $0.25 at 15%.
+- **Commission.** Apple keeps **15%** (Small Business Program, under $1M a year) or **30%**; card-processing percentages don't apply. A $5 pack nets about $4.25 or $3.50. Where Apple remits VAT/GST, proceeds are calculated after tax.
 - **Payment methods.** App Review Guideline 3.1.1 requires in-app purchase for digital goods used in the app; **Apple Pay (PassKit) is not allowed** for them. The App Store sheet already offers every method on the player's Apple Account: cards (including those in Apple Wallet), Apple Account balance and gift cards, carrier billing, and PayPal where available. Family approval (Ask to Buy) and bank authentication (SCA) surface as `.pending`.
 - **Currency.** The price currency follows the **App Store storefront**, not the device locale or region. StoreKit localizes `displayPrice` and `priceFormatStyle`, and `Storefront.updates` reports changes.
 - **Asset delivery options.** On-Demand Resources tie content to App Store Connect uploads and were deprecated in favour of Background Assets (Apple-hosted packs) in iOS 26, which are also uploaded through App Store Connect. Apple-hosted IAP content no longer accepts new content. Restore must be offered for non-consumables.
 
 ## Decision
 
-1. **Products.** Every item is a **non-consumable** in-app purchase with a conventional id (`ProductIDs`):
+1. **Products.** Every item is exactly one **non-consumable** in-app purchase with a conventional id (`ProductIDs`):
    - `fap.skin.<set>.set` for a set, $0.99;
-   - `fap.skin.<set>.card.<notation>` for one card of a set, $0.29 (e.g. `…card.Ts`; 52 per set);
    - `fap.skin.<item>` for a back, $0.99.
 
-   The catalog never carries prices. Product ids are permanent, so a sold item is never renamed. A set bought after some single cards still costs the full set price, because non-consumables have no dynamic bundle price. The UI shows the savings over the cards still missing (`SetPricing`, `SkinStore.setSavings`) in the storefront currency.
+   The catalog never carries prices. Product ids are permanent, so a sold item is never renamed.
+
+   **Sets are sold whole, never card by card** (amended 2026-10-15, before launch). The first version also sold every card on its own (`fap.skin.<set>.card.<notation>`, $0.29, 52 per set). That was removed because:
+   - each set needed 53 App Store Connect products instead of one;
+   - a set bought after some cards could not get cheaper. A non-consumable has one fixed price, so a discount needs extra discounted set products, and refunds of the cards bought first can be gamed against them;
+   - the store and its tests become simpler: a set is owned all or nothing.
+
+   No single-card product was ever submitted, so no player is affected. Equipping stays per slot (tdr/0011): an owned set can still be used on some cards and the classic deck on others. The `sellsSingleCards` catalog key is gone; older manifests that still carry it decode fine because unknown keys are ignored.
 2. **Ownership** is StoreKit 2's `Transaction.currentEntitlements`: verified transactions with no `revocationDate`. The App Store signs transactions (JWS) and StoreKit verifies them; unverified ones are finished and never granted. Ownership is never persisted by the app, so refunds and other devices are always reflected. `PurchaseService` is a protocol, and `StoreKitPurchaseService` implements it:
    - **Product loading:** 50-id batches loaded in parallel (`TaskGroup`).
    - **Purchase:** `purchase(confirmIn:options:)` on the active scene with `.appAccountToken(profile.localID)`, returning `.purchased(finish:)`, `.pending` or `.cancelled`.
@@ -49,10 +55,10 @@ A strategy note (`skin-assets-strategy.md`) recommended keeping art out of the b
 5. **Publishing.**
    - **This repo:** `SkinPublisher` (dev tool in `Server/`) has three commands:
      - `import <artwork>`: maps artist files to slot files and skips jokers, previews and SVGs;
-     - `manifest`: hashes the files, applies product-id conventions and per-item `item.json` metadata (names, badge, single-card sales, `minAppVersion`), and bumps the version;
+     - `manifest`: hashes the files, applies product-id conventions and per-item `item.json` metadata (names, badge, `minAppVersion`), and bumps the version;
      - `keygen`: creates an Ed25519 key pair.
    - **Pricing project:** the separate pricing project produces the same manifest with SkinKit and drives prices and sales through the App Store Connect API. New in-app purchase products need App Review for the product, not an app update.
-   - **Shipped content:** the Spanish set and the red check and red rosette backs ship in `Server/SkinAssets` as the first remote items. `StoreKit/SkinStore.storekit` mirrors their 55 products for local testing.
+   - **Shipped content:** the Spanish set and the red check and red rosette backs ship in `Server/SkinAssets` as the first remote items. `StoreKit/SkinStore.storekit` mirrors their 3 products for local testing.
 6. **Opponent loadout (planned, protocol v3).**
    - `PlayerIdentity` gains `cosmetics: [String: String]?` (the opaque `Loadout.wire`), and `MatchRoom` copies it into the opponent's `PlayerSummary`. `ProtocolVersion.current` becomes 3. Rules, `HandEngine` and `MatchState` are untouched.
    - The receiving app calls `SkinStore.opponentCardSkin(_:)`, which shows only skins installed locally and falls back to the default for the rest.
@@ -67,7 +73,7 @@ A strategy note (`skin-assets-strategy.md`) recommended keeping art out of the b
 
 - Sets, backs, artwork updates, badges, prices and sales change with no app update and no server restart. Only a new cosmetic kind needs an app update (tdr/0011).
 - Offline launches use the cached verified catalog, the installed files and the defaults; nothing blocks play.
-- 53 products per set adds App Store Connect busywork, so it should be scripted through the App Store Connect API (limit: 10,000 in-app purchases per app).
+- One App Store Connect product per set or back (limit: 10,000 in-app purchases per app); `fap.skin.spanish_001.set` ("Spanish Deck") already exists.
 - **Operations:**
   - accept the Paid Apps agreement;
   - create the products;
@@ -81,7 +87,8 @@ A strategy note (`skin-assets-strategy.md`) recommended keeping art out of the b
 - **A virtual currency** (buy coins via IAP, spend 25 per card): exact $0.25 pricing and server-driven sales, but it needs a server ledger and database, StoreKit can't restore it, and it draws more review scrutiny. Rejected in favour of direct non-consumables.
 - **Apple Pay or an external processor:** not allowed for in-app digital goods (3.1.1). US-only external purchase links are out of scope.
 - **Unsigned catalog over HTTPS only:** a compromised CDN or proxy could swap items or asset URLs, and the signature costs one line on each side.
-- **Downloading a whole set when any card is owned:** simpler, but it ships art the player hasn't bought and costs bandwidth; per-slot downloads fall out of the resolver for free.
+- **Selling single cards** ($0.29 each, alongside the set): see the amendment in decision 1. A set price that drops by $0.10 per owned card would need 7 extra discounted set products per set, picked by the app, and purchase-date bookkeeping so refunded cards can't be kept through the discount. Rejected as too much product and code for a cosmetic.
+- **Discount-free single cards plus the set:** players who bought a few cards pay full price for the set anyway, which reads as unfair.
 
 ## Comparison with `skin-assets-strategy.md`
 
@@ -96,7 +103,7 @@ A strategy note (`skin-assets-strategy.md`) recommended keeping art out of the b
 | Fallback | Default skin if a pack is missing or corrupt | Generalised into `SkinResolver`, which also covers refunds, opponents, unknown kinds and offline play. |
 | Purchases | "StoreKit purchase flow" | StoreKit 2 entitlements as the only ownership source, launch-time listeners, `.pending`, restore, `appAccountToken`, storefront currency. |
 | Pricing | Catalog metadata from the backend | Corrected: App Store Connect owns prices and sales, through its API from the pricing project. The catalog never carries a price. |
-| Not covered by the note | | Per-card sales, the $0.29 minimum price, the commission, App Review 3.1.1 and restore, forward-compatible kinds, multiplayer fallback. |
+| Not covered by the note | | Whole-set-only sales, the $0.29 minimum price, the commission, App Review 3.1.1 and restore, forward-compatible kinds, multiplayer fallback. |
 
 ## Test strategy
 
@@ -112,11 +119,11 @@ A strategy note (`skin-assets-strategy.md`) recommended keeping art out of the b
   - manifest hashes, product ids, metadata and previews;
   - key generation.
 - `ForeverAlonePokerTests/Shared/Skins`:
-  - `SkinStoreTests`: purchase, pending → approved via updates, cancel and failure, refund, restore, storefront change reloads prices, owned-only downloads, savings;
+  - `SkinStoreTests`: purchase, pending → approved via updates, cancel and failure, refund, restore, storefront change reloads prices, owned-only downloads, an unbought set can't be equipped, a bought set shows every card, single-card entitlements unlock nothing;
   - `CatalogClientTests`: pinned-key verification, tampering, unknown keys, unsigned policy, ETag revalidation, nothing cached on failure, asset URL resolution;
   - `SkinAssetRepositoryTests`: install and index, checksum mismatch discarded, republished hash re-downloads, backup exclusion.
 - Manual, with `StoreKit/SkinStore.storekit` selected in the scheme:
-  - buy a Spanish card, then the set;
+  - buy the Spanish set and check all 52 cards unlock; locked cards offer no purchase of their own;
   - approve an Ask to Buy and refund from Xcode's Transaction Manager;
   - change the storefront to check currency;
   - run `swift run --package-path Server PokerServer` with the default `Server/SkinAssets`.

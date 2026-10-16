@@ -31,17 +31,12 @@ public struct SkinCatalogBuilder {
     }
 
     /// A paid 52-card front set with placeholder hashes.
-    public static func cardSet(
-        _ id: SkinID,
-        productID: String? = nil,
-        sellsSingleCards: Bool = true
-    ) -> SkinItem {
+    public static func cardSet(_ id: SkinID, productID: String? = nil) -> SkinItem {
         SkinItem(
             id: id,
             kind: .cardFront,
             names: ["en": id.rawValue],
             productID: productID ?? ProductIDs.set(id),
-            sellsSingleCards: sellsSingleCards,
             assets: Dictionary(uniqueKeysWithValues: CosmeticSlot.allCardFronts.map { ($0, asset(id, $0)) })
         )
     }

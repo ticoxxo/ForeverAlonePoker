@@ -62,7 +62,7 @@ nonisolated final class StoreKitPurchaseService: PurchaseService {
     private let cache = ProductCache()
 
     func products(for ids: [String]) async throws -> [StoreProduct] {
-        // Sets have 53 products each; ask in parallel batches.
+        // One product per item; ask in parallel batches as the catalog grows.
         let batches = stride(from: 0, to: ids.count, by: 50).map { Array(ids[$0..<min($0 + 50, ids.count)]) }
         let found = try await withThrowingTaskGroup(of: [Product].self) { group in
             for batch in batches {

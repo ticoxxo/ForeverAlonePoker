@@ -6,7 +6,7 @@
 
 ## Context
 
-Players will customise how cards look: a skin per card face (bought as a whole set or card by card) and a card back. The mat and chips are next. Constraints:
+Players will customise how cards look: a skin per card face (sold as a whole set; tdr/0012) and a card back. The mat and chips are next. Constraints:
 
 - **The game does not care.** `PokerCore` (cards, rules, protocol) must not learn that skins exist. `CardView(card:)` and `CardBackView()` are used across the table and must not grow skin parameters.
 - **Opponents.** A player facing someone over the network may not know which skins the opponent uses. Unknown means the default skin.
@@ -22,7 +22,7 @@ Players will customise how cards look: a skin per card face (bought as a whole s
    - `Loadout`: slot → skin id. It is the player's choice, and its JSON form is a flat object.
    - `Ownership`: App Store product ids, or "everything" for rendering opponents.
    - `InstalledAssets`: the files present on this device.
-   - `ProductIDs`, `AssetNaming` (artist names → slots; jokers ignored) and `SetPricing`.
+   - `ProductIDs` and `AssetNaming` (artist names → slots; jokers ignored).
    - `SkinCatalog.builtIn`: the free defaults, `default` (fronts) and `navy_check` (back).
    - `SkinKitTestSupport`: `SkinCatalogBuilder` and `LoadoutBuilder`.
 2. **`SkinResolver` holds the one fallback rule.** A slot shows its selected item only if all of these hold:

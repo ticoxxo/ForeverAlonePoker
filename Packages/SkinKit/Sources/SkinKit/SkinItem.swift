@@ -13,8 +13,8 @@ public struct AssetRef: Codable, Hashable, Sendable {
 }
 
 /// A sellable skin: a card-front set, a card back, later a mat or chips.
-/// A card-front set covers up to 52 front slots and, when `sellsSingleCards`,
-/// each of its cards is also sold on its own (`ProductIDs.card`).
+/// A card-front set covers up to 52 front slots and is sold whole: buying it
+/// unlocks every card (tdr/0012).
 ///
 /// Prices never appear here: App Store Connect owns them (tdr/0012).
 public struct SkinItem: Codable, Hashable, Sendable, Identifiable {
@@ -24,7 +24,6 @@ public struct SkinItem: Codable, Hashable, Sendable, Identifiable {
     public let names: [String: String]
     /// The App Store product that unlocks the whole item; `nil` means free.
     public let productID: String?
-    public let sellsSingleCards: Bool
     public let assets: [CosmeticSlot: AssetRef]
     /// Small image for the store list; defaults to one of the item's assets.
     public let preview: AssetRef?
@@ -40,7 +39,6 @@ public struct SkinItem: Codable, Hashable, Sendable, Identifiable {
         kind: CosmeticKind,
         names: [String: String] = [:],
         productID: String? = nil,
-        sellsSingleCards: Bool = false,
         assets: [CosmeticSlot: AssetRef] = [:],
         preview: AssetRef? = nil,
         minAppVersion: AppVersion? = nil,
@@ -51,7 +49,6 @@ public struct SkinItem: Codable, Hashable, Sendable, Identifiable {
         self.kind = kind
         self.names = names
         self.productID = productID
-        self.sellsSingleCards = sellsSingleCards
         self.assets = assets
         self.preview = preview
         self.minAppVersion = minAppVersion
@@ -70,7 +67,7 @@ public struct SkinItem: Codable, Hashable, Sendable, Identifiable {
     // MARK: Codable (lenient: everything but id and kind is optional)
 
     private enum CodingKeys: String, CodingKey {
-        case id, kind, names, productID, sellsSingleCards, assets, preview, minAppVersion, isDefault, badge
+        case id, kind, names, productID, assets, preview, minAppVersion, isDefault, badge
     }
 
     public init(from decoder: Decoder) throws {
@@ -79,7 +76,6 @@ public struct SkinItem: Codable, Hashable, Sendable, Identifiable {
         kind = try container.decode(CosmeticKind.self, forKey: .kind)
         names = try container.decodeIfPresent([String: String].self, forKey: .names) ?? [:]
         productID = try container.decodeIfPresent(String.self, forKey: .productID)
-        sellsSingleCards = try container.decodeIfPresent(Bool.self, forKey: .sellsSingleCards) ?? false
         let rawAssets = try container.decodeIfPresent([String: AssetRef].self, forKey: .assets) ?? [:]
         assets = Dictionary(uniqueKeysWithValues: rawAssets.map { (CosmeticSlot(rawValue: $0.key), $0.value) })
         preview = try container.decodeIfPresent(AssetRef.self, forKey: .preview)
@@ -94,7 +90,6 @@ public struct SkinItem: Codable, Hashable, Sendable, Identifiable {
         try container.encode(kind, forKey: .kind)
         if !names.isEmpty { try container.encode(names, forKey: .names) }
         try container.encodeIfPresent(productID, forKey: .productID)
-        if sellsSingleCards { try container.encode(true, forKey: .sellsSingleCards) }
         try container.encode(
             Dictionary(uniqueKeysWithValues: assets.map { ($0.key.rawValue, $0.value) }),
             forKey: .assets
