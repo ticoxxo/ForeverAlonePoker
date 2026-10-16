@@ -8,6 +8,7 @@ struct OpponentSeatView: View {
     let isOnButton: Bool
     let revealedCards: [Card]
     let showsCards: Bool
+    var isActing: Bool = false
 
     var body: some View {
         VStack(spacing: 8) {
@@ -18,7 +19,9 @@ struct OpponentSeatView: View {
                     isOnButton: isOnButton,
                     isAllIn: summary.isAllIn,
                     hasFolded: summary.hasFolded,
-                    isConnected: summary.isConnected
+                    isConnected: summary.isConnected,
+                    isBusted: summary.isBusted,
+                    isActing: isActing
                 )
                 if showsCards {
                     if revealedCards.isEmpty {
@@ -66,7 +69,8 @@ struct MySeatView: View {
                     isOnButton: isOnButton,
                     isAllIn: summary.isAllIn,
                     hasFolded: summary.hasFolded,
-                    isConnected: summary.isConnected
+                    isConnected: summary.isConnected,
+                    isBusted: summary.isBusted
                 )
             }
         }
@@ -80,6 +84,8 @@ struct SeatHeaderView: View {
     let isAllIn: Bool
     let hasFolded: Bool
     let isConnected: Bool
+    var isBusted: Bool = false
+    var isActing: Bool = false
 
     var body: some View {
         HStack(spacing: 8) {
@@ -94,7 +100,9 @@ struct SeatHeaderView: View {
             Text(name)
                 .font(.headline)
             ChipAmountView(amount: stack)
-            if isAllIn {
+            if isBusted {
+                StatusTag(text: "Out")
+            } else if isAllIn {
                 StatusTag(text: "All-in")
             } else if hasFolded {
                 StatusTag(text: "Folded")
@@ -108,6 +116,81 @@ struct SeatHeaderView: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
         .background(.black.opacity(0.35), in: Capsule())
+        .overlay {
+            if isActing {
+                Capsule().strokeBorder(.yellow, lineWidth: 2)
+            }
+        }
+        .opacity(isBusted ? 0.5 : 1)
+    }
+}
+
+/// One of several other players at a bigger table (tdr/0013): a compact
+/// badge with picture, name and stack, small cards, and their bet.
+struct CompactSeatView: View {
+    let summary: PlayerSummary
+    let avatar: Data?
+    let isOnButton: Bool
+    let isActing: Bool
+    let revealedCards: [Card]
+    let showsCards: Bool
+
+    var body: some View {
+        VStack(spacing: 4) {
+            ZStack(alignment: .bottomTrailing) {
+                AvatarView(data: avatar, size: 36, name: summary.name)
+                    .overlay {
+                        if isActing {
+                            Circle().strokeBorder(.yellow, lineWidth: 2)
+                        }
+                    }
+                if isOnButton {
+                    Text("D")
+                        .font(.caption2.bold())
+                        .padding(3)
+                        .background(.white, in: Circle())
+                        .foregroundStyle(.black)
+                        .accessibilityLabel(Text("Dealer button"))
+                }
+            }
+            Text(summary.name)
+                .font(.caption.bold())
+                .lineLimit(1)
+            HStack(spacing: 4) {
+                ChipAmountView(amount: summary.stack)
+                    .font(.caption2)
+                if !summary.isConnected {
+                    Image(systemName: "wifi.slash")
+                        .font(.caption2)
+                        .accessibilityLabel(Text("Disconnected"))
+                }
+            }
+            if summary.isBusted {
+                StatusTag(text: "Out")
+            } else if summary.isAllIn {
+                StatusTag(text: "All-in")
+            } else if summary.hasFolded {
+                StatusTag(text: "Folded")
+            }
+            if showsCards {
+                if revealedCards.isEmpty {
+                    HStack(spacing: 2) {
+                        CardBackView().frame(height: 30)
+                        CardBackView().frame(height: 30)
+                    }
+                } else {
+                    CardRowView(cards: revealedCards, height: 30)
+                }
+            }
+            if summary.streetCommitted > 0 {
+                ChipAmountView(amount: summary.streetCommitted)
+                    .font(.caption2)
+            }
+        }
+        .foregroundStyle(.white)
+        .frame(width: 96)
+        .opacity(summary.isBusted ? 0.5 : 1)
+        .accessibilityElement(children: .combine)
     }
 }
 

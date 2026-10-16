@@ -43,16 +43,16 @@ struct WebSocketTransportTests {
         try await transport.send(.act(.call))
         #expect(try WireCodec.decodeText(ClientMessage.self, from: socket.sent[0]) == .act(.call))
 
-        socket.push(try WireCodec.encodeText(ServerMessage.waitingForOpponent))
+        socket.push(try WireCodec.encodeText(ServerMessage.welcome(seat: .three, roomCode: "ABC234")))
         var incoming = transport.incoming.makeAsyncIterator()
-        #expect(await incoming.next() == .waitingForOpponent)
+        #expect(await incoming.next() == .welcome(seat: .three, roomCode: "ABC234"))
 
         socket.push(#"{"version": 99, "message": {}}"#)
         #expect(await incoming.next() == .rejected(reason: "The server runs an incompatible protocol version."))
 
         socket.push("not json")
-        socket.push(try WireCodec.encodeText(ServerMessage.opponentLeft))
-        #expect(await incoming.next() == .opponentLeft, "non-protocol frames are skipped")
+        socket.push(try WireCodec.encodeText(ServerMessage.playerLeft(seat: .two, name: "Bob")))
+        #expect(await incoming.next() == .playerLeft(seat: .two, name: "Bob"), "non-protocol frames are skipped")
     }
 
     @Test("closing cancels the socket and finishes the stream")
@@ -91,14 +91,23 @@ struct HTTPRoomServiceTests {
     }
 }
 
+/// Table sizes the fake service was asked for.
+private final class CreatedSizes: @unchecked Sendable {
+    var values: [Int] = []
+}
+
 /// Fake service: known codes connect to an in-process authority so the lobby
 /// test exercises the real client against the real room.
 private struct FakeRoomService: RoomService {
     let transport: InMemoryTransport
     let knownCodes: Set<String>
     let createdCode: String
+    let created = CreatedSizes()
 
-    func createRoom() async throws -> String { createdCode }
+    func createRoom(maxPlayers: Int) async throws -> String {
+        created.values.append(maxPlayers)
+        return createdCode
+    }
 
     func checkRoom(_ code: String) async throws {
         guard knownCodes.contains(code) else { throw RoomServiceError.roomNotFound }
@@ -110,24 +119,57 @@ private struct FakeRoomService: RoomService {
 @Suite("OnlineLobbyModel")
 @MainActor
 struct OnlineLobbyModelTests {
-    private func makeModel(known: Set<String> = ["ABC234"]) async -> (OnlineLobbyModel, HostedTable) {
-        let table = HostedTable(room: MatchRoomBuilder().code("ABC234").build())
+    private func makeModel(known: Set<String> = ["ABC234"], maxPlayers: Int = 2) async -> (OnlineLobbyModel, HostedTable, FakeRoomService) {
+        let table = HostedTable(room: MatchRoomBuilder().code("ABC234").maxPlayers(maxPlayers).build())
         let service = FakeRoomService(transport: await table.connect(), knownCodes: known, createdCode: "ABC234")
-        return (OnlineLobbyModel(identity: TestPlayers.alice, service: service), table)
+        return (OnlineLobbyModel(identity: TestPlayers.alice, service: service), table, service)
     }
 
-    @Test("creating a room connects a client and exposes the code")
+    @Test("searching creates a room, connects a client and exposes the code")
     func create() async {
-        let (model, _) = await makeModel()
-        await model.createRoom()
+        let (model, _, service) = await makeModel()
+        await model.searchOpponents()
         #expect(model.phase == .connected(roomCode: "ABC234"))
         #expect(model.roomCode == "ABC234")
-        #expect(await eventually { model.client?.connection == .waitingForOpponent })
+        #expect(service.created.values == [2], "heads-up by default")
+        #expect(await eventually { model.client?.isInLobby == true })
+        #expect(!model.isPlaying)
+    }
+
+    @Test("the chosen table size is sent and locked once searching")
+    func tableSize() async {
+        let (model, _, service) = await makeModel(maxPlayers: 4)
+        model.maxPlayers = 4
+        model.maxPlayers = 9
+        #expect(model.maxPlayers == 4, "out of range sizes are ignored")
+        await model.searchOpponents()
+        #expect(service.created.values == [4])
+        #expect(!model.canChooseTableSize)
+        model.maxPlayers = 6
+        #expect(model.maxPlayers == 4, "the picker is disabled while searching")
+    }
+
+    @Test("the host starts a bigger table and the table replaces the lobby")
+    func hostStarts() async {
+        let (model, table, _) = await makeModel(maxPlayers: 3)
+        model.maxPlayers = 3
+        await model.searchOpponents()
+        #expect(await eventually { model.client?.isHost == true })
+
+        let bob = MatchSessionClient(identity: TestPlayers.bob, transport: await table.connect())
+        await bob.connect()
+        #expect(await eventually { model.client?.view?.players.count == 1 })
+        #expect(bob.isHost == false)
+
+        await model.startGame()
+        await table.waitForStart()
+        #expect(await eventually { model.isPlaying })
+        #expect(await eventually { bob.view?.phase == .inHand })
     }
 
     @Test("joining an unknown code fails with a readable reason and can be retried")
     func joinUnknown() async {
-        let (model, _) = await makeModel()
+        let (model, _, _) = await makeModel()
         await model.join(code: "zzzzzz")
         #expect(model.phase == .failed("No table with that code."))
         #expect(model.client == nil)
@@ -137,16 +179,16 @@ struct OnlineLobbyModelTests {
 
     @Test("joining a known code normalises it and connects")
     func joinKnown() async {
-        let (model, _) = await makeModel()
+        let (model, _, _) = await makeModel()
         await model.join(code: " abc234 ")
         #expect(model.phase == .connected(roomCode: "ABC234"))
     }
 
     @Test("leaving returns to idle and frees the seat")
     func leave() async {
-        let (model, table) = await makeModel()
-        await model.createRoom()
-        #expect(await eventually { model.client?.connection == .waitingForOpponent })
+        let (model, table, _) = await makeModel()
+        await model.searchOpponents()
+        #expect(await eventually { model.client?.isInLobby == true })
         await model.leave()
         #expect(model.phase == .idle)
         #expect(model.client == nil)

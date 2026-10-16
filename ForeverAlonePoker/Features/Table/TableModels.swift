@@ -1,3 +1,4 @@
+import Foundation
 import PokerCore
 
 /// Pure presentation state for the action bar, derived from `LegalActions`.
@@ -61,31 +62,47 @@ nonisolated struct TableActionModel: Equatable {
 /// What the table should tell the player outside of acting.
 nonisolated enum TableStatus: Hashable {
     case connecting
+    /// Nobody else is seated yet.
     case waitingForOpponent
     /// Between hands; the player has not pressed Ready yet.
     case readyPrompt
-    /// Between hands; waiting for the opponent to press Ready.
-    case waitingForOpponentReady
+    /// Between hands; waiting for the others to press Ready.
+    case waitingForOthersReady
     case yourTurn
-    case opponentsTurn
-    case matchOver(youWon: Bool)
-    case opponentLeft
+    case othersTurn(name: String)
+    /// Knocked out; watching until the match ends (tdr/0013).
+    case spectating
+    /// `place` is the finishing position when known.
+    case matchOver(youWon: Bool, place: Int?)
+    /// The last other player left the table.
+    case playerLeft(name: String)
 
-    static func make(view: PlayerView?, opponentLeft: Bool) -> TableStatus {
+    /// - Parameter departure: name of the last player who left, if any.
+    static func make(view: PlayerView?, departure: String?) -> TableStatus {
         guard let view else { return .connecting }
-        if opponentLeft || view.opponent == nil { return view.opponent == nil && !opponentLeft ? .waitingForOpponent : .opponentLeft }
+        if view.players.isEmpty {
+            if case .finished(let winner) = view.phase, departure == nil {
+                return .matchOver(youWon: winner == view.seat, place: view.me.place)
+            }
+            return departure.map { .playerLeft(name: $0) } ?? .waitingForOpponent
+        }
         switch view.phase {
+        case .lobby:
+            return .waitingForOpponent
         case .finished(let winner):
-            return .matchOver(youWon: winner == view.seat)
+            return .matchOver(youWon: winner == view.seat, place: view.me.place)
         case .waitingForHand:
-            return view.me.isReady ? .waitingForOpponentReady : .readyPrompt
+            if view.me.isBusted { return .spectating }
+            return view.me.isReady ? .waitingForOthersReady : .readyPrompt
         case .inHand:
-            return view.isMyTurn ? .yourTurn : .opponentsTurn
+            if view.isMyTurn { return .yourTurn }
+            let name = view.actor.flatMap { view.player(at: $0)?.name } ?? ""
+            return .othersTurn(name: name)
         }
     }
 }
 
-/// Human-readable outcome of the last hand from one seat's perspective.
+/// Outcome of the last hand from one seat's perspective.
 nonisolated struct HandOutcome: Equatable {
     enum Kind: Equatable {
         case youWon
@@ -94,30 +111,60 @@ nonisolated struct HandOutcome: Equatable {
     }
 
     let kind: Kind
+    /// What the player collected (won or chopped), or what the main winner
+    /// collected when the player lost.
     let amount: Chips
-    /// Winning hand category at showdown; `nil` when the hand ended on a fold.
+    /// The seat named when the player lost: the main pot's winner.
+    let winner: Seat?
+    /// Hand category of the named winner at showdown; `nil` on a fold.
     let category: HandCategory?
     let endedByFold: Bool
 
     init?(result: HandResult?, seat: Seat) {
         guard let result else { return nil }
-        let iWon = result.winners.contains(seat)
-        if result.winners.count == 2 {
-            kind = .chop
+        let mainWinners = result.pots.first?.winners ?? result.winners
+        if result.winners.contains(seat) {
+            kind = mainWinners.count > 1 && mainWinners.contains(seat) ? .chop : .youWon
+            winner = seat
         } else {
-            kind = iWon ? .youWon : .youLost
+            kind = .youLost
+            winner = mainWinners.first ?? result.winners.first
         }
-        // What changed hands: the loser's contribution, i.e. the smaller payout
-        // subtracted from the larger one is noise; show the winner's net gain.
-        let contested = result.payouts.min() ?? 0
-        amount = result.payouts.max().map { $0 - contested } ?? 0
+        let named = winner ?? seat
         switch result.reason {
         case .fold:
+            amount = result.payout(for: named)
             category = nil
             endedByFold = true
         case .showdown:
-            category = result.shownHands.first { result.winners.contains($0.seat) }?.rank.category
+            amount = result.pots
+                .filter { $0.winners.contains(named) }
+                .reduce(0) { $0 + $1.amount / $1.winners.count }
+            category = result.shownHands.first { $0.seat == named }?.rank.category
             endedByFold = false
+        }
+    }
+}
+
+/// Where the other players sit around the table, as unit coordinates
+/// (0...1, origin top-left) inside the area above the board. The player is
+/// always at the bottom, so the others fan out over the top arc, clockwise
+/// from the left.
+nonisolated enum SeatLayout {
+    struct Point: Equatable {
+        let x: Double
+        let y: Double
+    }
+
+    static func positions(count: Int) -> [Point] {
+        guard count > 0 else { return [] }
+        return (0..<count).map { index in
+            let angle = Double.pi - Double(index + 1) * Double.pi / Double(count + 1)
+            // Rounded to three places so positions compare exactly in tests.
+            return Point(
+                x: ((0.5 + 0.4 * cos(angle)) * 1000).rounded() / 1000,
+                y: ((0.85 - 0.75 * sin(angle)) * 1000).rounded() / 1000
+            )
         }
     }
 }

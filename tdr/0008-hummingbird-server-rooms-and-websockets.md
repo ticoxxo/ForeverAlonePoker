@@ -42,3 +42,7 @@ tdr/0003 chose a server-authoritative Hummingbird backend over WebSockets with n
 - `Server/Tests/PokerServerTests`: room code format and normalisation, registry uniqueness and sweeping, room routing; HTTP create/lookup/404; a full hand across two live WebSockets including opponent-left on close; unknown room refuses upgrade; version mismatch rejection. Run with `swift test --package-path Server`.
 - App: `WebSocketTransportTests` with a fake connection; `OnlineLobbyModelTests` with a fake room service and an in-process authority.
 - Manual: run `swift run --package-path Server PokerServer`, play from the simulator against `swift run --package-path Server PokerBot <code>`.
+
+## Notes
+
+- 2026-10-16: tables of two to six players, the host-run lobby and multiway Elo are decided in tdr/0013, which supersedes the heads-up-only parts of this record.

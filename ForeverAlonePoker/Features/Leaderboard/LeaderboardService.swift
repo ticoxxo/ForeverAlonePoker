@@ -65,19 +65,7 @@ nonisolated struct CloudKitLeaderboardService: LeaderboardService {
     }
 
     func avatars(for playerIDs: [String]) async throws -> [String: Data] {
-        guard !playerIDs.isEmpty else { return [:] }
-        let ids = playerIDs.map { CKRecord.ID(recordName: PublicProfileSnapshot.recordName(for: $0)) }
-        let results = try await database.records(for: ids, desiredKeys: ["avatar"])
-        var avatars: [String: Data] = [:]
-        for (id, result) in results {
-            guard let record = try? result.get(),
-                  let asset = record["avatar"] as? CKAsset,
-                  let url = asset.fileURL,
-                  let data = try? Data(contentsOf: url)
-            else { continue }
-            avatars[String(id.recordName.dropFirst("profile-".count))] = data
-        }
-        return avatars
+        try await CloudKitAvatarProvider(containerID: containerID).avatars(for: playerIDs)
     }
 
     static func row(from record: CKRecord) -> LeaderboardRow? {

@@ -14,7 +14,7 @@ struct LocalMatchView: View {
 
     var body: some View {
         ZStack {
-            if let client = model.client {
+            if model.isPlaying, let client = model.client {
                 TableView(client: client)
                     .onAppear { client.onMatchFinished = onMatchFinished }
             } else {
@@ -24,6 +24,9 @@ struct LocalMatchView: View {
         .navigationTitle("Local match")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(model.client != nil)
+        .onChange(of: model.isPlaying) {
+            if model.isPlaying { model.stopAdvertising() }
+        }
         .toolbar {
             if model.client != nil {
                 ToolbarItem(placement: .cancellationAction) {
@@ -44,7 +47,8 @@ struct LocalMatchView: View {
 
 /// Host or join a nearby table.
 struct LocalLobbyView: View {
-    let model: LocalLobbyModel
+    @Bindable var model: LocalLobbyModel
+    @State private var avatars = AvatarLoader()
 
     var body: some View {
         List {
@@ -62,14 +66,53 @@ struct LocalLobbyView: View {
                         Label("Join a nearby table", systemImage: "person.2.wave.2")
                     }
                 } footer: {
-                    Text("Both devices need Wi-Fi or Bluetooth on and the app open. The host's device referees the match and shows a passcode the guest must enter.")
+                    Text("Every device needs Wi-Fi or Bluetooth on and the app open. The host's device referees the match and shows a passcode the other players must enter.")
+                }
+            case .setup:
+                TableSizeSection(maxPlayers: $model.maxPlayers, isEnabled: true)
+                Section {
+                    Button {
+                        Task { await model.startSearching() }
+                    } label: {
+                        Label("Search opponents", systemImage: "magnifyingglass")
+                    }
+                    Button("Back", role: .cancel) {
+                        Task { await model.leave() }
+                    }
                 }
             case .hosting(let passcode):
                 Section {
                     PasscodeDisplay(passcode: passcode)
-                    LobbyStatusRow(text: "Waiting for a player to join…")
+                    LobbyStatusRow(text: model.maxPlayers == TableSize.minPlayers
+                        ? "Waiting for a player to join…"
+                        : "Waiting for players to join…")
                 } footer: {
-                    Text("Your table is visible nearby as “\(model.identity.displayName)”. Tell your opponent the passcode.")
+                    Text("Your table is visible nearby as “\(model.identity.displayName)”. Tell your opponents the passcode.")
+                }
+                TableSizeSection(maxPlayers: $model.maxPlayers, isEnabled: false)
+                if model.maxPlayers > TableSize.minPlayers, let view = model.client?.view {
+                    LobbyPlayersSection(view: view, avatars: avatars)
+                    Section {
+                        if view.table.isStarting {
+                            LobbyStatusRow(text: "Starting…")
+                        } else {
+                            Button {
+                                Task { await model.startGame() }
+                            } label: {
+                                Label("Start game", systemImage: "play.fill")
+                            }
+                            .disabled(view.players.filter(\.isConnected).isEmpty)
+                        }
+                    } footer: {
+                        Text("Start whenever you like. Players still connecting get a few seconds to sit down.")
+                    }
+                }
+                if !(model.client?.view?.table.isStarting ?? false) {
+                    Section {
+                        Button("Stop searching", role: .cancel) {
+                            Task { await model.stopSearching() }
+                        }
+                    }
                 }
             case .browsing:
                 NearbyPeersSection(peers: model.nearbyPeers, onSelect: model.select)
@@ -84,8 +127,15 @@ struct LocalLobbyView: View {
                     LobbyStatusRow(text: "Connecting to \(peerName)…")
                 }
             case .connected:
-                Section {
-                    LobbyStatusRow(text: "Connected. Taking your seat…")
+                if let view = model.client?.view, view.phase == .lobby {
+                    LobbyPlayersSection(view: view, avatars: avatars)
+                    Section {
+                        LobbyStatusRow(text: view.table.isStarting ? "Starting…" : "Waiting for the host to start…")
+                    }
+                } else {
+                    Section {
+                        LobbyStatusRow(text: "Connected. Taking your seat…")
+                    }
                 }
             case .failed(let reason):
                 Section {

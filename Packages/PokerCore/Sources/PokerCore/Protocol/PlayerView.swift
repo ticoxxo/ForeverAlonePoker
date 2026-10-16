@@ -89,6 +89,8 @@ public struct PlayerView: Codable, Sendable, Hashable {
     public let holeCards: [Card]
     public let community: [Card]
     public let pot: Chips
+    /// Whose turn it is; `nil` between hands or while cards run out.
+    public let actor: Seat?
     public let isMyTurn: Bool
     public let legalActions: LegalActions
     public let lastResult: HandResult?
@@ -105,6 +107,7 @@ public struct PlayerView: Codable, Sendable, Hashable {
         holeCards: [Card],
         community: [Card],
         pot: Chips,
+        actor: Seat? = nil,
         isMyTurn: Bool,
         legalActions: LegalActions,
         lastResult: HandResult?
@@ -120,6 +123,7 @@ public struct PlayerView: Codable, Sendable, Hashable {
         self.holeCards = holeCards
         self.community = community
         self.pot = pot
+        self.actor = actor
         self.isMyTurn = isMyTurn
         self.legalActions = legalActions
         self.lastResult = lastResult

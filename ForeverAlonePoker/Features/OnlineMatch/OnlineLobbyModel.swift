@@ -2,7 +2,8 @@ import Foundation
 import Observation
 import PokerCore
 
-/// Creates or joins a room on the server and hands the table a session client.
+/// Creates or joins a room on the server and hands the lobby and the table a
+/// session client. The creator picks the table size and is the host (tdr/0013).
 @Observable
 final class OnlineLobbyModel {
     enum Phase: Equatable {
@@ -15,6 +16,12 @@ final class OnlineLobbyModel {
     let identity: PlayerIdentity
     private(set) var phase: Phase = .idle
     private(set) var client: MatchSessionClient?
+    /// Seats at a table this player creates. Only editable before searching.
+    var maxPlayers = TableSize.minPlayers {
+        didSet {
+            if !canChooseTableSize || !TableSize.range.contains(maxPlayers) { maxPlayers = oldValue }
+        }
+    }
     private let service: any RoomService
     /// Ranked session token (tdr/0010); `nil` plays unranked.
     private let sessionToken: String?
@@ -30,11 +37,20 @@ final class OnlineLobbyModel {
         return nil
     }
 
-    func createRoom() async {
+    var canChooseTableSize: Bool { phase == .idle }
+
+    /// The match has been dealt; the table replaces the lobby.
+    var isPlaying: Bool {
+        guard let view = client?.view else { return false }
+        return view.phase != .lobby
+    }
+
+    /// Creates a table of `maxPlayers` and sits down as its host.
+    func searchOpponents() async {
         guard phase == .idle else { return }
         phase = .working
         do {
-            let code = try await service.createRoom()
+            let code = try await service.createRoom(maxPlayers: maxPlayers)
             await connect(to: code)
         } catch {
             phase = .failed(Self.describe(error))
@@ -51,6 +67,12 @@ final class OnlineLobbyModel {
         } catch {
             phase = .failed(Self.describe(error))
         }
+    }
+
+    /// Host: deal now; players still connecting get a short grace period.
+    func startGame() async {
+        guard let client, client.isHost else { return }
+        await client.startMatch()
     }
 
     func leave() async {

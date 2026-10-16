@@ -165,6 +165,7 @@ public struct MatchRoom: Sendable {
             holeCards: hand?[seat].holeCards ?? [],
             community: hand?.community ?? [],
             pot: (hand?.isOver == false) ? (hand?.pot ?? 0) : 0,
+            actor: inHand ? hand?.actor : nil,
             isMyTurn: inHand && hand?.actor == seat,
             legalActions: inHand ? HandEngine.legalActions(in: hand!, for: seat) : .none,
             lastResult: hand?.result

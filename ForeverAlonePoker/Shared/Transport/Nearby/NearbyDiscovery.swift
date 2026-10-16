@@ -10,15 +10,17 @@ nonisolated struct NearbyPeer: Identifiable, Hashable, Sendable {
 }
 
 /// Finds and opens links to nearby devices with Network.framework.
-/// Host: `startListening` advertises a Bonjour service and accepts the first
-/// guest whose passcode matches. Guest: `startBrowsing` lists hosts and
-/// `connect` opens a link with the passcode the host showed.
+/// Host: `startListening` advertises a Bonjour service and accepts up to
+/// `maxGuests` connections (tdr/0013); each must complete TLS with the
+/// passcode. Guest: `startBrowsing` lists hosts and `connect` opens a link
+/// with the passcode the host showed.
 nonisolated final class NearbyDiscovery: @unchecked Sendable {
     enum Event: Sendable {
         case listening
         case found(NearbyPeer)
         case lost(NearbyPeer)
-        /// A guest completed the TLS handshake with the right passcode.
+        /// A guest opened a connection; it is usable once its state is
+        /// `.ready` (TLS with the right passcode).
         case guestConnected(NearbyLink)
         case failed(String)
     }
@@ -28,7 +30,9 @@ nonisolated final class NearbyDiscovery: @unchecked Sendable {
     private let queue = DispatchQueue(label: "ForeverAlonePoker.nearby.discovery")
     private var listener: NWListener?
     private var browser: NWBrowser?
-    private var acceptedLink: NearbyLink?
+    /// Guest slots in use; guarded by `queue`.
+    private var acceptedGuests = 0
+    private var maxGuests = 1
 
     init() {
         (events, continuation) = AsyncStream<Event>.makeStream()
@@ -36,7 +40,8 @@ nonisolated final class NearbyDiscovery: @unchecked Sendable {
 
     // MARK: - Host
 
-    func startListening(name: String, passcode: String) {
+    func startListening(name: String, passcode: String, maxGuests: Int = 1) {
+        queue.sync { self.maxGuests = maxGuests }
         do {
             let listener = try NWListener(using: NearbyParameters.make(passcode: passcode))
             listener.service = NWListener.Service(name: name, type: NearbyParameters.serviceType)
@@ -49,13 +54,13 @@ nonisolated final class NearbyDiscovery: @unchecked Sendable {
             }
             listener.newConnectionHandler = { [weak self] connection in
                 guard let self else { return }
-                // Heads-up table: one guest. Anyone else is turned away.
-                guard acceptedLink == nil else {
+                // Once every seat is spoken for, anyone else is turned away.
+                guard acceptedGuests < self.maxGuests else {
                     connection.cancel()
                     return
                 }
+                acceptedGuests += 1
                 let link = NearbyLink(connection: connection)
-                acceptedLink = link
                 link.start()
                 continuation.yield(.guestConnected(link))
             }
@@ -63,6 +68,15 @@ nonisolated final class NearbyDiscovery: @unchecked Sendable {
             self.listener = listener
         } catch {
             continuation.yield(.failed(error.localizedDescription))
+        }
+    }
+
+    /// Frees a guest slot whose link failed (wrong passcode) or left before
+    /// the match started, so another guest can connect.
+    func releaseGuestSlot() {
+        queue.async { [weak self] in
+            guard let self, acceptedGuests > 0 else { return }
+            acceptedGuests -= 1
         }
     }
 

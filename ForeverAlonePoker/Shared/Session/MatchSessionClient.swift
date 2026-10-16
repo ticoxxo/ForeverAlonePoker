@@ -10,7 +10,6 @@ final class MatchSessionClient {
     enum ConnectionState: Equatable {
         case idle
         case connecting
-        case waitingForOpponent
         case seated(Seat, roomCode: String)
         case disconnected(reason: String?)
     }
@@ -24,7 +23,9 @@ final class MatchSessionClient {
     private(set) var events: [GameEvent] = []
     /// The most recent rejected action, cleared when the next state arrives.
     private(set) var lastRejection: String?
-    private(set) var opponentLeft = false
+    /// Name of the last player who left the table for good; cleared when the
+    /// next hand is dealt.
+    private(set) var lastDeparture: String?
     /// Called once each time a match reaches `.finished`, so a feature can
     /// record it (the client itself knows nothing about persistence).
     var onMatchFinished: ((MatchSummary) -> Void)?
@@ -42,11 +43,16 @@ final class MatchSessionClient {
     }
 
     var isMyTurn: Bool { view?.isMyTurn ?? false }
+    /// This player opened the table and decides when it starts (tdr/0013).
+    var isHost: Bool { view?.isHost ?? false }
+    /// Still gathering players.
+    var isInLobby: Bool { view?.phase == .lobby }
+    /// A heads-up opponent left and nobody else is at the table.
+    var opponentLeft: Bool { lastDeparture != nil && view?.players.isEmpty == true }
     var legalActions: LegalActions { view?.legalActions ?? .none }
 
     private let transport: any MatchTransport
     private var receiveTask: Task<Void, Never>?
-    private var assignedSeat: (seat: Seat, roomCode: String)?
     private let maxEvents = 50
 
     init(identity: PlayerIdentity, transport: any MatchTransport, sessionToken: String? = nil) {
@@ -61,7 +67,7 @@ final class MatchSessionClient {
     func connect() async {
         guard connection == .idle || isDisconnected else { return }
         connection = .connecting
-        opponentLeft = false
+        lastDeparture = nil
         startReceiving()
         await send(.join(identity, sessionToken: sessionToken))
     }
@@ -77,6 +83,8 @@ final class MatchSessionClient {
     // MARK: - Player actions
 
     func ready() async { await send(.ready) }
+    /// Host only: deal the first hand of a table of three or more.
+    func startMatch() async { await send(.startMatch) }
     func act(_ action: PlayerAction) async { await send(.act(action)) }
     func fold() async { await act(.fold) }
     func check() async { await act(.check) }
@@ -117,26 +125,19 @@ final class MatchSessionClient {
     private func handle(_ message: ServerMessage) {
         switch message {
         case .welcome(let seat, let roomCode):
-            assignedSeat = (seat, roomCode)
             connection = .seated(seat, roomCode: roomCode)
-        case .waitingForOpponent:
-            connection = .waitingForOpponent
         case .state(let newView):
-            // The first state after waiting means the opponent has arrived.
-            if connection == .waitingForOpponent, let assignedSeat {
-                connection = .seated(assignedSeat.seat, roomCode: assignedSeat.roomCode)
-            }
+            if newView.phase == .inHand, newView.handNumber != view?.handNumber { lastDeparture = nil }
             view = newView
             lastRejection = nil
-            if newView.opponent != nil { opponentLeft = false }
             reportIfFinished(newView)
         case .event(let event):
             events.append(event)
             if events.count > maxEvents { events.removeFirst(events.count - maxEvents) }
         case .rejected(let reason):
             lastRejection = reason
-        case .opponentLeft:
-            opponentLeft = true
+        case .playerLeft(_, let name):
+            lastDeparture = name
         case .rated(let update):
             ratingUpdate = update
             onRated?(update)
@@ -152,21 +153,53 @@ final class MatchSessionClient {
         // A finished match keeps sending the same hand number; report it once.
         guard reportedFinishedHand != view.handNumber else { return }
         reportedFinishedHand = view.handNumber
-        onMatchFinished?(MatchSummary(
-            didWin: winner == view.seat,
-            opponentName: view.opponent?.name ?? "",
-            myFinalStack: view.me.stack,
-            opponentFinalStack: view.opponent?.stack ?? 0,
-            handsPlayed: view.handNumber
-        ))
+        onMatchFinished?(MatchSummary(view: view, winner: winner))
     }
 }
 
 /// The facts worth keeping about a finished match.
 nonisolated struct MatchSummary: Equatable, Sendable {
     let didWin: Bool
+    /// Everyone else at the table, e.g. "Bob" or "Bob, Carol and Dave".
     let opponentName: String
     let myFinalStack: Chips
+    /// The winner's stack when this player lost; the best other stack otherwise.
     let opponentFinalStack: Chips
     let handsPlayed: Int
+    /// Finishing position, 1 for the winner.
+    let place: Int
+    /// Players at the table when the match ended, this player included.
+    let playerCount: Int
+
+    init(
+        didWin: Bool,
+        opponentName: String,
+        myFinalStack: Chips,
+        opponentFinalStack: Chips,
+        handsPlayed: Int,
+        place: Int? = nil,
+        playerCount: Int = 2
+    ) {
+        self.didWin = didWin
+        self.opponentName = opponentName
+        self.myFinalStack = myFinalStack
+        self.opponentFinalStack = opponentFinalStack
+        self.handsPlayed = handsPlayed
+        self.playerCount = playerCount
+        self.place = place ?? (didWin ? 1 : playerCount)
+    }
+
+    init(view: PlayerView, winner: Seat) {
+        let didWin = winner == view.seat
+        let playerCount = max(view.players.count + 1, TableSize.minPlayers)
+        self.init(
+            didWin: didWin,
+            opponentName: view.players.map(\.name).formatted(.list(type: .and)),
+            myFinalStack: view.me.stack,
+            opponentFinalStack: view.players.map(\.stack).max() ?? 0,
+            handsPlayed: view.handNumber,
+            place: view.me.place,
+            playerCount: max(playerCount, view.me.place ?? 0)
+        )
+    }
 }
