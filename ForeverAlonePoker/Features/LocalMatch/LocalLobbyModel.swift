@@ -39,11 +39,16 @@ final class LocalLobbyModel {
     /// Set once seated; the lobby list and the table UI bind to it.
     private(set) var client: MatchSessionClient?
     /// Seats at the hosted table, `TableSize.range`. Only editable during setup.
-    var maxPlayers = TableSize.minPlayers {
-        didSet {
-            if !canChooseTableSize || !TableSize.range.contains(maxPlayers) { maxPlayers = oldValue }
+    /// Clamped in a setter, not `didSet`: writing back from an `@Observable`
+    /// property's `didSet` re-enters the setter and recurses forever.
+    var maxPlayers: Int {
+        get { chosenMaxPlayers }
+        set {
+            guard canChooseTableSize, TableSize.range.contains(newValue) else { return }
+            chosenMaxPlayers = newValue
         }
     }
+    private var chosenMaxPlayers = TableSize.minPlayers
 
     private var discovery: NearbyDiscovery?
     /// Guest side: the one link to the host.

@@ -17,11 +17,16 @@ final class OnlineLobbyModel {
     private(set) var phase: Phase = .idle
     private(set) var client: MatchSessionClient?
     /// Seats at a table this player creates. Only editable before searching.
-    var maxPlayers = TableSize.minPlayers {
-        didSet {
-            if !canChooseTableSize || !TableSize.range.contains(maxPlayers) { maxPlayers = oldValue }
+    /// Clamped in a setter, not `didSet`: writing back from an `@Observable`
+    /// property's `didSet` re-enters the setter and recurses forever.
+    var maxPlayers: Int {
+        get { chosenMaxPlayers }
+        set {
+            guard canChooseTableSize, TableSize.range.contains(newValue) else { return }
+            chosenMaxPlayers = newValue
         }
     }
+    private var chosenMaxPlayers = TableSize.minPlayers
     private let service: any RoomService
     /// Ranked session token (tdr/0010); `nil` plays unranked.
     private let sessionToken: String?

@@ -23,7 +23,7 @@ public struct Seat: RawRepresentable, Codable, Sendable, Hashable, Comparable, C
 
     /// Every seat of a table with `count` seats, in clockwise order.
     public static func all(count: Int) -> [Seat] {
-        (0..<count).map(Seat.init)
+        (0..<count).map { Seat($0) }
     }
 
     /// The seat `steps` places clockwise on a table with `count` seats.
