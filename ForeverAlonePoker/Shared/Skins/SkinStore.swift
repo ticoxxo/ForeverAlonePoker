@@ -40,6 +40,12 @@ final class SkinStore {
     private(set) var lastError: String?
 
     private var resolver = SkinResolver(catalog: .builtIn)
+    /// Verified purchases `currentEntitlements` does not list yet. StoreKit
+    /// can lag behind a purchase it just verified (reliably so in Xcode's
+    /// StoreKit testing), and in-app purchases never come back through
+    /// `updates`, so without this a purchase only showed after a relaunch.
+    /// Each id is dropped as soon as StoreKit lists it, or on a revocation.
+    private var unlistedPurchases: Set<String> = []
     private let loadoutStore: any LoadoutPersisting
     private let catalogClient: any CatalogProviding
     private let assets: any SkinAssetStoring
@@ -169,6 +175,11 @@ final class SkinStore {
     /// refunds. Start it at launch so no transaction is missed.
     func observeTransactions() async {
         for await update in purchases.updates {
+            if update.isRevoked {
+                unlistedPurchases.remove(update.productID)
+            } else {
+                unlistedPurchases.insert(update.productID)
+            }
             await refreshEntitlements()
             await update.finish()
             await syncAssets()
@@ -192,7 +203,9 @@ final class SkinStore {
     }
 
     func refreshEntitlements() async {
-        ownership = Ownership(productIDs: await purchases.currentEntitlements())
+        let listed = await purchases.currentEntitlements()
+        unlistedPurchases.subtract(listed)
+        ownership = Ownership(productIDs: listed.union(unlistedPurchases))
     }
 
     func loadProducts() async {
@@ -251,9 +264,15 @@ final class SkinStore {
         do {
             switch try await purchases.purchase(productID, accountToken: accountToken) {
             case .purchased(let finish):
+                unlistedPurchases.insert(productID)
                 await refreshEntitlements()
                 await finish()
                 purchaseStates[productID] = nil
+                // The player just paid to see it: show it everywhere it fits.
+                // Files appear as they download; until then the default shows.
+                for item in catalog.items where item.productID == productID {
+                    equipAll(item)
+                }
                 await syncAssets()
             case .pending:
                 purchaseStates[productID] = .pending

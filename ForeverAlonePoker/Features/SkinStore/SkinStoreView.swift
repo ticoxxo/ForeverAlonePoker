@@ -48,6 +48,7 @@ struct SkinStoreView: View {
         .navigationTitle("Card store")
         .refreshable {
             await store.refreshCatalog()
+            await store.refreshEntitlements()
             await store.loadProducts()
             await store.syncAssets()
         }
