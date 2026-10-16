@@ -1,9 +1,10 @@
-/// Wire protocol shared by the app (client), the Multipeer host and the
+/// Wire protocol shared by the app (client), the local host and the
 /// Hummingbird server. Everything is `Codable` JSON. Bump `ProtocolVersion`
 /// whenever a message changes shape so mismatched builds fail loudly.
 public enum ProtocolVersion {
     /// 2: `PlayerIdentity.countryCode`, session tokens on `join`, `rated` (tdr/0010).
-    public static let current = 2
+    /// 3: tables of two to six, `startMatch`, `TableInfo`, `playerLeft` (tdr/0013).
+    public static let current = 3
 }
 
 /// Versioned wrapper around any message.
@@ -46,6 +47,9 @@ public enum ClientMessage: Codable, Sendable, Hashable {
     case ready
     case act(PlayerAction)
     case leave
+    /// Host only: deal the first hand of a table of three or more. Players
+    /// still connecting get a short grace period first (tdr/0013).
+    case startMatch
 }
 
 /// The referee's verdict on a ranked match for one player.
@@ -63,14 +67,15 @@ public struct RatingUpdate: Codable, Sendable, Hashable {
 /// Authority to client.
 public enum ServerMessage: Codable, Sendable, Hashable {
     case welcome(seat: Seat, roomCode: String)
-    case waitingForOpponent
-    /// Full redacted snapshot for the recipient. Sent after every change; a
-    /// client can always rebuild its UI from the latest one.
+    /// Full redacted snapshot for the recipient. Sent after every change,
+    /// including in the lobby; a client can always rebuild its UI from the
+    /// latest one.
     case state(PlayerView)
-    /// Public table events, identical for both players, for animations and logs.
+    /// Public table events, identical for every player, for animations and logs.
     case event(GameEvent)
     case rejected(reason: String)
-    case opponentLeft
+    /// A player left the table for good.
+    case playerLeft(seat: Seat, name: String)
     /// Sent once by the internet server after a ranked match is published.
     case rated(RatingUpdate)
 }

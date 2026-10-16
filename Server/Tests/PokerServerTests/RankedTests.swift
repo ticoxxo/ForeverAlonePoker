@@ -338,14 +338,55 @@ struct RankedRoomTests {
         await room.receive(.join(anaIdentity, sessionToken: try await ranked.sessions.issue(playerID: "ana-sub")), from: TestPlayers.aliceConnection)
         await room.receive(.join(brunoIdentity, sessionToken: try await ranked.sessions.issue(playerID: "bruno-sub")), from: TestPlayers.bobConnection)
         #expect(await room.rankedSeatCount == 2)
-        await room.receive(.ready, from: TestPlayers.aliceConnection)
-        await room.receive(.ready, from: TestPlayers.bobConnection)
         await room.receive(.act(.allIn), from: TestPlayers.aliceConnection)
         await room.receive(.act(.call), from: TestPlayers.bobConnection)
 
         #expect(await nextRated(&anaMessages) == RatingUpdate(rating: Rating(value: 1220, matchesPlayed: 1), delta: 20))
         #expect(await nextRated(&brunoMessages) == RatingUpdate(rating: Rating(value: 1180, matchesPlayed: 1), delta: -20))
         #expect(try await store.entries(for: ["ana-sub"])["ana-sub"]?.wins == 1)
+    }
+
+    @Test("a three-player ranked match: the winner gains, both losers drop")
+    func publishesMultiway() async throws {
+        let store = InMemoryLeaderboardStore()
+        let ranked = await makeRanked(store: store)
+        let room = Room(
+            code: "RANK06",
+            configuration: MatchConfiguration(startingStack: 100, maxPlayers: 3),
+            deckProvider: { _ in
+                HandStateBuilder()
+                    .stacks(100, 100, 100)
+                    .holeCards(.one, "Ah Ad")
+                    .holeCards(.two, "Kh Kd")
+                    .holeCards(.three, "Qh Qc")
+                    .deck()
+            },
+            ranked: ranked,
+            graceInterval: .zero
+        )
+        let carlaIdentity = PlayerIdentity(id: "carla-sub", displayName: "Carla", countryCode: "CL")
+        var anaMessages = await room.attach(TestPlayers.aliceConnection).makeAsyncIterator()
+        var brunoMessages = await room.attach(TestPlayers.bobConnection).makeAsyncIterator()
+        var carlaMessages = await room.attach(TestPlayers.carolConnection).makeAsyncIterator()
+        for (identity, connection) in [
+            (anaIdentity, TestPlayers.aliceConnection),
+            (brunoIdentity, TestPlayers.bobConnection),
+            (carlaIdentity, TestPlayers.carolConnection),
+        ] {
+            let token = try await ranked.sessions.issue(playerID: identity.id)
+            await room.receive(.join(identity, sessionToken: token), from: connection)
+        }
+        #expect(await room.authority.room.isEloEnabled)
+        await room.receive(.startMatch, from: TestPlayers.aliceConnection)
+        await room.waitForStart()
+        await room.receive(.act(.allIn), from: TestPlayers.aliceConnection)
+        await room.receive(.act(.call), from: TestPlayers.bobConnection)
+        await room.receive(.act(.call), from: TestPlayers.carolConnection)
+
+        #expect(await nextRated(&anaMessages) == RatingUpdate(rating: Rating(value: 1220, matchesPlayed: 1), delta: 20))
+        #expect(await nextRated(&brunoMessages) == RatingUpdate(rating: Rating(value: 1180, matchesPlayed: 1), delta: -20))
+        #expect(await nextRated(&carlaMessages) == RatingUpdate(rating: Rating(value: 1180, matchesPlayed: 1), delta: -20))
+        #expect(try await store.entries(for: ["carla-sub"])["carla-sub"]?.losses == 1)
     }
 
     @Test("a bad session token is rejected before the seat is taken")
@@ -379,8 +420,6 @@ struct RankedRoomTests {
         await room.receive(.join(anaIdentity, sessionToken: try await ranked.sessions.issue(playerID: "ana-sub")), from: TestPlayers.aliceConnection)
         await room.receive(.join(brunoIdentity), from: TestPlayers.bobConnection)
         #expect(await room.rankedSeatCount == 1)
-        await room.receive(.ready, from: TestPlayers.aliceConnection)
-        await room.receive(.ready, from: TestPlayers.bobConnection)
         await room.receive(.act(.allIn), from: TestPlayers.aliceConnection)
         await room.receive(.act(.call), from: TestPlayers.bobConnection)
 

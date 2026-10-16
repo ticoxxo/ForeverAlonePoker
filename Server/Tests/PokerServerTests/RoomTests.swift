@@ -2,6 +2,7 @@ import Foundation
 import Testing
 import PokerCore
 import PokerCoreTestSupport
+import NIOCore
 @testable import PokerServerCore
 
 @Suite("RoomCode")
@@ -49,12 +50,23 @@ struct RoomRegistryTests {
         await room.receive(.join(TestPlayers.alice), from: TestPlayers.aliceConnection)
         var iterator = stream.makeAsyncIterator()
         #expect(await iterator.next() == .welcome(seat: .one, roomCode: "TEST01"))
-        #expect(await iterator.next() == .waitingForOpponent)
+        guard case .state(let lobby)? = await iterator.next() else {
+            Issue.record("expected the lobby state")
+            return
+        }
+        #expect(lobby.phase == .lobby)
         #expect(await room.connectionCount == 1)
 
         await room.detach(TestPlayers.aliceConnection)
         #expect(await room.connectionCount == 0)
         #expect(await iterator.next() == nil, "stream finishes on detach")
+    }
+
+    @Test("rooms are created with the table size asked for")
+    func tableSize() async {
+        let registry = RoomRegistry()
+        let room = await registry.create(configuration: MatchConfiguration(maxPlayers: 5))
+        #expect(await room.authority.room.maxPlayers == 5)
     }
 
     @Test("idle empty rooms are swept, active ones are kept")
@@ -68,6 +80,64 @@ struct RoomRegistryTests {
         #expect(removed == 1)
         #expect(await registry.room(idle.code) == nil)
         #expect(await registry.room(active.code) != nil)
+    }
+}
+
+@Suite("Room: starting a bigger table")
+struct RoomStartTests {
+    private func lobby(grace: Duration) async -> Room {
+        let room = Room(
+            code: "TEST01",
+            configuration: MatchConfiguration(maxPlayers: 4),
+            deckProvider: { _ in HandStateBuilder().deck() },
+            graceInterval: grace
+        )
+        for (identity, connection) in [(TestPlayers.alice, TestPlayers.aliceConnection), (TestPlayers.bob, TestPlayers.bobConnection)] {
+            _ = await room.attach(connection)
+            await room.receive(.join(identity), from: connection)
+        }
+        return room
+    }
+
+    @Test("with everyone seated the host's start deals at once")
+    func startsImmediately() async {
+        let room = await lobby(grace: .seconds(30))
+        await room.receive(.startMatch, from: TestPlayers.aliceConnection)
+        await room.waitForStart()
+        #expect(await room.authority.room.phase == .inHand)
+    }
+
+    @Test("a socket still joining gets the grace period, then the table deals without it")
+    func waitsForPending() async {
+        let room = await lobby(grace: .seconds(1))
+        _ = await room.attach(TestPlayers.carolConnection)
+        await room.receive(.startMatch, from: TestPlayers.aliceConnection)
+        #expect(await room.authority.room.phase == .lobby, "Carol's socket is open but she has not joined")
+        await room.waitForStart()
+        #expect(await room.authority.room.phase == .inHand)
+        #expect(await room.authority.room.match.players == [.one, .two])
+    }
+
+    @Test("a player who joins during the grace period is dealt in")
+    func joinDuringGrace() async {
+        let room = await lobby(grace: .seconds(30))
+        _ = await room.attach(TestPlayers.carolConnection)
+        await room.receive(.startMatch, from: TestPlayers.aliceConnection)
+        await room.receive(.join(TestPlayers.carol), from: TestPlayers.carolConnection)
+        await room.waitForStart()
+        #expect(await room.authority.room.match.players == [.one, .two, .three])
+    }
+}
+
+@Suite("POST /rooms body")
+struct CreateRoomRequestTests {
+    @Test("no body is heads-up; a size in range is accepted; anything else is refused")
+    func parsing() {
+        #expect(CreateRoomRequest.maxPlayers(from: ByteBuffer()) == 2)
+        #expect(CreateRoomRequest.maxPlayers(from: ByteBuffer(string: #"{"maxPlayers": 6}"#)) == 6)
+        #expect(CreateRoomRequest.maxPlayers(from: ByteBuffer(string: #"{}"#)) == 2)
+        #expect(CreateRoomRequest.maxPlayers(from: ByteBuffer(string: #"{"maxPlayers": 7}"#)) == nil)
+        #expect(CreateRoomRequest.maxPlayers(from: ByteBuffer(string: "nonsense")) == nil)
     }
 }
 

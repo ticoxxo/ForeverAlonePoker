@@ -8,7 +8,8 @@ import PokerServerCore
 // Development opponent for online play: joins a room and readies, checks or
 // calls whenever it is its turn. Usage:
 //   swift run PokerBot <ROOMCODE> [http://host:port]
-// Omit the code to create a new room and print it.
+// Omit the code to create a new heads-up room and print it. Run several bots
+// with the same code to fill a bigger table; each gets its own identity.
 
 #if canImport(Darwin)
 setbuf(stdout, nil)  // Unbuffered so the room code shows up immediately when piped.
@@ -43,8 +44,9 @@ func send(_ message: ClientMessage) async throws {
     try await socket.send(.string(try ServerWire.encode(message)))
 }
 
-print("Joining \(code) as PokerBot…")
-try await send(.join(PlayerIdentity(id: "pokerbot", displayName: "PokerBot")))
+let botNumber = Int.random(in: 100...999)
+print("Joining \(code) as PokerBot \(botNumber)…")
+try await send(.join(PlayerIdentity(id: "pokerbot-\(botNumber)", displayName: "PokerBot \(botNumber)")))
 
 while true {
     guard case .string(let text) = try await socket.receive() else { continue }
@@ -52,20 +54,20 @@ while true {
     switch message {
     case .welcome(let seat, _):
         print("Seated at \(seat)")
-    case .waitingForOpponent:
-        print("Waiting for an opponent…")
     case .event(let event):
         print("  \(event)")
     case .rejected(let reason):
         print("Rejected: \(reason)")
-    case .opponentLeft:
-        print("Opponent left")
+    case .playerLeft(_, let name):
+        print("\(name) left")
     case .rated(let update):
         print("Rated: \(update.rating.value) (\(update.delta >= 0 ? "+" : "")\(update.delta))")
     case .state(let view):
         switch view.phase {
+        case .lobby:
+            continue
         case .waitingForHand, .finished:
-            if !view.me.isReady, view.opponent != nil {
+            if !view.me.isReady, !view.players.isEmpty {
                 try await Task.sleep(for: .seconds(1))
                 try await send(.ready)
             }

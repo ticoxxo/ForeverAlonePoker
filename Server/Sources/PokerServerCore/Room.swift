@@ -5,10 +5,14 @@ import PokerCore
 /// One table on the server: the authority plus the delivery queue of every
 /// connected WebSocket. Mirrors the remote path of the app's `HostedTable`.
 ///
-/// Ranked play (tdr/0010): a join carrying a session token is verified here,
-/// before the rules see it; the seat is remembered as ranked. When a match
-/// between two ranked seats finishes, the result is published and both
-/// players receive `.rated`.
+/// Ranked play (tdr/0010, tdr/0013): a join carrying a session token is
+/// verified here, before the rules see it; the seat is remembered as ranked.
+/// When a match in which every player is ranked finishes, the winner gains,
+/// every loser drops, and each player still connected receives `.rated`.
+///
+/// Starting a table of three or more (tdr/0013): after the host's
+/// `startMatch` the room waits up to `graceInterval` for sockets that are
+/// open but not yet seated, then deals.
 public actor Room {
     public nonisolated let code: String
     public nonisolated let authority: MatchAuthority
@@ -19,19 +23,30 @@ public actor Room {
     private var rankedSeats: [Seat: RankedPlayer] = [:]
     /// Guards against publishing the same finished match twice.
     private var publishedCurrentMatch = false
+    private let graceInterval: Duration
+    private var graceTask: Task<Void, Never>?
     private let logger = Logger(label: "PokerServer.Room")
+
+    public static let defaultGraceInterval: Duration = .seconds(5)
 
     public init(
         code: String,
         configuration: MatchConfiguration = .standard,
         deckProvider: @escaping MatchRoom.DeckProvider = { _ in Deck.shuffled() },
-        ranked: RankedServices? = nil
+        ranked: RankedServices? = nil,
+        graceInterval: Duration = Room.defaultGraceInterval
     ) {
         self.code = code
-        authority = MatchAuthority(room: MatchRoom(code: code, configuration: configuration, deckProvider: deckProvider))
+        authority = MatchAuthority(room: MatchRoom(
+            code: code,
+            configuration: configuration,
+            isRankedCapable: ranked != nil,
+            deckProvider: deckProvider
+        ))
         createdAt = Date()
         lastActivity = createdAt
         self.ranked = ranked
+        self.graceInterval = graceInterval
     }
 
     /// Registers a connection and returns the stream its socket should drain.
@@ -57,13 +72,44 @@ public actor Room {
             }
         }
 
-        let outbound = await authority.handle(message, from: id)
+        let outbound = await authority.handle(message, from: id, verifiedRanked: rankedPlayer != nil)
         if case .join = message, let seat = await authority.room.seat(of: id) {
             // A join without a valid token (re)claims the seat unranked.
             rankedSeats[seat] = rankedPlayer
         }
         deliver(outbound)
+        if case .startMatch = message {
+            await scheduleBegin()
+        }
         await publishIfFinished()
+    }
+
+    /// Deals once every open socket has taken a seat or the grace period ends.
+    private func scheduleBegin() async {
+        guard graceTask == nil, await authority.isStarting else { return }
+        let grace = graceInterval
+        graceTask = Task { [weak self] in
+            guard let self else { return }
+            let outbound = await self.authority.beginAfterGrace(grace: grace) { [weak self] in
+                await self?.openConnections() ?? []
+            }
+            await self.finishBegin(outbound)
+        }
+    }
+
+    private func openConnections() -> Set<ConnectionID> {
+        Set(connections.keys)
+    }
+
+    private func finishBegin(_ outbound: [Outbound]) async {
+        graceTask = nil
+        deliver(outbound)
+        await publishIfFinished()
+    }
+
+    /// Waits for a pending start to deal. For tests.
+    public func waitForStart() async {
+        await graceTask?.value
     }
 
     public func detach(_ id: ConnectionID) async {
@@ -112,17 +158,22 @@ public actor Room {
         guard !publishedCurrentMatch else { return }
         publishedCurrentMatch = true
 
+        // Every player who took part must be ranked, and all distinct.
+        let loserSeats = room.match.players.filter { $0 != winnerSeat }
         guard let ranked,
               let winner = rankedSeats[winnerSeat],
-              let loser = rankedSeats[winnerSeat.opponent],
-              winner.playerID != loser.playerID
+              case let losers = loserSeats.compactMap({ rankedSeats[$0] }),
+              losers.count == loserSeats.count,
+              Set(([winner] + losers).map(\.playerID)).count == losers.count + 1
         else { return }
 
         Task { [weak self] in
             do {
-                let result = try await ranked.rankings.record(winner: winner, loser: loser)
+                let result = try await ranked.rankings.record(winner: winner, losers: losers)
                 await self?.deliverRating(result.winner, to: winnerSeat)
-                await self?.deliverRating(result.loser, to: winnerSeat.opponent)
+                for (seat, update) in zip(loserSeats, result.losers) {
+                    await self?.deliverRating(update, to: seat)
+                }
             } catch {
                 await self?.logPublishFailure(error)
             }
