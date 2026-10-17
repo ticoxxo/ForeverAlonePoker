@@ -12,7 +12,9 @@ struct TableView: View {
     /// Offered when the connection is gone for good.
     var onLeave: (() -> Void)? = nil
     @State private var avatars = AvatarLoader()
+    @Namespace private var dealerButton
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private var view: PlayerView? { client.view }
     private var status: TableStatus { TableStatus.make(view: view, departure: client.lastDeparture) }
@@ -24,39 +26,58 @@ struct TableView: View {
                 table(arrangement, size: geometry.size)
                     .blur(radius: client.isConnectionLost ? 10 : 0)
                     .allowsHitTesting(!client.isConnectionLost)
+                    .accessibilityHidden(client.isConnectionLost)
                 if client.isConnectionLost {
                     ConnectionLostCard(connection: client.connection, onLeave: onLeave)
                         .transition(.scale(scale: 0.9).combined(with: .opacity))
                 }
             }
             .animation(.easeInOut(duration: 0.25), value: client.isConnectionLost)
-            // Rotating, resizing a split view or unfolding a foldable glides
-            // into the new arrangement instead of jumping.
-            .animation(reduceMotion ? nil : .smooth, value: arrangement)
+            // Rotating, resizing a split view or folding and unfolding a
+            // foldable glides into the new arrangement instead of jumping.
+            .motion(Theme.Motion.layout, value: arrangement)
         }
         .background(TableFelt())
+        .environment(\.dealerButtonNamespace, dealerButton)
+        // The dealer button moves on at each new hand.
+        .motion(Theme.Motion.layout, value: view?.button)
+        .onChange(of: status) { _, newStatus in
+            announce(newStatus)
+        }
     }
 
     /// Portrait and spacious stack the actions under the table; landscape
     /// docks them at the side so the short height only holds the table.
-    @ViewBuilder
+    /// One `AnyLayout` for both keeps the table and the action panel the
+    /// same views when the arrangement changes, so folding the phone or
+    /// rotating it mid-hand keeps a half-chosen raise amount (tdr/0018).
     private func table(_ arrangement: TableArrangement, size: CGSize) -> some View {
         let cards = arrangement.cardHeights(in: size)
-        if arrangement.docksActionsAtSide {
-            HStack(spacing: Theme.Spacing.large) {
-                tableArea(arrangement, size: size, cards: cards)
-                actions(axis: .vertical)
-                    .frame(width: 280)
-            }
-            .padding(Theme.Spacing.medium)
-        } else {
-            VStack(spacing: Theme.Spacing.large) {
-                tableArea(arrangement, size: size, cards: cards)
-                actions(axis: .horizontal)
-                    .frame(maxWidth: arrangement == .spacious ? 640 : .infinity)
-            }
-            .padding()
+        let docked = arrangement.docksActionsAtSide
+        let isAccessibilitySize = dynamicTypeSize.isAccessibilitySize
+        let layout = docked
+            ? AnyLayout(HStackLayout(spacing: Theme.Spacing.large))
+            : AnyLayout(VStackLayout(spacing: Theme.Spacing.large))
+        return layout {
+            tableArea(arrangement, size: size, cards: cards)
+            actions(axis: docked ? .vertical : .horizontal, stacksButtons: arrangement.stacksActionButtons(isAccessibilitySize: isAccessibilitySize))
+                .frame(width: docked ? arrangement.actionDockWidth(in: size, isAccessibilitySize: isAccessibilitySize) : nil)
+                .frame(maxWidth: arrangement == .spacious ? TableArrangement.actionPanelMaxWidth : .infinity)
         }
+        .padding(docked ? Theme.Spacing.medium : Theme.Spacing.large)
+    }
+
+    /// VoiceOver hears whose turn it is without hunting for the banner.
+    private func announce(_ status: TableStatus) {
+        let message: String? = switch status {
+        case .yourTurn: String(localized: "Your turn")
+        case .matchOver(let youWon, _): youWon ? String(localized: "You won the match") : String(localized: "Match over")
+        default: nil
+        }
+        guard let message else { return }
+        var announcement = AttributedString(message)
+        announcement.accessibilitySpeechAnnouncementPriority = .high
+        AccessibilityNotification.Announcement(announcement).post()
     }
 
     private func tableArea(_ arrangement: TableArrangement, size: CGSize, cards: TableArrangement.CardHeights) -> some View {
@@ -100,6 +121,7 @@ struct TableView: View {
                 Spacer(minLength: 0)
             }
             BoardView(community: view?.community ?? [], pot: collectedPot, street: view?.street, cardHeight: cards.board)
+                .accessibilitySortPriority(2)
             StatusBanner(
                 status: status,
                 outcome: view.flatMap { HandOutcome(result: $0.lastResult, seat: $0.seat) },
@@ -107,6 +129,9 @@ struct TableView: View {
                 ratingUpdate: client.ratingUpdate,
                 onReady: { Task { await client.ready() } }
             )
+            // VoiceOver starts with what is happening, then my cards, then
+            // the board; the other seats and the actions follow.
+            .accessibilitySortPriority(4)
             if let table = view?.table, table.isRankedCapable, !table.isEloEnabled {
                 Label("Elo gain disabled for this game", systemImage: "chart.line.downtrend.xyaxis")
                     .font(.footnote)
@@ -120,6 +145,8 @@ struct TableView: View {
                 reaction: view.flatMap { client.reactions[$0.seat] },
                 cardHeight: cards.mine
             )
+            .accessibilityElement(children: .contain)
+            .accessibilitySortPriority(3)
             if let rejection = client.lastRejection {
                 Label(rejection, systemImage: "exclamationmark.triangle.fill")
                     .font(.callout)
@@ -127,15 +154,17 @@ struct TableView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // A container so the sort priorities above order its children.
+        .accessibilityElement(children: .contain)
     }
 
     /// The action panel and, beside or under it, the emote tray.
-    private func actions(axis: Axis) -> some View {
+    private func actions(axis: Axis, stacksButtons: Bool) -> some View {
         let layout = axis == .vertical
             ? AnyLayout(VStackLayout(spacing: Theme.Spacing.medium))
             : AnyLayout(HStackLayout(alignment: .bottom, spacing: Theme.Spacing.medium))
         return layout {
-            ActionBar(model: TableActionModel(legalActions: client.legalActions), axis: axis) { action in
+            ActionBar(model: TableActionModel(legalActions: client.legalActions), axis: axis, stacksButtons: stacksButtons) { action in
                 Task { await client.act(action) }
             }
             if showsEmotes, view != nil {
@@ -197,7 +226,7 @@ private struct OpponentsRing: View {
                     .transition(.opacity)
                 }
             }
-            .animation(.spring(duration: 0.4), value: players.map(\.seat))
+            .motion(.spring(duration: 0.4), value: players.map(\.seat))
         }
         .environment(\.cardSkin, .standard)
     }
@@ -211,30 +240,33 @@ private struct WaitingZone: View {
     let avatars: AvatarLoader
     let reactions: [Seat: MatchSessionClient.Reaction]
 
+    @ScaledMetric(relativeTo: .caption) private var avatarSize: CGFloat = 30
+
     var body: some View {
-        VStack(spacing: 14) {
-            ForEach(players, id: \.seat) { player in
-                PlayerAvatar(
-                    data: avatars.avatar(for: player.playerID),
-                    size: 30,
-                    name: player.name,
-                    isReconnecting: player.isReconnecting
-                )
-                .opacity(player.isBusted ? 0.5 : 0.85)
-                .emoteBubble(reactions[player.seat], size: .small)
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(player.isBusted ? Text("\(player.name), out") : Text("\(player.name), folded"))
+        ZStack {
+            if !players.isEmpty {
+                VStack(spacing: Theme.Spacing.medium) {
+                    ForEach(players, id: \.seat) { player in
+                        PlayerAvatar(
+                            data: avatars.avatar(for: player.playerID),
+                            size: min(avatarSize, 44),
+                            name: player.name,
+                            isReconnecting: player.isReconnecting
+                        )
+                        .opacity(player.isBusted ? 0.5 : 0.85)
+                        .emoteBubble(reactions[player.seat], size: .small)
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(player.isBusted ? Text("\(player.name), out") : Text("\(player.name), folded"))
+                        .transition(.move(edge: .trailing).combined(with: .opacity))
+                    }
+                }
+                .padding(.vertical, Theme.Spacing.medium)
+                .padding(.horizontal, 7)
+                .tableGlass(in: Capsule(), tint: .black.opacity(0.15))
                 .transition(.move(edge: .trailing).combined(with: .opacity))
             }
         }
-        .padding(.vertical, players.isEmpty ? 0 : 12)
-        .padding(.horizontal, players.isEmpty ? 0 : 7)
-        .background {
-            if !players.isEmpty {
-                Capsule().fill(.black.opacity(0.25))
-            }
-        }
-        .animation(.spring(duration: 0.4), value: players.map(\.seat))
+        .motion(.spring(duration: 0.4), value: players.map(\.seat))
     }
 }
 
@@ -261,7 +293,7 @@ private struct ConnectionLostCard: View {
                 }
                 if let onLeave {
                     Button("Leave", action: onLeave)
-                        .buttonStyle(.glassProminent)
+                        .glassButtonStyle(.prominent)
                         .controlSize(.large)
                 }
             default:
@@ -277,9 +309,10 @@ private struct ConnectionLostCard: View {
         }
         .foregroundStyle(.white)
         .padding(Theme.Spacing.xLarge)
-        .frame(maxWidth: 300)
+        .frame(maxWidth: Theme.Width.card)
         .tablePanel()
         .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isModal)
     }
 }
 
@@ -294,10 +327,12 @@ struct StatusBanner: View {
     var ratingUpdate: RatingUpdate? = nil
     let onReady: () -> Void
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
         // Keyed by status so a change swaps the content in one step instead of
         // crossfading old and new text over each other.
-        VStack(spacing: 8) {
+        VStack(spacing: Theme.Spacing.small) {
             if let outcome, showsOutcome {
                 OutcomeText(outcome: outcome, winnerName: winnerName)
             }
@@ -337,7 +372,7 @@ struct StatusBanner: View {
                         .font(.subheadline)
                 }
                 Button("Rematch", action: onReady)
-                    .buttonStyle(.glassProminent)
+                    .glassButtonStyle(.prominent)
                     .controlSize(.large)
             case .playerLeft(let name):
                 Text("\(name) left the table.")
@@ -351,6 +386,16 @@ struct StatusBanner: View {
         .padding(.vertical, Theme.Spacing.medium)
         .tablePanel(cornerRadius: Theme.Radius.control)
         .id(status)
+        .transition(reduceMotion ? .opacity : AnyTransition(.blurReplace))
+        .motion(Theme.Motion.reveal, value: status)
+        // A tap of success when the player takes a pot or the match.
+        .sensoryFeedback(.success, trigger: celebrates) { _, celebrates in celebrates }
+    }
+
+    /// The player just won something worth a little fanfare.
+    private var celebrates: Bool {
+        if case .matchOver(youWon: true, _) = status { return true }
+        return showsOutcome && outcome?.kind == .youWon
     }
 
     private var showsOutcome: Bool {
@@ -370,11 +415,18 @@ private struct OutcomeText: View {
         case .chop:
             Text("Chopped pot")
         case .youWon:
-            if let category = outcome.category {
-                Text("You won \(outcome.amount, format: .number) with \(category.displayName)")
-            } else {
-                Text("Everyone else folded. You won \(outcome.amount, format: .number)")
+            Label {
+                if let category = outcome.category {
+                    Text("You won \(outcome.amount, format: .number) with \(category.displayName)")
+                } else {
+                    Text("Everyone else folded. You won \(outcome.amount, format: .number)")
+                }
+            } icon: {
+                Image(systemName: "trophy.fill")
+                    .foregroundStyle(Theme.Palette.highlight)
+                    .symbolEffect(.bounce, options: .nonRepeating, value: outcome.amount)
             }
+            .font(.headline)
         case .youLost:
             let name = winnerName.isEmpty ? String(localized: "Opponent") : winnerName
             if let category = outcome.category {

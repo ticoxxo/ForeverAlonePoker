@@ -1,6 +1,12 @@
 import SwiftUI
 import PokerCore
 
+extension EnvironmentValues {
+    /// Shared by every seat so the dealer button glides from one seat to the
+    /// next between hands instead of blinking (tdr/0018).
+    @Entry var dealerButtonNamespace: Namespace.ID? = nil
+}
+
 /// The opponent's seat: name, stack, bet in front, and their cards (face
 /// down until a showdown reveals them).
 struct OpponentSeatView: View {
@@ -13,10 +19,12 @@ struct OpponentSeatView: View {
     var reaction: MatchSessionClient.Reaction? = nil
     var cardHeight: CGFloat = 56
 
+    @ScaledMetric(relativeTo: .headline) private var avatarSize: CGFloat = 48
+
     var body: some View {
         VStack(spacing: Theme.Spacing.small) {
             if let summary {
-                PlayerAvatar(data: avatar, size: 48, name: summary.name, isReconnecting: summary.isReconnecting)
+                PlayerAvatar(data: avatar, size: min(avatarSize, 72), name: summary.name, isReconnecting: summary.isReconnecting)
                     .emoteBubble(reaction)
                 SeatHeaderView(
                     name: summary.name,
@@ -27,24 +35,18 @@ struct OpponentSeatView: View {
                     isBusted: summary.isBusted,
                     isActing: isActing
                 )
-                if showsCards {
-                    if revealedCards.isEmpty {
-                        HStack(spacing: 6) {
-                            CardBackView().frame(height: cardHeight)
-                            CardBackView().frame(height: cardHeight)
-                        }
-                    } else {
-                        CardRowView(cards: revealedCards, height: cardHeight)
-                    }
-                }
-                if summary.streetCommitted > 0 {
-                    ChipAmountView(amount: summary.streetCommitted)
-                        .foregroundStyle(.white)
-                }
+                HiddenOrRevealedCards(
+                    showsCards: showsCards,
+                    revealedCards: revealedCards,
+                    height: cardHeight,
+                    spacing: 6,
+                    ownerName: summary.name
+                )
+                BetView(amount: summary.streetCommitted)
             } else {
                 Label("Waiting for an opponent…", systemImage: "person.badge.clock")
                     .font(.headline)
-                    .foregroundStyle(.white.opacity(0.8))
+                    .foregroundStyle(.white.opacity(0.85))
             }
         }
     }
@@ -60,13 +62,13 @@ struct MySeatView: View {
 
     var body: some View {
         VStack(spacing: Theme.Spacing.small) {
-            if let summary, summary.streetCommitted > 0 {
-                ChipAmountView(amount: summary.streetCommitted)
-                    .foregroundStyle(.white)
-            }
+            BetView(amount: summary?.streetCommitted ?? 0)
             if !holeCards.isEmpty {
                 CardRowView(cards: holeCards, height: cardHeight)
                     .opacity(summary?.hasFolded == true ? 0.4 : 1)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(Text("Your cards"))
+                    .accessibilityValue(Text(holeCards.spokenList))
             }
             if let summary {
                 SeatHeaderView(
@@ -83,6 +85,66 @@ struct MySeatView: View {
     }
 }
 
+/// An opponent's two cards: backs while the hand runs, faces after a
+/// showdown. The backs are dealt in like the board.
+private struct HiddenOrRevealedCards: View {
+    let showsCards: Bool
+    let revealedCards: [Card]
+    let height: CGFloat
+    let spacing: CGFloat
+    let ownerName: String
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        Group {
+            if showsCards {
+                if revealedCards.isEmpty {
+                    HStack(spacing: spacing) {
+                        ForEach(0..<2, id: \.self) { index in
+                            CardBackView()
+                                .frame(height: height)
+                                .transition(reduceMotion
+                                    ? .opacity
+                                    : .dealt(from: height).animation(Theme.Motion.deal.delay(DealTiming.delay(index: index, previousCount: 0))))
+                        }
+                    }
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(Text("\(ownerName)'s cards, face down"))
+                } else {
+                    CardRowView(cards: revealedCards, height: height)
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(Text("\(ownerName) shows"))
+                        .accessibilityValue(Text(revealedCards.spokenList))
+                }
+            }
+        }
+        .motion(Theme.Motion.deal, value: showsCards)
+    }
+}
+
+/// Chips pushed forward on this street. They pop in when a bet is made and
+/// fade when the street ends and they join the pot.
+private struct BetView: View {
+    let amount: Chips
+    var font: Font = .subheadline
+
+    var body: some View {
+        ZStack {
+            if amount > 0 {
+                ChipAmountView(amount: amount)
+                    .font(font)
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, Theme.Spacing.small)
+                    .padding(.vertical, 2)
+                    .tableGlass(in: Capsule(), tint: .black.opacity(0.15))
+                    .transition(.scale(scale: 0.6).combined(with: .opacity))
+                    .accessibilityLabel(Text("Bet \(amount, format: .number)"))
+            }
+        }
+        .motion(Theme.Motion.reveal, value: amount > 0)
+    }
+}
+
 struct SeatHeaderView: View {
     let name: String
     let stack: Chips
@@ -92,46 +154,93 @@ struct SeatHeaderView: View {
     var isBusted: Bool = false
     var isActing: Bool = false
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     var body: some View {
-        HStack(spacing: 8) {
-            if isOnButton {
-                Text("D")
-                    .font(.caption.bold())
-                    .padding(6)
-                    .background(.white, in: Circle())
-                    .foregroundStyle(.black)
-                    .accessibilityLabel(Text("Dealer button"))
+        // At accessibility text sizes a single line would truncate the name,
+        // so the stack and tags drop under it.
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(spacing: Theme.Spacing.xSmall))
+            : AnyLayout(HStackLayout(spacing: Theme.Spacing.small))
+        layout {
+            HStack(spacing: Theme.Spacing.small) {
+                if isOnButton {
+                    DealerButton()
+                }
+                if isActing {
+                    Image(systemName: "hourglass")
+                        .font(.subheadline.bold())
+                        .foregroundStyle(Theme.Palette.highlight)
+                        .symbolEffect(.pulse)
+                }
+                Text(name)
+                    .font(.headline)
+                    .lineLimit(1)
             }
-            if isActing {
-                Image(systemName: "hourglass")
-                    .font(.subheadline.bold())
-                    .foregroundStyle(Theme.Palette.highlight)
-                    .symbolEffect(.pulse)
-                    .accessibilityLabel(Text("Thinking"))
-            }
-            Text(name)
-                .font(.headline)
-                .lineLimit(1)
-            ChipAmountView(amount: stack)
-            if isBusted {
-                StatusTag(text: "Out")
-            } else if isAllIn {
-                StatusTag(text: "All-in")
-            } else if hasFolded {
-                StatusTag(text: "Folded")
+            HStack(spacing: Theme.Spacing.small) {
+                ChipAmountView(amount: stack)
+                if let tag {
+                    StatusTag(text: tag)
+                }
             }
         }
         .foregroundStyle(.white)
         .padding(.horizontal, Theme.Spacing.medium)
         .padding(.vertical, Theme.Spacing.small)
         .frame(minHeight: Theme.Target.minimum)
-        .background(.black.opacity(0.4), in: Capsule())
+        .tableGlass(in: Capsule())
         .overlay {
             if isActing {
                 Capsule().strokeBorder(Theme.Palette.highlight, lineWidth: 3)
             }
         }
         .opacity(isBusted ? 0.5 : 1)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(name))
+        .accessibilityValue(accessibilityValue)
+    }
+
+    private var tag: LocalizedStringKey? {
+        if isBusted { return "Out" }
+        if isAllIn { return "All-in" }
+        if hasFolded { return "Folded" }
+        return nil
+    }
+
+    /// "1,500 chips, dealer, thinking, all-in": everything the plate shows.
+    private var accessibilityValue: Text {
+        var parts = [String(localized: "^[\(stack) chip](inflect: true)")]
+        if isOnButton { parts.append(String(localized: "dealer")) }
+        if isActing { parts.append(String(localized: "thinking")) }
+        if isBusted {
+            parts.append(String(localized: "out"))
+        } else if isAllIn {
+            parts.append(String(localized: "all-in"))
+        } else if hasFolded {
+            parts.append(String(localized: "folded"))
+        }
+        return Text(parts.formatted(.list(type: .and, width: .narrow)))
+    }
+}
+
+/// The white "D" disc. Inside a table it shares a namespace with every other
+/// seat, so it travels to the next dealer instead of reappearing.
+struct DealerButton: View {
+    var compact: Bool = false
+    @Environment(\.dealerButtonNamespace) private var namespace
+
+    var body: some View {
+        let disc = Text("D")
+            .font((compact ? Font.caption2 : .caption).bold())
+            .padding(compact ? 3 : 6)
+            .background(.white, in: Circle())
+            .foregroundStyle(.black)
+            .accessibilityLabel(Text("Dealer button"))
+        if let namespace {
+            disc.matchedGeometryEffect(id: "dealer", in: namespace)
+        } else {
+            disc
+        }
     }
 }
 
@@ -147,22 +256,19 @@ struct CompactSeatView: View {
     var reaction: MatchSessionClient.Reaction? = nil
     var cardHeight: CGFloat = 30
 
+    @ScaledMetric(relativeTo: .caption) private var avatarSize: CGFloat = 36
+
     var body: some View {
         VStack(spacing: Theme.Spacing.xSmall) {
             ZStack(alignment: .bottomTrailing) {
-                PlayerAvatar(data: avatar, size: 36, name: summary.name, isReconnecting: summary.isReconnecting)
+                PlayerAvatar(data: avatar, size: min(avatarSize, 56), name: summary.name, isReconnecting: summary.isReconnecting)
                     .overlay {
                         if isActing {
                             Circle().strokeBorder(Theme.Palette.highlight, lineWidth: 3)
                         }
                     }
                 if isOnButton {
-                    Text("D")
-                        .font(.caption2.bold())
-                        .padding(3)
-                        .background(.white, in: Circle())
-                        .foregroundStyle(.black)
-                        .accessibilityLabel(Text("Dealer button"))
+                    DealerButton(compact: true)
                 }
             }
             .emoteBubble(reaction)
@@ -174,6 +280,7 @@ struct CompactSeatView: View {
                 }
                 Text(summary.name)
                     .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
             .font(.caption.bold())
             ChipAmountView(amount: summary.stack)
@@ -185,23 +292,17 @@ struct CompactSeatView: View {
             } else if summary.hasFolded {
                 StatusTag(text: "Folded")
             }
-            if showsCards {
-                if revealedCards.isEmpty {
-                    HStack(spacing: 2) {
-                        CardBackView().frame(height: cardHeight)
-                        CardBackView().frame(height: cardHeight)
-                    }
-                } else {
-                    CardRowView(cards: revealedCards, height: cardHeight)
-                }
-            }
-            if summary.streetCommitted > 0 {
-                ChipAmountView(amount: summary.streetCommitted)
-                    .font(.caption2)
-            }
+            HiddenOrRevealedCards(
+                showsCards: showsCards,
+                revealedCards: revealedCards,
+                height: cardHeight,
+                spacing: 2,
+                ownerName: summary.name
+            )
+            BetView(amount: summary.streetCommitted, font: .caption2)
         }
         .foregroundStyle(.white)
-        .frame(width: max(96, cardHeight * 3.4))
+        .frame(width: max(96, cardHeight * 3.4, avatarSize * 2.6))
         .opacity(summary.isBusted ? 0.5 : 1)
         .accessibilityElement(children: .combine)
     }
@@ -240,10 +341,12 @@ struct PlayerAvatar: View {
     }
 }
 
-/// An arc that keeps spinning around a reconnecting player's picture.
+/// An arc that keeps spinning around a reconnecting player's picture. Under
+/// Reduce Motion it stays still; the `wifi.slash` symbol still says why.
 private struct ReconnectRing: View {
     let diameter: CGFloat
     @State private var isSpinning = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         Circle()
@@ -251,7 +354,7 @@ private struct ReconnectRing: View {
             .stroke(.white, style: StrokeStyle(lineWidth: max(2, diameter * 0.05), lineCap: .round))
             .frame(width: diameter, height: diameter)
             .rotationEffect(.degrees(isSpinning ? 360 : 0))
-            .animation(.linear(duration: 1).repeatForever(autoreverses: false), value: isSpinning)
+            .animation(reduceMotion ? nil : .linear(duration: 1).repeatForever(autoreverses: false), value: isSpinning)
             .onAppear { isSpinning = true }
             .allowsHitTesting(false)
     }
@@ -284,19 +387,29 @@ struct BoardView: View {
 
     var body: some View {
         VStack(spacing: Theme.Spacing.medium) {
-            if pot > 0 {
-                HStack(spacing: 4) {
-                    Text("Pot")
-                    ChipAmountView(amount: pot)
+            ZStack {
+                if pot > 0 {
+                    HStack(spacing: Theme.Spacing.xSmall) {
+                        Text("Pot")
+                        ChipAmountView(amount: pot)
+                    }
+                    .font(.headline)
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, Theme.Spacing.large)
+                    .padding(.vertical, Theme.Spacing.small)
+                    .tableGlass(in: Capsule())
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(Text("Pot"))
+                    .accessibilityValue(Text("^[\(pot) chip](inflect: true)"))
+                    .transition(.scale(scale: 0.8).combined(with: .opacity))
                 }
-                .font(.headline)
-                .foregroundStyle(.white)
-                .padding(.horizontal, Theme.Spacing.large)
-                .padding(.vertical, Theme.Spacing.small)
-                .background(.black.opacity(0.4), in: Capsule())
             }
+            .motion(Theme.Motion.reveal, value: pot > 0)
             CardRowView(cards: community, slots: street == nil ? 0 : 5, height: cardHeight)
-                .animation(.spring(duration: 0.35), value: community)
+                .motion(Theme.Motion.layout, value: community)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text("Board"))
+                .accessibilityValue(community.isEmpty ? Text("No cards yet") : Text(community.spokenList))
         }
     }
 }

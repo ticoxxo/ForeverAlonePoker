@@ -206,6 +206,22 @@ nonisolated enum SeatLayout {
     }
 }
 
+/// When each card of a deal lands (tdr/0018). Cards new to a row arrive one
+/// after another, like a dealer pitching them; cards already showing never
+/// wait. Under Reduce Motion everything lands at once.
+nonisolated enum DealTiming {
+    /// Seconds between two cards of the same deal.
+    static let step: Double = 0.12
+
+    /// - Parameters:
+    ///   - index: the card's position in its row.
+    ///   - previousCount: how many cards of the row were already showing.
+    static func delay(index: Int, previousCount: Int, reduceMotion: Bool = false) -> Double {
+        guard !reduceMotion else { return 0 }
+        return Double(max(0, index - previousCount)) * step
+    }
+}
+
 /// How the table arranges itself for the space it has (tdr/0017). Decided
 /// from the container size alone, never the device model, so rotation, iPad
 /// split view and a foldable opening or closing all follow from the size.
@@ -230,6 +246,27 @@ nonisolated enum TableArrangement: Equatable {
     }
 
     var docksActionsAtSide: Bool { self == .landscape }
+
+    /// The widest the action panel gets under the table, so buttons on a
+    /// big screen stay within easy reach of one thumb.
+    static let actionPanelMaxWidth: CGFloat = 640
+
+    /// Width of the action panel docked at the side in landscape. Accessibility
+    /// text sizes get more room so "Raise to 1,480" still fits on a button,
+    /// but the table always keeps more than half the width.
+    func actionDockWidth(in size: CGSize, isAccessibilitySize: Bool) -> CGFloat {
+        let (share, range): (CGFloat, ClosedRange<CGFloat>) = isAccessibilitySize
+            ? (0.45, 320...460)
+            : (0.32, 260...340)
+        let width = min(max(size.width * share, range.lowerBound), range.upperBound)
+        return min(width, (size.width * 0.49).rounded(.down)).rounded()
+    }
+
+    /// Fold / Call / Raise sit side by side under the table, but stack when
+    /// docked at the side or when the text is too big to share a row.
+    func stacksActionButtons(isAccessibilitySize: Bool) -> Bool {
+        docksActionsAtSide || isAccessibilitySize
+    }
 
     /// Card sizes for every place cards appear, scaled from the short side.
     struct CardHeights: Equatable {

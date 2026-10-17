@@ -172,6 +172,31 @@ struct SkinStoreTests {
         #expect(fixture.store.myCardSkin.source(for: king) == .file(URL(filePath: "/skins/spanish_001/front.Kd.png"), fallback: "skin-default-front-Kd"))
     }
 
+    @Test("a completed purchase is announced once, with what it unlocked")
+    func purchaseAnnounced() async throws {
+        let fixture = Fixture()
+        await fixture.store.start()
+
+        await fixture.store.purchase(ProductIDs.single("red_check"))
+
+        let unlock = try #require(fixture.store.lastUnlock)
+        #expect(unlock.productID == ProductIDs.single("red_check"))
+        #expect(unlock.items.map(\.id) == [Fixture.redCheck.id])
+        fixture.store.acknowledgeUnlock()
+        #expect(fixture.store.lastUnlock == nil)
+    }
+
+    @Test("a cancelled, failed or pending purchase announces nothing")
+    func nothingAnnounced() async {
+        let fixture = Fixture()
+        await fixture.store.start()
+        for outcome in [FakePurchases.PurchaseOutcomeScript.cancel, .fail, .pending] {
+            fixture.purchases.nextOutcome = outcome
+            await fixture.store.purchase(ProductIDs.single("red_check"))
+        }
+        #expect(fixture.store.lastUnlock == nil)
+    }
+
     @Test("an approved update grants at once, even before StoreKit lists it")
     func updateBeforeListed() async {
         let fixture = Fixture()

@@ -21,7 +21,7 @@ struct CardView: View {
         .aspectRatio(CardMetrics.aspectRatio, contentMode: .fit)
         .shadow(radius: 1, y: 1)
         .accessibilityElement()
-        .accessibilityLabel(Text(card.notation))
+        .accessibilityLabel(Text(card.spokenName))
     }
 }
 
@@ -140,29 +140,89 @@ struct DrawnCardBack: View {
 }
 
 /// A row of cards, with optional face-down placeholders filling to `slots`.
+/// New cards are dealt in one after another (tdr/0018): the flop lands card
+/// by card, the turn and river on their own, and a new hand replaces the
+/// old one.
 struct CardRowView: View {
     let cards: [Card]
     var slots: Int = 0
     var height: CGFloat = 64
+    /// Cards come face down from above and flip; off for rows that only
+    /// preview cards (the store).
+    var dealsIn: Bool = true
+
+    /// The cards showing before the latest change, so only new ones wait
+    /// their turn. Updated after each render that changes `cards`.
+    @State private var shown: [Card] = []
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
+        // Read during the render that inserts new cards, before `shown`
+        // catches up, so it still counts only the cards already showing.
+        let previousCount = cards.filter(shown.contains).count
         HStack(spacing: 6) {
-            ForEach(cards, id: \.self) { card in
+            ForEach(Array(cards.enumerated()), id: \.element) { index, card in
                 CardView(card: card)
                     .frame(height: height)
-                    .transition(.scale.combined(with: .opacity))
+                    .transition(transition(delay: DealTiming.delay(index: index, previousCount: previousCount, reduceMotion: reduceMotion)))
             }
             ForEach(0..<max(0, slots - cards.count), id: \.self) { _ in
                 RoundedRectangle(cornerRadius: CardMetrics.cornerRadius)
                     .strokeBorder(.white.opacity(0.3), style: StrokeStyle(lineWidth: 1, dash: [4]))
                     .aspectRatio(CardMetrics.aspectRatio, contentMode: .fit)
                     .frame(height: height)
+                    .accessibilityHidden(true)
             }
         }
+        .onChange(of: cards, initial: true) { shown = cards }
+    }
+
+    private func transition(delay: Double) -> AnyTransition {
+        guard dealsIn, !reduceMotion else { return .opacity }
+        return .asymmetric(
+            insertion: .dealt(from: height).animation(Theme.Motion.deal.delay(delay)),
+            removal: .opacity.combined(with: .scale(scale: 0.85))
+        )
     }
 }
 
-/// A chip amount with a consistent style.
+extension AnyTransition {
+    /// A card pitched from the dealer: it drops in from above, face down,
+    /// and turns over as it lands. `distance` is how far it travels.
+    static func dealt(from distance: CGFloat) -> AnyTransition {
+        .modifier(active: DealEffect(progress: 0, distance: distance), identity: DealEffect(progress: 1, distance: distance))
+    }
+}
+
+/// The in-between states of `AnyTransition.dealt(from:)`.
+private struct DealEffect: ViewModifier, Animatable {
+    var progress: Double
+    let distance: CGFloat
+
+    var animatableData: Double {
+        get { progress }
+        set { progress = newValue }
+    }
+
+    func body(content: Content) -> some View {
+        // The first half of the turn shows the back, the second the face.
+        let angle = (1 - progress) * 180
+        content
+            .opacity(angle < 90 ? 1 : 0)
+            .overlay {
+                if angle >= 90 {
+                    CardBackView()
+                        .rotation3DEffect(.degrees(180), axis: (x: 0, y: 1, z: 0))
+                        .accessibilityHidden(true)
+                }
+            }
+            .rotation3DEffect(.degrees(angle), axis: (x: 0, y: 1, z: 0), perspective: 0.4)
+            .offset(y: -distance * (1 - progress))
+            .scaleEffect(0.75 + 0.25 * progress)
+    }
+}
+
+/// A chip amount with a consistent style. The digits roll when it changes.
 struct ChipAmountView: View {
     let amount: Chips
 
@@ -170,10 +230,15 @@ struct ChipAmountView: View {
         Label {
             Text(amount, format: .number)
                 .monospacedDigit()
+                .contentTransition(.numericText(value: Double(amount)))
         } icon: {
             Image(systemName: "circle.circle.fill")
+                .accessibilityHidden(true)
         }
         .font(.subheadline.weight(.semibold))
+        .motion(Theme.Motion.count, value: amount)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("^[\(amount) chip](inflect: true)"))
     }
 }
 

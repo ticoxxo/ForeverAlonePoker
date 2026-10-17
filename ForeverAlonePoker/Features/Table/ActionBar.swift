@@ -8,9 +8,14 @@ import PokerCore
 struct ActionBar: View {
     let model: TableActionModel
     var axis: Axis = .horizontal
+    /// Fold / Call / Raise in a column instead of a row: docked at the side,
+    /// or at accessibility text sizes (`TableArrangement.stacksActionButtons`).
+    var stacksButtons: Bool = false
     let onAction: (PlayerAction) -> Void
 
     @State private var amount: Chips = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         VStack(spacing: Theme.Spacing.medium) {
@@ -20,11 +25,17 @@ struct ActionBar: View {
             buttons
         }
         .padding(Theme.Spacing.large)
-        // Fixed height under the table keeps it from jumping when the bar appears.
-        .frame(maxWidth: .infinity, minHeight: axis == .horizontal ? 150 : nil)
+        // A fixed minimum under the table keeps it from jumping when the bar
+        // appears; at accessibility sizes the content decides.
+        .frame(maxWidth: .infinity, minHeight: axis == .horizontal && !dynamicTypeSize.isAccessibilitySize ? 150 : nil)
         .tablePanel()
+        // Rises into place when it becomes the player's turn, so the change
+        // is noticed even out of the corner of an eye.
         .opacity(model.isActive ? 1 : 0)
+        .offset(y: model.isActive || reduceMotion ? 0 : 24)
+        .animation(reduceMotion ? .easeInOut(duration: 0.2) : Theme.Motion.reveal, value: model.isActive)
         .disabled(!model.isActive)
+        .accessibilityHidden(!model.isActive)
         .sensoryFeedback(.impact(weight: .light), trigger: model.isActive) { _, isActive in isActive }
         .onChange(of: model.sizing, initial: true) {
             amount = model.sizing?.range.lowerBound ?? 0
@@ -32,51 +43,61 @@ struct ActionBar: View {
     }
 
     private var buttons: some View {
-        let layout = axis == .horizontal
-            ? AnyLayout(HStackLayout(spacing: Theme.Spacing.medium))
-            : AnyLayout(VStackLayout(spacing: Theme.Spacing.medium))
-        return layout {
-            if model.canFold {
-                Button(role: .destructive) {
-                    onAction(.fold)
-                } label: {
-                    ActionLabel { Text("Fold") }
-                }
-                .buttonStyle(.bordered)
-                .tint(.red)
-            }
-            if model.canCheck {
-                Button {
-                    onAction(.check)
-                } label: {
-                    ActionLabel { Text("Check") }
-                }
-                .buttonStyle(.glassProminent)
-            }
-            if let callAmount = model.callAmount {
-                Button {
-                    onAction(.call)
-                } label: {
-                    ActionLabel { Text("Call \(callAmount, format: .number)") }
-                }
-                .buttonStyle(.glassProminent)
-            }
-            if let sizing = model.sizing, let action = model.sizedAction(amount) {
-                Button {
-                    onAction(action)
-                } label: {
-                    ActionLabel {
-                        switch sizing {
-                        case .bet: Text("Bet \(model.clamped(amount), format: .number)")
-                        case .raise: Text("Raise to \(model.clamped(amount), format: .number)")
-                        }
-                    }
-                }
-                .buttonStyle(.glassProminent)
-                .tint(.orange)
+        let layout = stacksButtons || axis == .vertical
+            ? AnyLayout(VStackLayout(spacing: Theme.Spacing.medium))
+            : AnyLayout(HStackLayout(spacing: Theme.Spacing.medium))
+        // One glass container so the buttons render together and morph as
+        // Check turns into Call or the raise button comes and goes.
+        return GlassGroup(spacing: Theme.Spacing.medium) {
+            layout {
+                actionButtons
             }
         }
         .controlSize(.large)
+        .animation(reduceMotion ? nil : Theme.Motion.layout, value: model)
+    }
+
+    @ViewBuilder
+    private var actionButtons: some View {
+        if model.canFold {
+            Button(role: .destructive) {
+                onAction(.fold)
+            } label: {
+                ActionLabel { Text("Fold") }
+            }
+            .glassButtonStyle()
+            .tint(.red)
+        }
+        if model.canCheck {
+            Button {
+                onAction(.check)
+            } label: {
+                ActionLabel { Text("Check") }
+            }
+            .glassButtonStyle(.prominent)
+        }
+        if let callAmount = model.callAmount {
+            Button {
+                onAction(.call)
+            } label: {
+                ActionLabel { Text("Call \(callAmount, format: .number)") }
+            }
+            .glassButtonStyle(.prominent)
+        }
+        if let sizing = model.sizing, let action = model.sizedAction(amount) {
+            Button {
+                onAction(action)
+            } label: {
+                ActionLabel {
+                    switch sizing {
+                    case .bet: Text("Bet \(model.clamped(amount), format: .number)")
+                    case .raise: Text("Raise to \(model.clamped(amount), format: .number)")
+                    }
+                }
+            }
+            .glassButtonStyle(.prominent)
+            .tint(.orange)
+        }
     }
 }
 
@@ -88,8 +109,10 @@ private struct ActionLabel<Content: View>: View {
     var body: some View {
         content()
             .font(.headline.monospacedDigit())
-            .lineLimit(1)
-            .minimumScaleFactor(0.8)
+            // Two lines rather than shrinking past legibility at big sizes.
+            .lineLimit(2)
+            .multilineTextAlignment(.center)
+            .minimumScaleFactor(0.85)
             .frame(maxWidth: .infinity, minHeight: Theme.Target.primary - 20)
     }
 }
@@ -138,14 +161,17 @@ private struct SizingControl: View {
             }
             HStack {
                 Button("Min") { amount = range.lowerBound }
+                    .accessibilityLabel(Text("Smallest amount"))
                 Spacer()
-                if model.allInAmount != nil {
+                if let allIn = model.allInAmount {
                     Button("All in") { onAction(.allIn) }
                         .tint(.orange)
+                        .accessibilityLabel(Text("All in, \(allIn, format: .number)"))
                 }
             }
-            .buttonStyle(.bordered)
+            .glassButtonStyle()
             .buttonBorderShape(.capsule)
+            .frame(minHeight: Theme.Target.minimum)
         }
     }
 }
@@ -161,7 +187,7 @@ private struct StepButton: View {
                 .font(.body.bold())
                 .frame(width: Theme.Target.minimum - 16, height: Theme.Target.minimum - 16)
         }
-        .buttonStyle(.bordered)
+        .glassButtonStyle()
         .buttonBorderShape(.circle)
         .accessibilityLabel(Text(label))
     }
