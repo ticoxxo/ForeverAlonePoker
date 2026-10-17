@@ -86,12 +86,14 @@ public actor Room {
             }
         }
 
-        let outbound = await authority.handle(message, from: id, verifiedRanked: rankedPlayer != nil)
+        let (outbound, absence) = await authority.receive(message, from: id, verifiedRanked: rankedPlayer != nil)
         if case .join = message, let seat = await authority.room.seat(of: id) {
             // A join without a valid token (re)claims the seat unranked.
             rankedSeats[seat] = rankedPlayer
         }
         deliver(outbound)
+        // Leaving a match in play holds the seat like a drop (tdr/0016).
+        if let absence { scheduleExpiry(of: absence) }
         if case .startMatch = message {
             await scheduleBegin()
         }

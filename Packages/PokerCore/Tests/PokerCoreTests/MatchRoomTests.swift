@@ -153,19 +153,74 @@ struct MatchRoomPlayTests {
         #expect(room.match.currentHand?.pot == 30)
     }
 
-    @Test("leaving mid-hand forfeits the pot and frees the seat")
+    @Test("leaving mid-match folds the hand at once and holds the seat, chips included")
     func leave() throws {
         var room = MatchRoomBuilder().build()
         room.seatAliceAndBobAndDeal()
         let out = room.handle(.leave, from: TestPlayers.bobConnection)
 
-        #expect(out.messages(for: TestPlayers.aliceConnection).contains(.playerLeft(seat: .two, name: "Bob")))
+        #expect(!out.messages(for: TestPlayers.aliceConnection).contains(.playerLeft(seat: .two, name: "Bob")), "not gone yet")
         let view = try #require(out.latestView(for: TestPlayers.aliceConnection))
         #expect(view.me.stack == 1520, "Alice collects the 30 in blinds")
-        #expect(view.opponent == nil)
-        #expect(view.phase == .finished(winner: .one), "the last player left wins")
-        #expect(!room.isFull)
+        #expect(view.opponent?.isConnected == false)
+        #expect(view.opponent?.stack == 1480)
+        #expect(view.phase == .waitingForHand)
+        #expect(room.isFull, "the seat is held")
+        #expect(room.absence(of: .two) != nil)
         #expect(out.messages(for: TestPlayers.bobConnection).isEmpty)
+    }
+
+    @Test("a player who left and stays away is knocked out when the absence expires")
+    func leaveExpires() throws {
+        var room = MatchRoomBuilder().build()
+        room.seatAliceAndBobAndDeal()
+        _ = room.handle(.leave, from: TestPlayers.bobConnection)
+        let out = room.expire(try #require(room.absence(of: .two)))
+
+        #expect(out.messages(for: TestPlayers.aliceConnection).contains(.playerLeft(seat: .two, name: "Bob")))
+        #expect(out.latestView(for: TestPlayers.aliceConnection)?.phase == .finished(winner: .one), "the last player left wins")
+        #expect(!room.isFull)
+    }
+
+    @Test("a player who left can come back with their chips")
+    func leaveAndReturn() throws {
+        var room = MatchRoomBuilder().build()
+        room.seatAliceAndBobAndDeal()
+        _ = room.handle(.leave, from: TestPlayers.bobConnection)
+        let back = ConnectionID("conn-bob-2")
+        let out = room.handle(.join(TestPlayers.bob), from: back)
+        #expect(out.messages(for: back).first == .welcome(seat: .two, roomCode: "TEST01"))
+        #expect(out.latestView(for: back)?.me.stack == 1480)
+        #expect(!room.dealNextHand().isEmpty, "both are connected again, so the next hand is dealt")
+    }
+
+    @Test("a join takes over a seat still held by a stale connection")
+    func takeover() throws {
+        var room = MatchRoomBuilder().build()
+        room.seatAliceAndBobAndDeal()
+        let fresh = ConnectionID("conn-bob-2")
+        let out = room.handle(.join(TestPlayers.bob), from: fresh)
+        #expect(out.messages(for: fresh).first == .welcome(seat: .two, roomCode: "TEST01"))
+        #expect(out.latestView(for: fresh)?.holeCards.count == 2, "the live hand carries on")
+        #expect(room.seat(of: TestPlayers.bobConnection) == nil)
+        #expect(out.rejections(for: TestPlayers.bobConnection) == ["You joined this table from another device."])
+
+        #expect(room.disconnect(TestPlayers.bobConnection).isEmpty, "the stale socket closing later changes nothing")
+        #expect(room.players[.two]?.connection == fresh)
+    }
+
+    @Test("leaving the lobby or a finished match frees the seat at once")
+    func leaveOutsidePlay() throws {
+        var room = MatchRoomBuilder()
+            .deck(HandStateBuilder().holeCards(.one, "Ah Kh").holeCards(.two, "Qs Qd").board("Ac 7d Ts 4h 9s").deck())
+            .build()
+        room.seatAliceAndBobAndDeal()
+        _ = room.handle(.act(.allIn), from: TestPlayers.aliceConnection)
+        _ = room.handle(.act(.call), from: TestPlayers.bobConnection)
+        #expect(room.match.phase == .finished(winner: .one))
+        let out = room.handle(.leave, from: TestPlayers.bobConnection)
+        #expect(out.messages(for: TestPlayers.aliceConnection).contains(.playerLeft(seat: .two, name: "Bob")))
+        #expect(room.players[.two] == nil)
     }
 
     @Test("a dropped connection keeps the seat for the same identity")
@@ -305,6 +360,17 @@ struct ProtocolTests {
     func seatWireFormat() throws {
         #expect(String(decoding: try JSONEncoder().encode(Seat.three), as: UTF8.self) == "2")
         #expect(try JSONDecoder().decode(Seat.self, from: Data("5".utf8)) == .six)
+    }
+
+    @Test("the authority reports the absence a leave starts")
+    func authorityLeave() async throws {
+        let authority = MatchAuthority(room: MatchRoomBuilder().build())
+        _ = await authority.receive(.join(TestPlayers.alice), from: TestPlayers.aliceConnection)
+        _ = await authority.receive(.join(TestPlayers.bob), from: TestPlayers.bobConnection)
+        let (_, absence) = await authority.receive(.leave, from: TestPlayers.bobConnection)
+        #expect(absence?.seat == .two)
+        let (_, none) = await authority.receive(.act(.call), from: TestPlayers.aliceConnection)
+        #expect(none == nil)
     }
 
     @Test("the match authority serialises room access")

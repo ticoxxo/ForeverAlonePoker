@@ -23,7 +23,12 @@ struct OnlineMatchView: View {
     var body: some View {
         ZStack {
             if model.isPlaying, let client = model.client {
-                TableView(client: client)
+                TableView(client: client) {
+                    Task {
+                        await model.leave()
+                        dismiss()
+                    }
+                }
                     .onAppear {
                         client.onMatchFinished = onMatchFinished
                         client.onRated = onRated

@@ -188,16 +188,88 @@ struct MatchSessionClientTests {
         #expect(rated == [update])
     }
 
-    @Test("leaving tells the opponent and disconnects the leaver")
+    @Test("leaving folds the leaver's hand, holds the seat, and tells the opponent once it expires")
     func leaving() async {
-        let harness = await SessionHarness()
+        let harness = await SessionHarness(absenceTimeout: .milliseconds(100))
         await harness.deal()
 
         await harness.bob.leave()
         #expect(harness.bob.connection == .disconnected(reason: nil))
+        #expect(!harness.bob.isConnectionLost, "leaving on purpose is not a lost connection")
+        #expect(await eventually { harness.alice.view?.opponent?.isConnected == false })
+        #expect(harness.alice.view?.me.stack == 1520, "Alice collects the blinds")
+        #expect(!harness.alice.opponentLeft, "the seat is held for a while")
+
+        await harness.table.waitForAbsences()
         #expect(await eventually { harness.alice.opponentLeft })
         #expect(harness.alice.view?.opponent == nil)
-        #expect(harness.alice.view?.me.stack == 1520, "Alice collects the blinds")
+    }
+
+    @Test("a dropped online client reconnects by itself and gets its seat back")
+    func reconnects() async {
+        let table = HostedTable(room: MatchRoomBuilder().build())
+        let aliceTransport = await table.connect(id: TestPlayers.aliceConnection)
+        var attempts = 0
+        let alice = MatchSessionClient(identity: TestPlayers.alice, transport: aliceTransport) {
+            attempts += 1
+            return await table.connect(id: ConnectionID("conn-alice-\(attempts + 1)"))
+        }
+        alice.reconnectInterval = .milliseconds(20)
+        let bob = MatchSessionClient(identity: TestPlayers.bob, transport: await table.connect(id: TestPlayers.bobConnection))
+        await alice.connect()
+        await bob.connect()
+        #expect(await eventually { alice.view?.phase == .inHand })
+
+        await aliceTransport.close() // the link dies under the client
+        #expect(await eventually { attempts >= 1 }, "the client noticed and opened a new transport")
+        #expect(await eventually { alice.connection == .seated(.one, roomCode: "TEST01") })
+        #expect(!alice.isConnectionLost)
+        #expect(alice.view?.holeCards.count == 2, "the live hand is still Alice's")
+        #expect(await eventually { bob.view?.opponent?.isConnected == true })
+    }
+
+    @Test("a client away too long learns it lost its seat")
+    func seatLost() async {
+        let table = HostedTable(room: MatchRoomBuilder().maxPlayers(3).build(), graceInterval: .zero, absenceTimeout: .milliseconds(30))
+        let alice = MatchSessionClient(identity: TestPlayers.alice, transport: await table.connect(id: TestPlayers.aliceConnection))
+        let bob = MatchSessionClient(identity: TestPlayers.bob, transport: await table.connect(id: TestPlayers.bobConnection))
+        let carolTransport = await table.connect(id: TestPlayers.carolConnection)
+        let carol = MatchSessionClient(identity: TestPlayers.carol, transport: carolTransport) {
+            // Come back only once the seat has expired.
+            while await table.authority.room.players[.three] != nil {
+                try? await Task.sleep(for: .milliseconds(10))
+            }
+            return await table.connect(id: ConnectionID("conn-carol-2"))
+        }
+        await alice.connect()
+        await bob.connect()
+        await carol.connect()
+        #expect(await eventually { alice.view?.players.count == 2 })
+        await alice.startMatch()
+        await table.waitForStart()
+        #expect(await eventually { carol.view?.phase == .inHand })
+
+        await carolTransport.close()
+        #expect(await eventually { carol.connection == .disconnected(reason: "You were away too long and lost your seat.") })
+        #expect(carol.isConnectionLost)
+    }
+
+    @Test("leaving never reconnects")
+    func leaveDoesNotReconnect() async {
+        let table = HostedTable(room: MatchRoomBuilder().build())
+        var attempts = 0
+        let alice = MatchSessionClient(identity: TestPlayers.alice, transport: await table.connect(id: TestPlayers.aliceConnection)) {
+            attempts += 1
+            return await table.connect()
+        }
+        let bob = MatchSessionClient(identity: TestPlayers.bob, transport: await table.connect(id: TestPlayers.bobConnection))
+        await alice.connect()
+        await bob.connect()
+        #expect(await eventually { alice.view?.phase == .inHand })
+        await alice.leave()
+        try? await Task.sleep(for: .milliseconds(50))
+        #expect(attempts == 0)
+        #expect(alice.connection == .disconnected(reason: nil))
     }
 
     @Test("a bigger table: the host starts it and every player is dealt in")
@@ -276,12 +348,12 @@ struct MatchSessionClientTests {
 
         await table.waitForAbsences()
         #expect(await eventually { alice.lastDeparture == "Carol" })
-        #expect(alice.view?.player(at: .three) == nil)
+        #expect(await eventually { alice.view?.player(at: .three) == nil })
     }
 
     @Test("a player leaving a bigger table is named to the others")
     func departureNamed() async {
-        let table = HostedTable(room: MatchRoomBuilder().maxPlayers(3).build(), graceInterval: .zero)
+        let table = HostedTable(room: MatchRoomBuilder().maxPlayers(3).build(), graceInterval: .zero, absenceTimeout: .milliseconds(50))
         let alice = MatchSessionClient(identity: TestPlayers.alice, transport: await table.connect(id: TestPlayers.aliceConnection))
         let bob = MatchSessionClient(identity: TestPlayers.bob, transport: await table.connect(id: TestPlayers.bobConnection))
         let carol = MatchSessionClient(identity: TestPlayers.carol, transport: await table.connect(id: TestPlayers.carolConnection))
@@ -294,6 +366,7 @@ struct MatchSessionClientTests {
         #expect(await eventually { alice.view?.phase == .inHand })
 
         await carol.leave()
+        await table.waitForAbsences()
         #expect(await eventually { alice.lastDeparture == "Carol" })
         #expect(!alice.opponentLeft, "Bob is still at the table")
     }

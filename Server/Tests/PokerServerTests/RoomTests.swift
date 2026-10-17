@@ -165,6 +165,16 @@ struct RoomTimingTests {
         #expect(await room.authority.room.match.phase == .finished(winner: .one))
     }
 
+    @Test("a player who leaves is held like a drop and knocked out after the timeout")
+    func leaveExpires() async {
+        let room = await headsUp(absence: .milliseconds(50))
+        await room.receive(.leave, from: TestPlayers.bobConnection)
+        #expect(await room.authority.room.players[.two] != nil, "the seat is held at first")
+        await room.waitForAbsences()
+        #expect(await room.authority.room.players[.two] == nil)
+        #expect(await room.authority.room.match.phase == .finished(winner: .one))
+    }
+
     @Test("a player who rejoins before the timeout keeps the seat")
     func rejoinInTime() async {
         let room = await headsUp(absence: .milliseconds(200))

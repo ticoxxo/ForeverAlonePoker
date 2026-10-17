@@ -12,6 +12,8 @@ private final class FakeWebSocketConnection: WebSocketConnection, @unchecked Sen
     private(set) var sent: [String] = []
     private(set) var resumed = false
     private(set) var cancelled = false
+    /// Set to make the next pings fail, as when the network vanished.
+    var pingFails = false
 
     func push(_ text: String) { continuation.yield(text) }
     func close() { continuation.finish() }
@@ -24,6 +26,10 @@ private final class FakeWebSocketConnection: WebSocketConnection, @unchecked Sen
         if iterator == nil { iterator = frames.makeAsyncIterator() }
         guard let text = await iterator?.next() else { throw URLError(.networkConnectionLost) }
         return text
+    }
+
+    func sendPing() async throws {
+        if pingFails { throw URLError(.timedOut) }
     }
 
     func cancel() {
@@ -63,6 +69,16 @@ struct WebSocketTransportTests {
         #expect(socket.cancelled)
         var incoming = transport.incoming.makeAsyncIterator()
         #expect(await incoming.next() == nil)
+    }
+
+    @Test("a missed heartbeat closes the socket and finishes the stream")
+    func heartbeat() async {
+        let socket = FakeWebSocketConnection()
+        let transport = WebSocketTransport(connection: socket, heartbeat: .milliseconds(20))
+        socket.pingFails = true
+        var incoming = transport.incoming.makeAsyncIterator()
+        #expect(await incoming.next() == nil)
+        #expect(socket.cancelled)
     }
 
     @Test("a socket error finishes the stream")

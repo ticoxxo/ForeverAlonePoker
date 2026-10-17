@@ -70,7 +70,7 @@ actor HostedTable {
 
     fileprivate func send(_ message: ClientMessage, from id: ConnectionID) async throws {
         guard locals[id] != nil else { throw TransportError.notConnected }
-        deliver(await authority.handle(message, from: id))
+        await receive(message, from: id)
         if case .startMatch = message { await scheduleBegin() }
         await scheduleNextHand()
     }
@@ -102,7 +102,7 @@ actor HostedTable {
 
     func receiveRemote(_ message: ClientMessage, from id: ConnectionID) async {
         guard remotes[id] != nil else { return }
-        deliver(await authority.handle(message, from: id))
+        await receive(message, from: id)
         if case .startMatch = message { await scheduleBegin() }
         await scheduleNextHand()
     }
@@ -111,6 +111,13 @@ actor HostedTable {
         expected.remove(id)
         guard remotes.removeValue(forKey: id) != nil else { return }
         await disconnect(id)
+    }
+
+    /// Leaving a match in play holds the seat like a drop (tdr/0016).
+    private func receive(_ message: ClientMessage, from id: ConnectionID) async {
+        let (outbound, absence) = await authority.receive(message, from: id)
+        deliver(outbound)
+        if let absence { scheduleExpiry(of: absence) }
     }
 
     private func disconnect(_ id: ConnectionID) async {

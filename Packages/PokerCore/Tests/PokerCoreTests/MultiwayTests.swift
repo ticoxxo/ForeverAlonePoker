@@ -409,18 +409,26 @@ struct MatchRoomMultiwayTests {
         #expect(room.match.phase == .waitingForHand)
     }
 
-    @Test("a player who leaves mid-match is knocked out and the others play on")
+    @Test("a player who leaves mid-hand is folded at once and comes back folded until the next hand")
     func leaveMidMatch() throws {
         var room = MatchRoomBuilder().maxPlayers(3).build()
         room.seatThreeAndDeal()
         let out = room.handle(.leave, from: TestPlayers.carolConnection)
-        #expect(out.messages(for: TestPlayers.aliceConnection).contains(.playerLeft(seat: .three, name: "Carol")))
-        #expect(room.players[.three] == nil)
-        #expect(room.match.phase == .inHand)
+        #expect(!out.messages(for: TestPlayers.aliceConnection).contains(.playerLeft(seat: .three, name: "Carol")))
+        #expect(room.match.currentHand?[.three].hasFolded == true)
+        #expect(room.players[.three] != nil)
+
+        let back = ConnectionID("conn-carol-2")
+        let rejoined = room.handle(.join(TestPlayers.carol), from: back)
+        let carol = try #require(rejoined.latestView(for: back))
+        #expect(carol.me.hasFolded)
+        #expect(carol.legalActions == .none)
 
         _ = room.handle(.act(.fold), from: TestPlayers.aliceConnection)
-        #expect(room.match.isBusted(.three))
-        #expect(room.match.phase == .waitingForHand, "Alice and Bob still have chips")
+        #expect(room.match.phase == .waitingForHand)
+        #expect(!room.match.isBusted(.three))
+        _ = room.dealNextHand()
+        #expect(room.match.currentHand?[.three].hasFolded == false, "dealt into the next hand")
     }
 
     @Test("knocked-out players stay at the table and see the result")

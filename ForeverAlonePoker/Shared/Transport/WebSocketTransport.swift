@@ -8,12 +8,22 @@ nonisolated protocol WebSocketConnection: Sendable {
     func send(text: String) async throws
     /// Waits for the next text frame. Throws when the socket closes.
     func receiveText() async throws -> String
+    /// Round-trips a ping; throws when no pong comes back.
+    func sendPing() async throws
     func cancel()
 }
 
 extension URLSessionWebSocketTask: WebSocketConnection {
     nonisolated func send(text: String) async throws {
         try await send(.string(text))
+    }
+
+    nonisolated func sendPing() async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, any Error>) in
+            sendPing { error in
+                if let error { continuation.resume(throwing: error) } else { continuation.resume() }
+            }
+        }
     }
 
     nonisolated func receiveText() async throws -> String {
@@ -31,13 +41,18 @@ extension URLSessionWebSocketTask: WebSocketConnection {
 }
 
 /// `MatchTransport` to the Hummingbird server (tdr/0008): one WebSocket per
-/// player, JSON envelopes as text frames.
+/// player, JSON envelopes as text frames. A ping every `heartbeat` notices a
+/// link that died silently (the phone lost its network) and closes the
+/// socket, so the session client can reconnect (tdr/0016).
 nonisolated final class WebSocketTransport: MatchTransport, Sendable {
+    static let defaultHeartbeat: Duration = .seconds(10)
+
     let incoming: AsyncStream<ServerMessage>
     private let connection: any WebSocketConnection
     private let receiveTask: Task<Void, Never>
+    private let heartbeatTask: Task<Void, Never>
 
-    init(connection: any WebSocketConnection) {
+    init(connection: any WebSocketConnection, heartbeat: Duration = WebSocketTransport.defaultHeartbeat) {
         self.connection = connection
         let (stream, continuation) = AsyncStream<ServerMessage>.makeStream()
         incoming = stream
@@ -60,6 +75,23 @@ nonisolated final class WebSocketTransport: MatchTransport, Sendable {
             }
             continuation.finish()
         }
+        heartbeatTask = Task {
+            while !Task.isCancelled {
+                try? await Task.sleep(for: heartbeat)
+                guard !Task.isCancelled else { return }
+                do {
+                    try await connection.sendPing()
+                } catch {
+                    // Cancelling makes the pending receive throw, which ends `incoming`.
+                    connection.cancel()
+                    return
+                }
+            }
+        }
+    }
+
+    deinit {
+        heartbeatTask.cancel()
     }
 
     convenience init(url: URL, session: URLSession = .shared) {
@@ -71,6 +103,7 @@ nonisolated final class WebSocketTransport: MatchTransport, Sendable {
     }
 
     func close() async {
+        heartbeatTask.cancel()
         receiveTask.cancel()
         connection.cancel()
     }

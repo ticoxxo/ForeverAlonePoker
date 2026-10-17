@@ -13,8 +13,8 @@ struct SessionHarness {
     let alice: MatchSessionClient
     let bob: MatchSessionClient
 
-    init(room: MatchRoom = MatchRoomBuilder().build()) async {
-        table = HostedTable(room: room)
+    init(room: MatchRoom = MatchRoomBuilder().build(), absenceTimeout: Duration = HostedTable.defaultAbsenceTimeout) async {
+        table = HostedTable(room: room, absenceTimeout: absenceTimeout)
         alice = MatchSessionClient(identity: TestPlayers.alice, transport: await table.connect(id: TestPlayers.aliceConnection))
         bob = MatchSessionClient(identity: TestPlayers.bob, transport: await table.connect(id: TestPlayers.bobConnection))
     }

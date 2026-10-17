@@ -3,24 +3,47 @@ import PokerCore
 
 /// The poker table. Works identically for local and online play because it
 /// only ever talks to a `MatchSessionClient`. Heads-up the opponent sits
-/// across; at a bigger table the others fan out over the top (tdr/0013).
+/// across; at a bigger table the others fan out over the top (tdr/0013), and
+/// players out of the hand wait in a column at the side (tdr/0016).
 struct TableView: View {
     let client: MatchSessionClient
     /// The emote tray (tdr/0015); off where nobody would see the reactions.
     var showsEmotes = true
+    /// Offered when the connection is gone for good.
+    var onLeave: (() -> Void)? = nil
     @State private var avatars = AvatarLoader()
 
     private var view: PlayerView? { client.view }
     private var status: TableStatus { TableStatus.make(view: view, departure: client.lastDeparture) }
 
     var body: some View {
+        ZStack {
+            table
+                .blur(radius: client.isConnectionLost ? 10 : 0)
+                .allowsHitTesting(!client.isConnectionLost)
+            if client.isConnectionLost {
+                ConnectionLostCard(connection: client.connection, onLeave: onLeave)
+                    .transition(.scale(scale: 0.9).combined(with: .opacity))
+            }
+        }
+        .animation(.easeInOut(duration: 0.25), value: client.isConnectionLost)
+        .background(TableFelt())
+    }
+
+    private var table: some View {
         VStack(spacing: 16) {
             if let view {
                 if view.table.maxPlayers > TableSize.minPlayers {
-                    OpponentsRing(view: view, avatars: avatars, reactions: client.reactions)
+                    let seating = TableSeating(view: view)
+                    OpponentsRing(view: view, players: seating.active, avatars: avatars, reactions: client.reactions)
                         .frame(height: 200)
                         .task(id: view.players.map(\.playerID)) {
                             await avatars.load(view.players.map(\.playerID))
+                        }
+                    Spacer(minLength: 0)
+                        .frame(maxWidth: .infinity)
+                        .overlay(alignment: .trailing) {
+                            WaitingZone(players: seating.waiting, avatars: avatars, reactions: client.reactions)
                         }
                 } else {
                     OpponentSeatView(
@@ -29,11 +52,17 @@ struct TableView: View {
                         revealedCards: view.opponent.map { revealedCards(for: $0.seat, in: view) } ?? [],
                         showsCards: view.street != nil && view.opponent?.hasFolded == false,
                         isActing: view.actor != nil && view.actor == view.opponent?.seat,
+                        avatar: view.opponent.flatMap { avatars.avatar(for: $0.playerID) },
                         reaction: view.opponent.flatMap { client.reactions[$0.seat] }
                     )
+                    .task(id: view.opponent?.playerID) {
+                        if let id = view.opponent?.playerID { await avatars.load([id]) }
+                    }
+                    Spacer(minLength: 0)
                 }
+            } else {
+                Spacer(minLength: 0)
             }
-            Spacer(minLength: 0)
             BoardView(community: view?.community ?? [], pot: collectedPot, street: view?.street)
             StatusBanner(
                 status: status,
@@ -72,7 +101,6 @@ struct TableView: View {
         }
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(TableFelt())
     }
 
     /// Chips already in the middle. Bets on the current street are shown in
@@ -100,15 +128,16 @@ func revealedCards(for seat: Seat, in view: PlayerView) -> [Card] {
 /// know nothing about theirs, and unknown means the default.
 private struct OpponentsRing: View {
     let view: PlayerView
+    /// The players still in the hand (`TableSeating.active`), clockwise.
+    let players: [PlayerSummary]
     let avatars: AvatarLoader
     let reactions: [Seat: MatchSessionClient.Reaction]
 
     var body: some View {
         GeometryReader { geometry in
-            let positions = SeatLayout.positions(count: view.players.count)
+            let positions = SeatLayout.positions(count: players.count)
             ZStack {
-                ForEach(view.players.indices, id: \.self) { index in
-                    let player = view.players[index]
+                ForEach(Array(players.enumerated()), id: \.element.seat) { index, player in
                     let point = positions[index]
                     CompactSeatView(
                         summary: player,
@@ -120,10 +149,91 @@ private struct OpponentsRing: View {
                         reaction: reactions[player.seat]
                     )
                     .position(x: point.x * geometry.size.width, y: point.y * geometry.size.height)
+                    .transition(.opacity)
                 }
             }
+            .animation(.spring(duration: 0.4), value: players.map(\.seat))
         }
         .environment(\.cardSkin, .standard)
+    }
+}
+
+/// Players out of the current hand (folded, or knocked out) at a bigger
+/// table, in a slim column at the side until the next hand (tdr/0016):
+/// pictures only, still able to emote.
+private struct WaitingZone: View {
+    let players: [PlayerSummary]
+    let avatars: AvatarLoader
+    let reactions: [Seat: MatchSessionClient.Reaction]
+
+    var body: some View {
+        VStack(spacing: 14) {
+            ForEach(players, id: \.seat) { player in
+                PlayerAvatar(
+                    data: avatars.avatar(for: player.playerID),
+                    size: 30,
+                    name: player.name,
+                    isReconnecting: player.isReconnecting
+                )
+                .opacity(player.isBusted ? 0.5 : 0.85)
+                .emoteBubble(reactions[player.seat], size: .small)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(player.isBusted ? Text("\(player.name), out") : Text("\(player.name), folded"))
+                .transition(.move(edge: .trailing).combined(with: .opacity))
+            }
+        }
+        .padding(.vertical, players.isEmpty ? 0 : 12)
+        .padding(.horizontal, players.isEmpty ? 0 : 7)
+        .background {
+            if !players.isEmpty {
+                Capsule().fill(.black.opacity(0.25))
+            }
+        }
+        .animation(.spring(duration: 0.4), value: players.map(\.seat))
+    }
+}
+
+/// Covers the blurred table while this device's own connection is down: a
+/// spinner while reconnecting, then the reason and a way out (tdr/0016).
+private struct ConnectionLostCard: View {
+    let connection: MatchSessionClient.ConnectionState
+    let onLeave: (() -> Void)?
+
+    var body: some View {
+        VStack(spacing: 14) {
+            switch connection {
+            case .disconnected(let reason):
+                Image(systemName: "wifi.exclamationmark")
+                    .font(.largeTitle)
+                    .foregroundStyle(.orange)
+                Text("Connection lost")
+                    .font(.headline)
+                if let reason {
+                    Text(reason)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                if let onLeave {
+                    Button("Leave", action: onLeave)
+                        .buttonStyle(.borderedProminent)
+                }
+            default:
+                Text("Unstable connection")
+                    .font(.headline)
+                ProgressView()
+                    .controlSize(.large)
+                    .tint(.orange)
+                Text("Check your connection.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .foregroundStyle(.white)
+        .padding(24)
+        .frame(maxWidth: 260)
+        .background(.black.opacity(0.7), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .accessibilityElement(children: .combine)
     }
 }
 

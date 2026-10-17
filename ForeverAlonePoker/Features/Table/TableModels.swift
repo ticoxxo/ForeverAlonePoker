@@ -143,6 +143,28 @@ nonisolated struct HandOutcome: Equatable {
     }
 }
 
+/// Who sits at the table and who waits at the side (tdr/0016). At a table of
+/// three or more, players out of the current hand (folded, or knocked out)
+/// move to the waiting zone, so the ring only shows players still in it.
+/// Folded players stay there until the next hand is dealt.
+nonisolated struct TableSeating: Equatable {
+    let active: [PlayerSummary]
+    let waiting: [PlayerSummary]
+
+    init(view: PlayerView) {
+        guard view.table.maxPlayers > TableSize.minPlayers else {
+            active = view.players
+            waiting = []
+            return
+        }
+        // `hasFolded` describes the current or just-finished hand, and is
+        // reset when the next one is dealt.
+        let isWaiting: (PlayerSummary) -> Bool = { $0.isBusted || (view.street != nil && $0.hasFolded) }
+        active = view.players.filter { !isWaiting($0) }
+        waiting = view.players.filter(isWaiting)
+    }
+}
+
 /// Where the other players sit around the table, as unit coordinates
 /// (0...1, origin top-left) inside the area above the board. The player is
 /// always at the bottom, so the others fan out over the top arc, clockwise

@@ -1,6 +1,6 @@
 # 0014. Hold dropped seats on a timer, play short all-ins strictly, and deal the next hand automatically
 
-- **Status:** Accepted (supersedes in part 0013 §2 and §4)
+- **Status:** Accepted (supersedes in part 0013 §2 and §4); leaving mid-match superseded by 0016
 - **Date:** 2026-10-17
 - **Feature / area:** `Packages/PokerCore/Sources/PokerCore/{Hand,Authority,Protocol}`, `Server/Sources/PokerServerCore/Room.swift`, `Server/Sources/PokerBot`, `ForeverAlonePoker/Shared/{Transport/HostedTable.swift,Session}`, `ForeverAlonePoker/Features/Table`
 
