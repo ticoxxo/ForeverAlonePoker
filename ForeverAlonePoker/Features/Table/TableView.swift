@@ -12,34 +12,69 @@ struct TableView: View {
     /// Offered when the connection is gone for good.
     var onLeave: (() -> Void)? = nil
     @State private var avatars = AvatarLoader()
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var view: PlayerView? { client.view }
     private var status: TableStatus { TableStatus.make(view: view, departure: client.lastDeparture) }
 
     var body: some View {
-        ZStack {
-            table
-                .blur(radius: client.isConnectionLost ? 10 : 0)
-                .allowsHitTesting(!client.isConnectionLost)
-            if client.isConnectionLost {
-                ConnectionLostCard(connection: client.connection, onLeave: onLeave)
-                    .transition(.scale(scale: 0.9).combined(with: .opacity))
+        GeometryReader { geometry in
+            let arrangement = TableArrangement.make(size: geometry.size)
+            ZStack {
+                table(arrangement, size: geometry.size)
+                    .blur(radius: client.isConnectionLost ? 10 : 0)
+                    .allowsHitTesting(!client.isConnectionLost)
+                if client.isConnectionLost {
+                    ConnectionLostCard(connection: client.connection, onLeave: onLeave)
+                        .transition(.scale(scale: 0.9).combined(with: .opacity))
+                }
             }
+            .animation(.easeInOut(duration: 0.25), value: client.isConnectionLost)
+            // Rotating, resizing a split view or unfolding a foldable glides
+            // into the new arrangement instead of jumping.
+            .animation(reduceMotion ? nil : .smooth, value: arrangement)
         }
-        .animation(.easeInOut(duration: 0.25), value: client.isConnectionLost)
         .background(TableFelt())
     }
 
-    private var table: some View {
-        VStack(spacing: 16) {
+    /// Portrait and spacious stack the actions under the table; landscape
+    /// docks them at the side so the short height only holds the table.
+    @ViewBuilder
+    private func table(_ arrangement: TableArrangement, size: CGSize) -> some View {
+        let cards = arrangement.cardHeights(in: size)
+        if arrangement.docksActionsAtSide {
+            HStack(spacing: Theme.Spacing.large) {
+                tableArea(arrangement, size: size, cards: cards)
+                actions(axis: .vertical)
+                    .frame(width: 280)
+            }
+            .padding(Theme.Spacing.medium)
+        } else {
+            VStack(spacing: Theme.Spacing.large) {
+                tableArea(arrangement, size: size, cards: cards)
+                actions(axis: .horizontal)
+                    .frame(maxWidth: arrangement == .spacious ? 640 : .infinity)
+            }
+            .padding()
+        }
+    }
+
+    private func tableArea(_ arrangement: TableArrangement, size: CGSize, cards: TableArrangement.CardHeights) -> some View {
+        VStack(spacing: arrangement == .landscape ? Theme.Spacing.small : Theme.Spacing.large) {
             if let view {
                 if view.table.maxPlayers > TableSize.minPlayers {
                     let seating = TableSeating(view: view)
-                    OpponentsRing(view: view, players: seating.active, avatars: avatars, reactions: client.reactions)
-                        .frame(height: 200)
-                        .task(id: view.players.map(\.playerID)) {
-                            await avatars.load(view.players.map(\.playerID))
-                        }
+                    OpponentsRing(
+                        view: view,
+                        players: seating.active,
+                        avatars: avatars,
+                        reactions: client.reactions,
+                        cardHeight: cards.compact
+                    )
+                    .frame(height: arrangement.opponentsHeight(in: size))
+                    .task(id: view.players.map(\.playerID)) {
+                        await avatars.load(view.players.map(\.playerID))
+                    }
                     Spacer(minLength: 0)
                         .frame(maxWidth: .infinity)
                         .overlay(alignment: .trailing) {
@@ -53,7 +88,8 @@ struct TableView: View {
                         showsCards: view.street != nil && view.opponent?.hasFolded == false,
                         isActing: view.actor != nil && view.actor == view.opponent?.seat,
                         avatar: view.opponent.flatMap { avatars.avatar(for: $0.playerID) },
-                        reaction: view.opponent.flatMap { client.reactions[$0.seat] }
+                        reaction: view.opponent.flatMap { client.reactions[$0.seat] },
+                        cardHeight: cards.opponent
                     )
                     .task(id: view.opponent?.playerID) {
                         if let id = view.opponent?.playerID { await avatars.load([id]) }
@@ -63,7 +99,7 @@ struct TableView: View {
             } else {
                 Spacer(minLength: 0)
             }
-            BoardView(community: view?.community ?? [], pot: collectedPot, street: view?.street)
+            BoardView(community: view?.community ?? [], pot: collectedPot, street: view?.street, cardHeight: cards.board)
             StatusBanner(
                 status: status,
                 outcome: view.flatMap { HandOutcome(result: $0.lastResult, seat: $0.seat) },
@@ -72,35 +108,42 @@ struct TableView: View {
                 onReady: { Task { await client.ready() } }
             )
             if let table = view?.table, table.isRankedCapable, !table.isEloEnabled {
-                Text("Elo gain disabled for this game")
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.8))
+                Label("Elo gain disabled for this game", systemImage: "chart.line.downtrend.xyaxis")
+                    .font(.footnote)
+                    .foregroundStyle(.white.opacity(0.85))
             }
             Spacer(minLength: 0)
             MySeatView(
                 summary: view?.me,
                 isOnButton: view?.isOnButton ?? false,
                 holeCards: view?.holeCards ?? [],
-                reaction: view.flatMap { client.reactions[$0.seat] }
+                reaction: view.flatMap { client.reactions[$0.seat] },
+                cardHeight: cards.mine
             )
             if let rejection = client.lastRejection {
-                Text(rejection)
-                    .font(.footnote)
+                Label(rejection, systemImage: "exclamationmark.triangle.fill")
+                    .font(.callout)
                     .foregroundStyle(.yellow)
             }
-            HStack(alignment: .bottom, spacing: 12) {
-                ActionBar(model: TableActionModel(legalActions: client.legalActions)) { action in
-                    Task { await client.act(action) }
-                }
-                if showsEmotes, view != nil {
-                    EmotePicker(isEnabled: client.canEmote) { emote in
-                        Task { await client.emote(emote) }
-                    }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// The action panel and, beside or under it, the emote tray.
+    private func actions(axis: Axis) -> some View {
+        let layout = axis == .vertical
+            ? AnyLayout(VStackLayout(spacing: Theme.Spacing.medium))
+            : AnyLayout(HStackLayout(alignment: .bottom, spacing: Theme.Spacing.medium))
+        return layout {
+            ActionBar(model: TableActionModel(legalActions: client.legalActions), axis: axis) { action in
+                Task { await client.act(action) }
+            }
+            if showsEmotes, view != nil {
+                EmotePicker(isEnabled: client.canEmote) { emote in
+                    Task { await client.emote(emote) }
                 }
             }
         }
-        .padding()
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     /// Chips already in the middle. Bets on the current street are shown in
@@ -132,6 +175,7 @@ private struct OpponentsRing: View {
     let players: [PlayerSummary]
     let avatars: AvatarLoader
     let reactions: [Seat: MatchSessionClient.Reaction]
+    let cardHeight: CGFloat
 
     var body: some View {
         GeometryReader { geometry in
@@ -146,7 +190,8 @@ private struct OpponentsRing: View {
                         isActing: view.actor == player.seat,
                         revealedCards: revealedCards(for: player.seat, in: view),
                         showsCards: view.street != nil && !player.hasFolded && !player.isBusted,
-                        reaction: reactions[player.seat]
+                        reaction: reactions[player.seat],
+                        cardHeight: cardHeight
                     )
                     .position(x: point.x * geometry.size.width, y: point.y * geometry.size.height)
                     .transition(.opacity)
@@ -216,7 +261,8 @@ private struct ConnectionLostCard: View {
                 }
                 if let onLeave {
                     Button("Leave", action: onLeave)
-                        .buttonStyle(.borderedProminent)
+                        .buttonStyle(.glassProminent)
+                        .controlSize(.large)
                 }
             default:
                 Text("Unstable connection")
@@ -230,22 +276,10 @@ private struct ConnectionLostCard: View {
             }
         }
         .foregroundStyle(.white)
-        .padding(24)
-        .frame(maxWidth: 260)
-        .background(.black.opacity(0.7), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .padding(Theme.Spacing.xLarge)
+        .frame(maxWidth: 300)
+        .tablePanel()
         .accessibilityElement(children: .combine)
-    }
-}
-
-struct TableFelt: View {
-    var body: some View {
-        RadialGradient(
-            colors: [Color(red: 0.16, green: 0.5, blue: 0.3), Color(red: 0.05, green: 0.25, blue: 0.15)],
-            center: .center,
-            startRadius: 40,
-            endRadius: 600
-        )
-        .ignoresSafeArea()
     }
 }
 
@@ -275,8 +309,9 @@ struct StatusBanner: View {
             case .nextHandSoon:
                 ProgressView("Next hand…")
             case .yourTurn:
-                Text("Your turn")
-                    .font(.headline)
+                Label("Your turn", systemImage: "hand.point.down.fill")
+                    .font(.title3.bold())
+                    .foregroundStyle(Theme.Palette.highlight)
             case .othersTurn(let name):
                 if name.isEmpty {
                     Text("Opponent is thinking…")
@@ -302,16 +337,19 @@ struct StatusBanner: View {
                         .font(.subheadline)
                 }
                 Button("Rematch", action: onReady)
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(.glassProminent)
+                    .controlSize(.large)
             case .playerLeft(let name):
                 Text("\(name) left the table.")
                     .font(.headline)
             }
         }
+        .font(.body)
         .foregroundStyle(.white)
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .background(.black.opacity(0.35), in: RoundedRectangle(cornerRadius: 12))
+        .multilineTextAlignment(.center)
+        .padding(.horizontal, Theme.Spacing.large)
+        .padding(.vertical, Theme.Spacing.medium)
+        .tablePanel(cornerRadius: Theme.Radius.control)
         .id(status)
     }
 

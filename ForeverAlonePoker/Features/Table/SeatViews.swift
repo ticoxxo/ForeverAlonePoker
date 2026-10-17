@@ -11,11 +11,12 @@ struct OpponentSeatView: View {
     var isActing: Bool = false
     var avatar: Data? = nil
     var reaction: MatchSessionClient.Reaction? = nil
+    var cardHeight: CGFloat = 56
 
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: Theme.Spacing.small) {
             if let summary {
-                PlayerAvatar(data: avatar, size: 44, name: summary.name, isReconnecting: summary.isReconnecting)
+                PlayerAvatar(data: avatar, size: 48, name: summary.name, isReconnecting: summary.isReconnecting)
                     .emoteBubble(reaction)
                 SeatHeaderView(
                     name: summary.name,
@@ -29,11 +30,11 @@ struct OpponentSeatView: View {
                 if showsCards {
                     if revealedCards.isEmpty {
                         HStack(spacing: 6) {
-                            CardBackView().frame(height: 56)
-                            CardBackView().frame(height: 56)
+                            CardBackView().frame(height: cardHeight)
+                            CardBackView().frame(height: cardHeight)
                         }
                     } else {
-                        CardRowView(cards: revealedCards, height: 56)
+                        CardRowView(cards: revealedCards, height: cardHeight)
                     }
                 }
                 if summary.streetCommitted > 0 {
@@ -41,7 +42,7 @@ struct OpponentSeatView: View {
                         .foregroundStyle(.white)
                 }
             } else {
-                Text("Waiting for an opponent…")
+                Label("Waiting for an opponent…", systemImage: "person.badge.clock")
                     .font(.headline)
                     .foregroundStyle(.white.opacity(0.8))
             }
@@ -55,15 +56,16 @@ struct MySeatView: View {
     let isOnButton: Bool
     let holeCards: [Card]
     var reaction: MatchSessionClient.Reaction? = nil
+    var cardHeight: CGFloat = 88
 
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: Theme.Spacing.small) {
             if let summary, summary.streetCommitted > 0 {
                 ChipAmountView(amount: summary.streetCommitted)
                     .foregroundStyle(.white)
             }
             if !holeCards.isEmpty {
-                CardRowView(cards: holeCards, height: 88)
+                CardRowView(cards: holeCards, height: cardHeight)
                     .opacity(summary?.hasFolded == true ? 0.4 : 1)
             }
             if let summary {
@@ -100,8 +102,16 @@ struct SeatHeaderView: View {
                     .foregroundStyle(.black)
                     .accessibilityLabel(Text("Dealer button"))
             }
+            if isActing {
+                Image(systemName: "hourglass")
+                    .font(.subheadline.bold())
+                    .foregroundStyle(Theme.Palette.highlight)
+                    .symbolEffect(.pulse)
+                    .accessibilityLabel(Text("Thinking"))
+            }
             Text(name)
                 .font(.headline)
+                .lineLimit(1)
             ChipAmountView(amount: stack)
             if isBusted {
                 StatusTag(text: "Out")
@@ -112,12 +122,13 @@ struct SeatHeaderView: View {
             }
         }
         .foregroundStyle(.white)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .background(.black.opacity(0.35), in: Capsule())
+        .padding(.horizontal, Theme.Spacing.medium)
+        .padding(.vertical, Theme.Spacing.small)
+        .frame(minHeight: Theme.Target.minimum)
+        .background(.black.opacity(0.4), in: Capsule())
         .overlay {
             if isActing {
-                Capsule().strokeBorder(.yellow, lineWidth: 2)
+                Capsule().strokeBorder(Theme.Palette.highlight, lineWidth: 3)
             }
         }
         .opacity(isBusted ? 0.5 : 1)
@@ -134,14 +145,15 @@ struct CompactSeatView: View {
     let revealedCards: [Card]
     let showsCards: Bool
     var reaction: MatchSessionClient.Reaction? = nil
+    var cardHeight: CGFloat = 30
 
     var body: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: Theme.Spacing.xSmall) {
             ZStack(alignment: .bottomTrailing) {
                 PlayerAvatar(data: avatar, size: 36, name: summary.name, isReconnecting: summary.isReconnecting)
                     .overlay {
                         if isActing {
-                            Circle().strokeBorder(.yellow, lineWidth: 2)
+                            Circle().strokeBorder(Theme.Palette.highlight, lineWidth: 3)
                         }
                     }
                 if isOnButton {
@@ -154,9 +166,16 @@ struct CompactSeatView: View {
                 }
             }
             .emoteBubble(reaction)
-            Text(summary.name)
-                .font(.caption.bold())
-                .lineLimit(1)
+            HStack(spacing: 2) {
+                if isActing {
+                    Image(systemName: "hourglass")
+                        .foregroundStyle(Theme.Palette.highlight)
+                        .accessibilityLabel(Text("Thinking"))
+                }
+                Text(summary.name)
+                    .lineLimit(1)
+            }
+            .font(.caption.bold())
             ChipAmountView(amount: summary.stack)
                 .font(.caption2)
             if summary.isBusted {
@@ -169,11 +188,11 @@ struct CompactSeatView: View {
             if showsCards {
                 if revealedCards.isEmpty {
                     HStack(spacing: 2) {
-                        CardBackView().frame(height: 30)
-                        CardBackView().frame(height: 30)
+                        CardBackView().frame(height: cardHeight)
+                        CardBackView().frame(height: cardHeight)
                     }
                 } else {
-                    CardRowView(cards: revealedCards, height: 30)
+                    CardRowView(cards: revealedCards, height: cardHeight)
                 }
             }
             if summary.streetCommitted > 0 {
@@ -182,7 +201,7 @@ struct CompactSeatView: View {
             }
         }
         .foregroundStyle(.white)
-        .frame(width: 96)
+        .frame(width: max(96, cardHeight * 3.4))
         .opacity(summary.isBusted ? 0.5 : 1)
         .accessibilityElement(children: .combine)
     }
@@ -249,9 +268,9 @@ struct StatusTag: View {
     var body: some View {
         Text(text)
             .font(.caption.bold())
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .background(.yellow, in: Capsule())
+            .padding(.horizontal, Theme.Spacing.small)
+            .padding(.vertical, 3)
+            .background(Theme.Palette.highlight, in: Capsule())
             .foregroundStyle(.black)
     }
 }
@@ -261,21 +280,22 @@ struct BoardView: View {
     let community: [Card]
     let pot: Chips
     let street: Street?
+    var cardHeight: CGFloat = 64
 
     var body: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: Theme.Spacing.medium) {
             if pot > 0 {
                 HStack(spacing: 4) {
                     Text("Pot")
                     ChipAmountView(amount: pot)
                 }
-                .font(.subheadline)
+                .font(.headline)
                 .foregroundStyle(.white)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 4)
-                .background(.black.opacity(0.35), in: Capsule())
+                .padding(.horizontal, Theme.Spacing.large)
+                .padding(.vertical, Theme.Spacing.small)
+                .background(.black.opacity(0.4), in: Capsule())
             }
-            CardRowView(cards: community, slots: street == nil ? 0 : 5, height: 64)
+            CardRowView(cards: community, slots: street == nil ? 0 : 5, height: cardHeight)
                 .animation(.spring(duration: 0.35), value: community)
         }
     }

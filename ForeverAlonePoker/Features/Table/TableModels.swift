@@ -1,4 +1,5 @@
 import Foundation
+import CoreGraphics
 import PokerCore
 
 /// Pure presentation state for the action bar, derived from `LegalActions`.
@@ -47,6 +48,23 @@ nonisolated struct TableActionModel: Equatable {
     func clamped(_ amount: Chips) -> Chips {
         guard let range = sizing?.range else { return amount }
         return min(max(amount, range.lowerBound), range.upperBound)
+    }
+
+    /// How far one tap of the − / + buttons moves the amount: the opening
+    /// bet's minimum (the big blind), or half the minimum raise-to, which is
+    /// the size of the raise increment over the bet being raised.
+    var sizingStep: Chips {
+        switch sizing {
+        case .bet(let range): max(1, range.lowerBound)
+        case .raise(let range): max(1, range.lowerBound / 2)
+        case nil: 1
+        }
+    }
+
+    /// The amount one step up (`direction` > 0) or down from `amount`, kept
+    /// in the legal range.
+    func stepped(_ amount: Chips, by direction: Int) -> Chips {
+        clamped(amount + direction.signum() * sizingStep)
     }
 
     /// The action for a chosen slider amount.
@@ -185,5 +203,65 @@ nonisolated enum SeatLayout {
                 y: ((0.85 - 0.75 * sin(angle)) * 1000).rounded() / 1000
             )
         }
+    }
+}
+
+/// How the table arranges itself for the space it has (tdr/0017). Decided
+/// from the container size alone, never the device model, so rotation, iPad
+/// split view and a foldable opening or closing all follow from the size.
+nonisolated enum TableArrangement: Equatable {
+    /// Taller than wide (an upright phone, a narrow split-view column):
+    /// opponents on top, the player at the bottom, actions under them.
+    case portrait
+    /// A phone on its side: the table on the left, the actions docked on the
+    /// trailing side so nothing is stacked into the short height.
+    case landscape
+    /// Plenty of room both ways (iPad, an unfolded foldable): the portrait
+    /// order with bigger cards and a width-limited action panel.
+    case spacious
+
+    /// Below this on the short side a screen is phone-sized.
+    static let spaciousShortSide: CGFloat = 600
+
+    static func make(size: CGSize) -> TableArrangement {
+        guard size.width > 0, size.height > 0 else { return .portrait }
+        if min(size.width, size.height) >= spaciousShortSide { return .spacious }
+        return size.width / size.height > 1.25 ? .landscape : .portrait
+    }
+
+    var docksActionsAtSide: Bool { self == .landscape }
+
+    /// Card sizes for every place cards appear, scaled from the short side.
+    struct CardHeights: Equatable {
+        static let boardRange: ClosedRange<CGFloat> = 44...120
+
+        let board: CGFloat
+        /// The player's own hole cards, the biggest on screen.
+        var mine: CGFloat { board * 1.375 }
+        /// The heads-up opponent.
+        var opponent: CGFloat { board * 0.875 }
+        /// Opponents at a bigger table.
+        var compact: CGFloat { board * 0.47 }
+    }
+
+    func cardHeights(in size: CGSize) -> CardHeights {
+        let factor: CGFloat = switch self {
+        case .portrait: 0.16
+        case .landscape: 0.14
+        case .spacious: 0.11
+        }
+        let range = CardHeights.boardRange
+        let board = min(max(min(size.width, size.height) * factor, range.lowerBound), range.upperBound)
+        return CardHeights(board: board.rounded())
+    }
+
+    /// Height of the area the other players fan out in at a bigger table.
+    func opponentsHeight(in size: CGSize) -> CGFloat {
+        let share: CGFloat = switch self {
+        case .portrait: 0.26
+        case .landscape: 0.3
+        case .spacious: 0.28
+        }
+        return (size.height * share).rounded()
     }
 }

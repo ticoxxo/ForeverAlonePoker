@@ -28,6 +28,21 @@ struct TableActionModelTests {
         #expect(model.sizedAction(100) == .bet(100))
     }
 
+    @Test("the − and + buttons step by the blind and stay in range")
+    func stepping() throws {
+        let preflop = try HandStateBuilder().start()
+        let raise = TableActionModel(legalActions: HandEngine.legalActions(in: preflop, for: .one))
+        #expect(raise.sizingStep == 20)
+        #expect(raise.stepped(40, by: 1) == 60)
+        #expect(raise.stepped(40, by: -1) == 40)
+        #expect(raise.stepped(1490, by: 1) == 1500)
+
+        let flop = try HandEngine.play(preflop, [(.one, .call), (.two, .check)]).state
+        let bet = TableActionModel(legalActions: HandEngine.legalActions(in: flop, for: .two))
+        #expect(bet.sizingStep == 20)
+        #expect(bet.stepped(100, by: -1) == 80)
+    }
+
     @Test("slider values are clamped to the legal range")
     func clamping() throws {
         let state = try HandStateBuilder().start()
