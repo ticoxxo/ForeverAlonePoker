@@ -55,8 +55,6 @@ private struct PeerHarness {
         await alice.connect()
         await bob.connect()
         guard await eventually({ alice.view?.opponent != nil && bob.view?.opponent != nil }) else { return false }
-        await alice.ready()
-        await bob.ready()
         return await eventually { alice.view?.phase == .inHand && bob.view?.phase == .inHand }
     }
 }
@@ -119,15 +117,18 @@ struct PeerLinkTransportTests {
         #expect(await eventually { harness.bob.lastRejection?.contains("Incompatible app version") == true })
     }
 
-    @Test("dropping the link forfeits the guest's hand and holds the seat")
+    @Test("dropping the link holds the seat and folds the guest when the action reaches them")
     func linkDrops() async {
         let harness = await PeerHarness()
         await harness.deal()
 
         await harness.guestLink.disconnect()
         #expect(await eventually { harness.alice.view?.opponent?.isConnected == false })
-        #expect(harness.alice.view?.me.stack == 1520, "the forfeited blinds are collected")
+        #expect(harness.alice.view?.opponent?.hasFolded == false, "not folded out of turn")
         #expect(await eventually { harness.bob.connection == .disconnected(reason: "Connection closed.") })
+
+        await harness.alice.call()
+        #expect(await eventually { harness.alice.view?.me.stack == 1520 }, "Bob's hand is folded on their turn; Alice collects the blinds")
         let room = await harness.table.authority.room
         #expect(room.isFull, "seat is held for a reconnect")
     }

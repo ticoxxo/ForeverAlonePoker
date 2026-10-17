@@ -64,10 +64,8 @@ nonisolated enum TableStatus: Hashable {
     case connecting
     /// Nobody else is seated yet.
     case waitingForOpponent
-    /// Between hands; the player has not pressed Ready yet.
-    case readyPrompt
-    /// Between hands; waiting for the others to press Ready.
-    case waitingForOthersReady
+    /// Between hands; the table deals the next one by itself (tdr/0014).
+    case nextHandSoon
     case yourTurn
     case othersTurn(name: String)
     /// Knocked out; watching until the match ends (tdr/0013).
@@ -92,8 +90,7 @@ nonisolated enum TableStatus: Hashable {
         case .finished(let winner):
             return .matchOver(youWon: winner == view.seat, place: view.me.place)
         case .waitingForHand:
-            if view.me.isBusted { return .spectating }
-            return view.me.isReady ? .waitingForOthersReady : .readyPrompt
+            return view.me.isBusted ? .spectating : .nextHandSoon
         case .inHand:
             if view.isMyTurn { return .yourTurn }
             let name = view.actor.flatMap { view.player(at: $0)?.name } ?? ""

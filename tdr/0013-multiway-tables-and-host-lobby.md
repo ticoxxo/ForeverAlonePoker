@@ -1,6 +1,6 @@
 # 0013. Seat two to six players, gathered in a host-run lobby
 
-- **Status:** Accepted (supersedes in part 0003, 0007, 0008, 0009, 0010)
+- **Status:** Accepted (supersedes in part 0003, 0007, 0008, 0009, 0010); §2 short all-ins and §4 Ready between hands and dropped players superseded by 0014
 - **Date:** 2026-10-16
 - **Feature / area:** `Packages/PokerCore/Sources/PokerCore/{Hand,Match,Authority,Protocol,Rating}`, `Server/Sources/PokerServerCore`, `ForeverAlonePoker/Shared/{Transport,Session,Identity,DesignSystem}`, `Features/{LocalMatch,OnlineMatch,Table}`
 

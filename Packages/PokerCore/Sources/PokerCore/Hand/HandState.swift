@@ -10,6 +10,10 @@ public struct SeatState: Codable, Sendable, Hashable {
     /// Whether the player has voluntarily acted on the current street. Posting
     /// a blind does not count, which is what gives the big blind its option.
     public var hasActedThisStreet: Bool
+    /// The street's bet right after the player last acted voluntarily (what
+    /// they matched, made or checked); `nil` until they act. A short all-in after that only lets them
+    /// raise again once the bet has grown by a full raise (tdr/0014).
+    public var actedAtBet: Chips?
     /// The seat had no chips when the hand began (empty or busted) and is not
     /// dealt in. It counts as folded for every rule.
     public var isSittingOut: Bool

@@ -9,6 +9,7 @@ struct OpponentSeatView: View {
     let revealedCards: [Card]
     let showsCards: Bool
     var isActing: Bool = false
+    var reaction: MatchSessionClient.Reaction? = nil
 
     var body: some View {
         VStack(spacing: 8) {
@@ -19,10 +20,15 @@ struct OpponentSeatView: View {
                     isOnButton: isOnButton,
                     isAllIn: summary.isAllIn,
                     hasFolded: summary.hasFolded,
-                    isConnected: summary.isConnected,
                     isBusted: summary.isBusted,
                     isActing: isActing
                 )
+                .overlay(alignment: .trailing) {
+                    EmoteBubble(reaction: reaction).offset(x: 52)
+                }
+                if !summary.isConnected && !summary.isBusted {
+                    ReconnectingLabel()
+                }
                 if showsCards {
                     if revealedCards.isEmpty {
                         HStack(spacing: 6) {
@@ -51,6 +57,7 @@ struct MySeatView: View {
     let summary: PlayerSummary?
     let isOnButton: Bool
     let holeCards: [Card]
+    var reaction: MatchSessionClient.Reaction? = nil
 
     var body: some View {
         VStack(spacing: 8) {
@@ -69,9 +76,11 @@ struct MySeatView: View {
                     isOnButton: isOnButton,
                     isAllIn: summary.isAllIn,
                     hasFolded: summary.hasFolded,
-                    isConnected: summary.isConnected,
                     isBusted: summary.isBusted
                 )
+                .overlay(alignment: .trailing) {
+                    EmoteBubble(reaction: reaction).offset(x: 52)
+                }
             }
         }
     }
@@ -83,7 +92,6 @@ struct SeatHeaderView: View {
     let isOnButton: Bool
     let isAllIn: Bool
     let hasFolded: Bool
-    let isConnected: Bool
     var isBusted: Bool = false
     var isActing: Bool = false
 
@@ -106,10 +114,6 @@ struct SeatHeaderView: View {
                 StatusTag(text: "All-in")
             } else if hasFolded {
                 StatusTag(text: "Folded")
-            }
-            if !isConnected {
-                Image(systemName: "wifi.slash")
-                    .accessibilityLabel(Text("Disconnected"))
             }
         }
         .foregroundStyle(.white)
@@ -134,6 +138,7 @@ struct CompactSeatView: View {
     let isActing: Bool
     let revealedCards: [Card]
     let showsCards: Bool
+    var reaction: MatchSessionClient.Reaction? = nil
 
     var body: some View {
         VStack(spacing: 4) {
@@ -153,18 +158,17 @@ struct CompactSeatView: View {
                         .accessibilityLabel(Text("Dealer button"))
                 }
             }
+            .overlay(alignment: .topTrailing) {
+                EmoteBubble(reaction: reaction).offset(x: 30, y: -14)
+            }
+            if !summary.isConnected && !summary.isBusted {
+                ReconnectingLabel()
+            }
             Text(summary.name)
                 .font(.caption.bold())
                 .lineLimit(1)
-            HStack(spacing: 4) {
-                ChipAmountView(amount: summary.stack)
-                    .font(.caption2)
-                if !summary.isConnected {
-                    Image(systemName: "wifi.slash")
-                        .font(.caption2)
-                        .accessibilityLabel(Text("Disconnected"))
-                }
-            }
+            ChipAmountView(amount: summary.stack)
+                .font(.caption2)
             if summary.isBusted {
                 StatusTag(text: "Out")
             } else if summary.isAllIn {
@@ -191,6 +195,18 @@ struct CompactSeatView: View {
         .frame(width: 96)
         .opacity(summary.isBusted ? 0.5 : 1)
         .accessibilityElement(children: .combine)
+    }
+}
+
+/// Shown under a player who dropped while their seat is held for them
+/// (tdr/0014). Their hand is folded when the action reaches them.
+struct ReconnectingLabel: View {
+    var body: some View {
+        Label("Reconnecting…", systemImage: "wifi.slash")
+            .font(.caption2)
+            .labelStyle(.titleAndIcon)
+            .foregroundStyle(.white.opacity(0.85))
+            .lineLimit(1)
     }
 }
 

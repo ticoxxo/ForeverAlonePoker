@@ -13,6 +13,10 @@ import PokerCore
 /// Starting a table of three or more (tdr/0013): after the host's
 /// `startMatch` the room waits up to `graceInterval` for sockets that are
 /// open but not yet seated, then deals.
+///
+/// Between hands (tdr/0014) the room deals the next hand `nextHandPause`
+/// after the last one ends, and a player whose socket dropped is knocked out
+/// if they have not rejoined within `absenceTimeout`.
 public actor Room {
     public nonisolated let code: String
     public nonisolated let authority: MatchAuthority
@@ -25,16 +29,24 @@ public actor Room {
     private var publishedCurrentMatch = false
     private let graceInterval: Duration
     private var graceTask: Task<Void, Never>?
+    private let nextHandPause: Duration
+    private var nextHandTask: Task<Void, Never>?
+    private let absenceTimeout: Duration
+    private var absenceTasks: [MatchRoom.Absence: Task<Void, Never>] = [:]
     private let logger = Logger(label: "PokerServer.Room")
 
     public static let defaultGraceInterval: Duration = .seconds(5)
+    public static let defaultNextHandPause: Duration = .seconds(4)
+    public static let defaultAbsenceTimeout: Duration = .seconds(60)
 
     public init(
         code: String,
         configuration: MatchConfiguration = .standard,
         deckProvider: @escaping MatchRoom.DeckProvider = { _ in Deck.shuffled() },
         ranked: RankedServices? = nil,
-        graceInterval: Duration = Room.defaultGraceInterval
+        graceInterval: Duration = Room.defaultGraceInterval,
+        nextHandPause: Duration = Room.defaultNextHandPause,
+        absenceTimeout: Duration = Room.defaultAbsenceTimeout
     ) {
         self.code = code
         authority = MatchAuthority(room: MatchRoom(
@@ -47,6 +59,8 @@ public actor Room {
         lastActivity = createdAt
         self.ranked = ranked
         self.graceInterval = graceInterval
+        self.nextHandPause = nextHandPause
+        self.absenceTimeout = absenceTimeout
     }
 
     /// Registers a connection and returns the stream its socket should drain.
@@ -82,6 +96,7 @@ public actor Room {
             await scheduleBegin()
         }
         await publishIfFinished()
+        await scheduleNextHand()
     }
 
     /// Deals once every open socket has taken a seat or the grace period ends.
@@ -105,6 +120,7 @@ public actor Room {
         graceTask = nil
         deliver(outbound)
         await publishIfFinished()
+        await scheduleNextHand()
     }
 
     /// Waits for a pending start to deal. For tests.
@@ -112,12 +128,60 @@ public actor Room {
         await graceTask?.value
     }
 
+    /// Deals the next hand after the pause whenever one is due.
+    private func scheduleNextHand() async {
+        guard nextHandTask == nil, let ticket = await authority.nextHandTicket else { return }
+        let pause = nextHandPause
+        nextHandTask = Task { [weak self] in
+            guard let self else { return }
+            let outbound = await self.authority.dealNextHand(ticket: ticket, after: pause)
+            await self.finishNextHand(outbound)
+        }
+    }
+
+    private func finishNextHand(_ outbound: [Outbound]) async {
+        nextHandTask = nil
+        deliver(outbound)
+        await publishIfFinished()
+        await scheduleNextHand()
+    }
+
+    /// Waits for a scheduled next hand. For tests.
+    public func waitForNextHand() async {
+        await nextHandTask?.value
+    }
+
     public func detach(_ id: ConnectionID) async {
         guard let continuation = connections.removeValue(forKey: id) else { return }
         continuation.finish()
         lastActivity = Date()
-        deliver(await authority.disconnect(id))
+        let (outbound, absence) = await authority.disconnect(id)
+        deliver(outbound)
+        if let absence { scheduleExpiry(of: absence) }
         await publishIfFinished()
+        await scheduleNextHand()
+    }
+
+    /// Knocks the player out if they are still away after the timeout.
+    private func scheduleExpiry(of absence: MatchRoom.Absence) {
+        let timeout = absenceTimeout
+        absenceTasks[absence] = Task { [weak self] in
+            guard let self else { return }
+            let outbound = await self.authority.expire(absence, after: timeout)
+            await self.finishExpiry(absence, outbound)
+        }
+    }
+
+    private func finishExpiry(_ absence: MatchRoom.Absence, _ outbound: [Outbound]) async {
+        absenceTasks[absence] = nil
+        deliver(outbound)
+        await publishIfFinished()
+        await scheduleNextHand()
+    }
+
+    /// Waits for every pending absence to expire or lapse. For tests.
+    public func waitForAbsences() async {
+        for task in absenceTasks.values { await task.value }
     }
 
     public var connectionCount: Int { connections.count }

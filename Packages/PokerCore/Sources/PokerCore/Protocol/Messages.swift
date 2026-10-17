@@ -4,7 +4,9 @@
 public enum ProtocolVersion {
     /// 2: `PlayerIdentity.countryCode`, session tokens on `join`, `rated` (tdr/0010).
     /// 3: tables of two to six, `startMatch`, `TableInfo`, `playerLeft` (tdr/0013).
-    public static let current = 3
+    /// 4: the authority deals the next hand by itself (tdr/0014); `emote`,
+    ///    `PlayerView.canEmote` (tdr/0015).
+    public static let current = 4
 }
 
 /// Versioned wrapper around any message.
@@ -43,13 +45,16 @@ public enum ClientMessage: Codable, Sendable, Hashable {
     /// `sessionToken` is the server-issued ranked token (tdr/0010); `nil`
     /// plays unranked. Only the internet server verifies it.
     case join(PlayerIdentity, sessionToken: String? = nil)
-    /// Ready for the next hand (or for a rematch once the match is finished).
+    /// Ready for a rematch once the match is finished. Between hands the
+    /// authority deals by itself (tdr/0014), so it is ignored there.
     case ready
     case act(PlayerAction)
     case leave
     /// Host only: deal the first hand of a table of three or more. Players
     /// still connecting get a short grace period first (tdr/0013).
     case startMatch
+    /// One reaction for the table; one per turn (tdr/0015).
+    case emote(Emote)
 }
 
 /// The referee's verdict on a ranked match for one player.
@@ -78,4 +83,6 @@ public enum ServerMessage: Codable, Sendable, Hashable {
     case playerLeft(seat: Seat, name: String)
     /// Sent once by the internet server after a ranked match is published.
     case rated(RatingUpdate)
+    /// A player's reaction, sent to everyone at the table, sender included.
+    case emote(seat: Seat, emote: Emote)
 }

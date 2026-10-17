@@ -2,7 +2,7 @@
 import Foundation
 import PokerCore
 
-/// A development-only opponent that readies up and checks or calls whenever
+/// A development-only opponent that accepts rematches and checks or calls whenever
 /// it is its turn. Used by previews and the practice table so the UI can be
 /// exercised without a second device. Not a bot and not shipped.
 final class AutoCallingOpponent {
@@ -21,9 +21,10 @@ final class AutoCallingOpponent {
                 try? await Task.sleep(for: .milliseconds(400))
                 guard let view = client.view else { continue }
                 switch view.phase {
-                case .lobby:
+                case .lobby, .waitingForHand:
+                    // The table deals the next hand by itself (tdr/0014).
                     continue
-                case .waitingForHand, .finished:
+                case .finished:
                     if !view.me.isReady, !view.players.isEmpty { await client.ready() }
                 case .inHand:
                     guard view.isMyTurn else { continue }

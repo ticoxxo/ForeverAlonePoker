@@ -79,15 +79,12 @@ struct TableStatusTests {
         #expect(TableStatus.make(view: room.view(for: .one), departure: nil) == .waitingForOpponent)
     }
 
-    @Test("between hands shows the ready prompt until the player is ready")
-    func readyPrompt() {
+    @Test("between hands the next hand is coming, with no Ready to press")
+    func nextHandSoon() {
         var room = MatchRoomBuilder().build()
         room.seatAliceAndBobAndDeal()
         _ = room.handle(.act(.fold), from: TestPlayers.aliceConnection)
-        #expect(TableStatus.make(view: room.view(for: .one), departure: nil) == .readyPrompt)
-
-        _ = room.handle(.ready, from: TestPlayers.aliceConnection)
-        #expect(TableStatus.make(view: room.view(for: .one), departure: nil) == .waitingForOthersReady)
+        #expect(TableStatus.make(view: room.view(for: .one), departure: nil) == .nextHandSoon)
     }
 
     @Test("during a hand it reports whose turn it is, by name")
@@ -132,7 +129,7 @@ struct TableStatusTests {
         _ = room.handle(.act(.call), from: TestPlayers.carolConnection)
         #expect(room.match.isBusted(.three))
         #expect(TableStatus.make(view: room.view(for: .three), departure: nil) == .spectating)
-        #expect(TableStatus.make(view: room.view(for: .two), departure: nil) == .readyPrompt)
+        #expect(TableStatus.make(view: room.view(for: .two), departure: nil) == .nextHandSoon)
     }
 }
 

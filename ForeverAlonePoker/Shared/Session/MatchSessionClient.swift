@@ -14,6 +14,13 @@ final class MatchSessionClient {
         case disconnected(reason: String?)
     }
 
+    /// An emote showing by a player's seat (tdr/0015). Each one is distinct,
+    /// so the same emoji sent twice restarts the bubble.
+    nonisolated struct Reaction: Equatable, Sendable {
+        let id = UUID()
+        let emote: Emote
+    }
+
     let identity: PlayerIdentity
 
     private(set) var connection: ConnectionState = .idle
@@ -34,6 +41,12 @@ final class MatchSessionClient {
     /// and cleared when the next match starts.
     private(set) var ratingUpdate: RatingUpdate?
     var onRated: ((RatingUpdate) -> Void)?
+    /// Emotes currently showing, by the seat that sent them.
+    private(set) var reactions: [Seat: Reaction] = [:]
+    /// How long an emote stays by the sender's seat.
+    var reactionDuration: Duration = .seconds(3)
+    /// Sent an emote the authority has not answered yet.
+    private var emotePending = false
     /// Sent with the join; `nil` plays unranked.
     private let sessionToken: String?
 
@@ -50,6 +63,8 @@ final class MatchSessionClient {
     /// A heads-up opponent left and nobody else is at the table.
     var opponentLeft: Bool { lastDeparture != nil && view?.players.isEmpty == true }
     var legalActions: LegalActions { view?.legalActions ?? .none }
+    /// One emote per turn; the authority says when another is allowed.
+    var canEmote: Bool { view?.canEmote == true && !emotePending }
 
     private let transport: any MatchTransport
     private var receiveTask: Task<Void, Never>?
@@ -93,6 +108,12 @@ final class MatchSessionClient {
     func raise(to total: Chips) async { await act(.raise(to: total)) }
     func allIn() async { await act(.allIn) }
 
+    func emote(_ emote: Emote) async {
+        guard canEmote else { return }
+        emotePending = true
+        await send(.emote(emote))
+    }
+
     // MARK: - Private
 
     private var isDisconnected: Bool {
@@ -129,18 +150,32 @@ final class MatchSessionClient {
         case .state(let newView):
             if newView.phase == .inHand, newView.handNumber != view?.handNumber { lastDeparture = nil }
             view = newView
+            emotePending = false
             lastRejection = nil
             reportIfFinished(newView)
         case .event(let event):
             events.append(event)
             if events.count > maxEvents { events.removeFirst(events.count - maxEvents) }
         case .rejected(let reason):
+            emotePending = false
             lastRejection = reason
         case .playerLeft(_, let name):
             lastDeparture = name
         case .rated(let update):
             ratingUpdate = update
             onRated?(update)
+        case .emote(let seat, let emote):
+            show(Reaction(emote: emote), at: seat)
+        }
+    }
+
+    private func show(_ reaction: Reaction, at seat: Seat) {
+        reactions[seat] = reaction
+        let duration = reactionDuration
+        Task { [weak self] in
+            try? await Task.sleep(for: duration)
+            guard let self, self.reactions[seat] == reaction else { return }
+            self.reactions[seat] = nil
         }
     }
 

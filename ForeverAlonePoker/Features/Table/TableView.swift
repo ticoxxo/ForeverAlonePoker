@@ -6,6 +6,8 @@ import PokerCore
 /// across; at a bigger table the others fan out over the top (tdr/0013).
 struct TableView: View {
     let client: MatchSessionClient
+    /// The emote tray (tdr/0015); off where nobody would see the reactions.
+    var showsEmotes = true
     @State private var avatars = AvatarLoader()
 
     private var view: PlayerView? { client.view }
@@ -15,7 +17,7 @@ struct TableView: View {
         VStack(spacing: 16) {
             if let view {
                 if view.table.maxPlayers > TableSize.minPlayers {
-                    OpponentsRing(view: view, avatars: avatars)
+                    OpponentsRing(view: view, avatars: avatars, reactions: client.reactions)
                         .frame(height: 200)
                         .task(id: view.players.map(\.playerID)) {
                             await avatars.load(view.players.map(\.playerID))
@@ -26,7 +28,8 @@ struct TableView: View {
                         isOnButton: view.opponent.map { view.button == $0.seat } ?? false,
                         revealedCards: view.opponent.map { revealedCards(for: $0.seat, in: view) } ?? [],
                         showsCards: view.street != nil && view.opponent?.hasFolded == false,
-                        isActing: view.actor != nil && view.actor == view.opponent?.seat
+                        isActing: view.actor != nil && view.actor == view.opponent?.seat,
+                        reaction: view.opponent.flatMap { client.reactions[$0.seat] }
                     )
                 }
             }
@@ -48,15 +51,23 @@ struct TableView: View {
             MySeatView(
                 summary: view?.me,
                 isOnButton: view?.isOnButton ?? false,
-                holeCards: view?.holeCards ?? []
+                holeCards: view?.holeCards ?? [],
+                reaction: view.flatMap { client.reactions[$0.seat] }
             )
             if let rejection = client.lastRejection {
                 Text(rejection)
                     .font(.footnote)
                     .foregroundStyle(.yellow)
             }
-            ActionBar(model: TableActionModel(legalActions: client.legalActions)) { action in
-                Task { await client.act(action) }
+            HStack(alignment: .bottom, spacing: 12) {
+                ActionBar(model: TableActionModel(legalActions: client.legalActions)) { action in
+                    Task { await client.act(action) }
+                }
+                if showsEmotes, view != nil {
+                    EmotePicker(isEnabled: client.canEmote) { emote in
+                        Task { await client.emote(emote) }
+                    }
+                }
             }
         }
         .padding()
@@ -90,6 +101,7 @@ func revealedCards(for seat: Seat, in view: PlayerView) -> [Card] {
 private struct OpponentsRing: View {
     let view: PlayerView
     let avatars: AvatarLoader
+    let reactions: [Seat: MatchSessionClient.Reaction]
 
     var body: some View {
         GeometryReader { geometry in
@@ -104,7 +116,8 @@ private struct OpponentsRing: View {
                         isOnButton: view.button == player.seat && view.street != nil,
                         isActing: view.actor == player.seat,
                         revealedCards: revealedCards(for: player.seat, in: view),
-                        showsCards: view.street != nil && !player.hasFolded && !player.isBusted
+                        showsCards: view.street != nil && !player.hasFolded && !player.isBusted,
+                        reaction: reactions[player.seat]
                     )
                     .position(x: point.x * geometry.size.width, y: point.y * geometry.size.height)
                 }
@@ -126,7 +139,8 @@ struct TableFelt: View {
     }
 }
 
-/// Tells the player what is happening and offers the Ready button between hands.
+/// Tells the player what is happening and offers the Rematch button once a
+/// match is over.
 struct StatusBanner: View {
     let status: TableStatus
     let outcome: HandOutcome?
@@ -148,11 +162,8 @@ struct StatusBanner: View {
                 ProgressView("Connecting…")
             case .waitingForOpponent:
                 ProgressView("Waiting for players…")
-            case .readyPrompt:
-                Button("Ready for the next hand", action: onReady)
-                    .buttonStyle(.borderedProminent)
-            case .waitingForOthersReady:
-                ProgressView("Waiting for the others…")
+            case .nextHandSoon:
+                ProgressView("Next hand…")
             case .yourTurn:
                 Text("Your turn")
                     .font(.headline)
@@ -196,7 +207,7 @@ struct StatusBanner: View {
 
     private var showsOutcome: Bool {
         switch status {
-        case .readyPrompt, .waitingForOthersReady, .spectating, .matchOver: true
+        case .nextHandSoon, .spectating, .matchOver: true
         default: false
         }
     }

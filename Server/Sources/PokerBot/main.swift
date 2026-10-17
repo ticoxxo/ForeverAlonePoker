@@ -62,11 +62,14 @@ while true {
         print("\(name) left")
     case .rated(let update):
         print("Rated: \(update.rating.value) (\(update.delta >= 0 ? "+" : "")\(update.delta))")
+    case .emote(let seat, let emote):
+        print("\(seat): \(emote.symbol)")
     case .state(let view):
         switch view.phase {
-        case .lobby:
+        case .lobby, .waitingForHand:
+            // The server deals the next hand by itself (tdr/0014).
             continue
-        case .waitingForHand, .finished:
+        case .finished:
             if !view.me.isReady, !view.players.isEmpty {
                 try await Task.sleep(for: .seconds(1))
                 try await send(.ready)

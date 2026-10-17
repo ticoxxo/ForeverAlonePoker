@@ -94,6 +94,8 @@ public struct PlayerView: Codable, Sendable, Hashable {
     public let isMyTurn: Bool
     public let legalActions: LegalActions
     public let lastResult: HandResult?
+    /// This player has not sent an emote yet this turn (tdr/0015).
+    public let canEmote: Bool
 
     public init(
         seat: Seat,
@@ -110,7 +112,8 @@ public struct PlayerView: Codable, Sendable, Hashable {
         actor: Seat? = nil,
         isMyTurn: Bool,
         legalActions: LegalActions,
-        lastResult: HandResult?
+        lastResult: HandResult?,
+        canEmote: Bool = false
     ) {
         self.seat = seat
         self.me = me
@@ -127,6 +130,7 @@ public struct PlayerView: Codable, Sendable, Hashable {
         self.isMyTurn = isMyTurn
         self.legalActions = legalActions
         self.lastResult = lastResult
+        self.canEmote = canEmote
     }
 
     public var isOnButton: Bool { button == seat }

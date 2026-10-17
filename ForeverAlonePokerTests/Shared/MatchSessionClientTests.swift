@@ -224,6 +224,61 @@ struct MatchSessionClientTests {
         #expect(alice.view?.holeCards.count == 2)
     }
 
+    @Test("an emote shows by the sender's seat for everyone, once per turn, then fades")
+    func emotes() async {
+        let harness = await SessionHarness()
+        harness.alice.reactionDuration = .milliseconds(100)
+        await harness.deal()
+        #expect(harness.bob.canEmote)
+
+        await harness.bob.emote(.laughing)
+        #expect(await eventually { harness.alice.reactions[.two]?.emote == .laughing })
+        #expect(await eventually { harness.bob.reactions[.two]?.emote == .laughing })
+        #expect(!harness.bob.canEmote, "one emote per turn")
+
+        #expect(await eventually { harness.alice.reactions[.two] == nil }, "the bubble fades")
+        await harness.alice.call()
+        #expect(await eventually { harness.bob.canEmote }, "the action moved on")
+    }
+
+    @Test("the hosted table deals the next hand by itself after the pause")
+    func autoDeal() async {
+        let table = HostedTable(room: MatchRoomBuilder().build(), nextHandPause: .milliseconds(50))
+        let alice = MatchSessionClient(identity: TestPlayers.alice, transport: await table.connect(id: TestPlayers.aliceConnection))
+        let bob = MatchSessionClient(identity: TestPlayers.bob, transport: await table.connect(id: TestPlayers.bobConnection))
+        await alice.connect()
+        await bob.connect()
+        #expect(await eventually { alice.view?.phase == .inHand })
+
+        await alice.fold()
+        #expect(await eventually { alice.view?.handNumber == 2 && alice.view?.phase == .inHand })
+    }
+
+    @Test("a dropped player is shown reconnecting, then knocked out when the timeout passes")
+    func absenceExpires() async {
+        let table = HostedTable(room: MatchRoomBuilder().maxPlayers(3).build(), graceInterval: .zero, absenceTimeout: .milliseconds(100))
+        let alice = MatchSessionClient(identity: TestPlayers.alice, transport: await table.connect(id: TestPlayers.aliceConnection))
+        let bob = MatchSessionClient(identity: TestPlayers.bob, transport: await table.connect(id: TestPlayers.bobConnection))
+        let carolTransport = await table.connect(id: TestPlayers.carolConnection)
+        let carol = MatchSessionClient(identity: TestPlayers.carol, transport: carolTransport)
+        await alice.connect()
+        await bob.connect()
+        await carol.connect()
+        #expect(await eventually { alice.view?.players.count == 2 })
+        await alice.startMatch()
+        await table.waitForStart()
+        #expect(await eventually { alice.view?.phase == .inHand })
+
+        // The connection drops without a leave.
+        await carolTransport.close()
+        #expect(await eventually { alice.view?.player(at: .three)?.isConnected == false })
+        #expect(alice.view?.player(at: .three)?.hasFolded == false, "the hand stays live until Carol's turn")
+
+        await table.waitForAbsences()
+        #expect(await eventually { alice.lastDeparture == "Carol" })
+        #expect(alice.view?.player(at: .three) == nil)
+    }
+
     @Test("a player leaving a bigger table is named to the others")
     func departureNamed() async {
         let table = HostedTable(room: MatchRoomBuilder().maxPlayers(3).build(), graceInterval: .zero)

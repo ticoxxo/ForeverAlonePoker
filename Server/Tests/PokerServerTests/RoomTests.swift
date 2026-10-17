@@ -129,6 +129,54 @@ struct RoomStartTests {
     }
 }
 
+@Suite("Room: between hands and dropped players")
+struct RoomTimingTests {
+    private func headsUp(pause: Duration = .seconds(30), absence: Duration = .seconds(30)) async -> Room {
+        let room = Room(
+            code: "TEST01",
+            deckProvider: { _ in HandStateBuilder().deck() },
+            nextHandPause: pause,
+            absenceTimeout: absence
+        )
+        for (identity, connection) in [(TestPlayers.alice, TestPlayers.aliceConnection), (TestPlayers.bob, TestPlayers.bobConnection)] {
+            _ = await room.attach(connection)
+            await room.receive(.join(identity), from: connection)
+        }
+        return room
+    }
+
+    @Test("the next hand is dealt after the pause with nobody pressing Ready")
+    func autoDeal() async {
+        let room = await headsUp(pause: .milliseconds(50))
+        await room.receive(.act(.fold), from: TestPlayers.aliceConnection)
+        #expect(await room.authority.room.match.phase == .waitingForHand)
+        await room.waitForNextHand()
+        #expect(await room.authority.room.match.currentHand?.handNumber == 2)
+        #expect(await room.authority.room.match.phase == .inHand)
+    }
+
+    @Test("a dropped player still away after the timeout is knocked out")
+    func absenceExpires() async {
+        let room = await headsUp(absence: .milliseconds(50))
+        await room.detach(TestPlayers.bobConnection)
+        #expect(await room.authority.room.players[.two] != nil, "the seat is held at first")
+        await room.waitForAbsences()
+        #expect(await room.authority.room.players[.two] == nil)
+        #expect(await room.authority.room.match.phase == .finished(winner: .one))
+    }
+
+    @Test("a player who rejoins before the timeout keeps the seat")
+    func rejoinInTime() async {
+        let room = await headsUp(absence: .milliseconds(200))
+        await room.detach(TestPlayers.bobConnection)
+        let back = ConnectionID("conn-bob-2")
+        _ = await room.attach(back)
+        await room.receive(.join(TestPlayers.bob), from: back)
+        await room.waitForAbsences()
+        #expect(await room.authority.room.players[.two]?.connection == back)
+    }
+}
+
 @Suite("POST /rooms body")
 struct CreateRoomRequestTests {
     @Test("no body is heads-up; a size in range is accepted; anything else is refused")
