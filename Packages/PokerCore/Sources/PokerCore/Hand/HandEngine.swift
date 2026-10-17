@@ -148,6 +148,7 @@ public enum HandEngine {
                 // An all-in for more than the current bet is a bet or raise,
                 // even when it is smaller than the normal minimum.
                 guard othersCanAct(state, besides: seat) else { throw HandError.cannotGoAllIn }
+                guard mayRaise(state, seat: seat) else { throw HandError.raiseNotAllowed }
                 let added = commit(&state, seat: seat, upTo: state[seat].stack)
                 registerAggression(&state, by: seat, newTotal: total)
                 events.append(.acted(seat: seat, action: .allIn, chips: added))
@@ -159,6 +160,7 @@ public enum HandEngine {
             }
         }
 
+        state[seat].actedAtBet = state.currentBet
         try progress(&state, after: seat, events: &events)
         return (state, events)
     }
@@ -196,8 +198,9 @@ public enum HandEngine {
             legal.callAmount = min(toCall, me.stack)
         }
 
-        // Betting and raising are only meaningful if someone can still respond.
-        guard othersCanAct(state, besides: seat), me.stack > toCall else { return legal }
+        // Betting and raising are only meaningful if someone can still respond,
+        // and a short all-in does not reopen raising for who already acted.
+        guard othersCanAct(state, besides: seat), me.stack > toCall, mayRaise(state, seat: seat) else { return legal }
 
         let maxTotal = me.streetCommitted + me.stack
         if state.currentBet == 0 {
@@ -234,7 +237,8 @@ public enum HandEngine {
         return added
     }
 
-    /// Records a bet or raise to `newTotal` and reopens the action for everyone else.
+    /// Records a bet or raise to `newTotal`; everyone else must respond. Only a
+    /// full raise lets those who already acted raise again (`mayRaise`).
     private static func registerAggression(_ state: inout HandState, by seat: Seat, newTotal: Chips) {
         let increment = newTotal - state.currentBet
         if increment >= state.minRaiseIncrement {
@@ -244,6 +248,15 @@ public enum HandEngine {
         for other in state.allSeats {
             state[other].hasActedThisStreet = other == seat
         }
+    }
+
+    /// Whether `seat` may bet or raise: they have not acted on this street, or
+    /// the bet has grown by at least a full raise since they did. Short
+    /// all-ins only add up to reopen raising once together they make a full
+    /// raise (tdr/0014).
+    private static func mayRaise(_ state: HandState, seat: Seat) -> Bool {
+        guard let faced = state[seat].actedAtBet else { return true }
+        return state.currentBet - faced >= state.minRaiseIncrement
     }
 
     private static func othersCanAct(_ state: HandState, besides seat: Seat) -> Bool {
@@ -293,6 +306,7 @@ public enum HandEngine {
             for seat in state.allSeats {
                 state[seat].streetCommitted = 0
                 state[seat].hasActedThisStreet = false
+                state[seat].actedAtBet = nil
             }
             events.append(.streetDealt(street: next, cards: dealt))
             if bettingPossible(state) {

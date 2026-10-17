@@ -14,8 +14,14 @@ import PokerCore
 /// When the host starts a table of three or more (tdr/0013) the first hand is
 /// dealt once every connection, including guests still completing their
 /// handshake (`expectRemote`), has taken a seat, or after `graceInterval`.
+///
+/// Between hands (tdr/0014) the next hand is dealt `nextHandPause` after the
+/// last one ends, and a player who dropped is knocked out if they have not
+/// rejoined within `absenceTimeout`.
 actor HostedTable {
     nonisolated static let defaultGraceInterval: Duration = .seconds(5)
+    nonisolated static let defaultNextHandPause: Duration = .seconds(4)
+    nonisolated static let defaultAbsenceTimeout: Duration = .seconds(60)
 
     let authority: MatchAuthority
     private var locals: [ConnectionID: AsyncStream<ServerMessage>.Continuation] = [:]
@@ -23,14 +29,35 @@ actor HostedTable {
     private var expected: Set<ConnectionID> = []
     private let graceInterval: Duration
     private var graceTask: Task<Void, Never>?
+    private let nextHandPause: Duration
+    private var nextHandTask: Task<Void, Never>?
+    private let absenceTimeout: Duration
+    private var absenceTasks: [MatchRoom.Absence: Task<Void, Never>] = [:]
 
-    init(authority: MatchAuthority, graceInterval: Duration = HostedTable.defaultGraceInterval) {
+    init(
+        authority: MatchAuthority,
+        graceInterval: Duration = HostedTable.defaultGraceInterval,
+        nextHandPause: Duration = HostedTable.defaultNextHandPause,
+        absenceTimeout: Duration = HostedTable.defaultAbsenceTimeout
+    ) {
         self.authority = authority
         self.graceInterval = graceInterval
+        self.nextHandPause = nextHandPause
+        self.absenceTimeout = absenceTimeout
     }
 
-    init(room: MatchRoom, graceInterval: Duration = HostedTable.defaultGraceInterval) {
-        self.init(authority: MatchAuthority(room: room), graceInterval: graceInterval)
+    init(
+        room: MatchRoom,
+        graceInterval: Duration = HostedTable.defaultGraceInterval,
+        nextHandPause: Duration = HostedTable.defaultNextHandPause,
+        absenceTimeout: Duration = HostedTable.defaultAbsenceTimeout
+    ) {
+        self.init(
+            authority: MatchAuthority(room: room),
+            graceInterval: graceInterval,
+            nextHandPause: nextHandPause,
+            absenceTimeout: absenceTimeout
+        )
     }
 
     // MARK: - Local connections
@@ -43,14 +70,15 @@ actor HostedTable {
 
     fileprivate func send(_ message: ClientMessage, from id: ConnectionID) async throws {
         guard locals[id] != nil else { throw TransportError.notConnected }
-        deliver(await authority.handle(message, from: id))
+        await receive(message, from: id)
         if case .startMatch = message { await scheduleBegin() }
+        await scheduleNextHand()
     }
 
     fileprivate func close(_ id: ConnectionID) async {
         guard let continuation = locals.removeValue(forKey: id) else { return }
         continuation.finish()
-        deliver(await authority.disconnect(id))
+        await disconnect(id)
     }
 
     // MARK: - Remote connections
@@ -74,14 +102,29 @@ actor HostedTable {
 
     func receiveRemote(_ message: ClientMessage, from id: ConnectionID) async {
         guard remotes[id] != nil else { return }
-        deliver(await authority.handle(message, from: id))
+        await receive(message, from: id)
         if case .startMatch = message { await scheduleBegin() }
+        await scheduleNextHand()
     }
 
     func detachRemote(_ id: ConnectionID) async {
         expected.remove(id)
         guard remotes.removeValue(forKey: id) != nil else { return }
-        deliver(await authority.disconnect(id))
+        await disconnect(id)
+    }
+
+    /// Leaving a match in play holds the seat like a drop (tdr/0016).
+    private func receive(_ message: ClientMessage, from id: ConnectionID) async {
+        let (outbound, absence) = await authority.receive(message, from: id)
+        deliver(outbound)
+        if let absence { scheduleExpiry(of: absence) }
+    }
+
+    private func disconnect(_ id: ConnectionID) async {
+        let (outbound, absence) = await authority.disconnect(id)
+        deliver(outbound)
+        if let absence { scheduleExpiry(of: absence) }
+        await scheduleNextHand()
     }
 
     // MARK: - Starting
@@ -102,14 +145,60 @@ actor HostedTable {
         Set(locals.keys).union(remotes.keys).union(expected)
     }
 
-    private func finishBegin(_ outbound: [Outbound]) {
+    private func finishBegin(_ outbound: [Outbound]) async {
         graceTask = nil
         deliver(outbound)
+        await scheduleNextHand()
     }
 
     /// Waits for a pending start to deal. For tests.
     func waitForStart() async {
         await graceTask?.value
+    }
+
+    // MARK: - Between hands
+
+    /// Deals the next hand after the pause whenever one is due.
+    private func scheduleNextHand() async {
+        guard nextHandTask == nil, let ticket = await authority.nextHandTicket else { return }
+        let pause = nextHandPause
+        nextHandTask = Task { [weak self] in
+            guard let self else { return }
+            let outbound = await self.authority.dealNextHand(ticket: ticket, after: pause)
+            await self.finishNextHand(outbound)
+        }
+    }
+
+    private func finishNextHand(_ outbound: [Outbound]) async {
+        nextHandTask = nil
+        deliver(outbound)
+        await scheduleNextHand()
+    }
+
+    /// Waits for a scheduled next hand. For tests.
+    func waitForNextHand() async {
+        await nextHandTask?.value
+    }
+
+    /// Knocks the player out if they are still away after the timeout.
+    private func scheduleExpiry(of absence: MatchRoom.Absence) {
+        let timeout = absenceTimeout
+        absenceTasks[absence] = Task { [weak self] in
+            guard let self else { return }
+            let outbound = await self.authority.expire(absence, after: timeout)
+            await self.finishExpiry(absence, outbound)
+        }
+    }
+
+    private func finishExpiry(_ absence: MatchRoom.Absence, _ outbound: [Outbound]) async {
+        absenceTasks[absence] = nil
+        deliver(outbound)
+        await scheduleNextHand()
+    }
+
+    /// Waits for every pending absence to expire or lapse. For tests.
+    func waitForAbsences() async {
+        for task in absenceTasks.values { await task.value }
     }
 
     // MARK: - Delivery

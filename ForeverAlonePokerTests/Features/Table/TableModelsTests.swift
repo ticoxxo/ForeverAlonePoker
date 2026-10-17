@@ -79,15 +79,12 @@ struct TableStatusTests {
         #expect(TableStatus.make(view: room.view(for: .one), departure: nil) == .waitingForOpponent)
     }
 
-    @Test("between hands shows the ready prompt until the player is ready")
-    func readyPrompt() {
+    @Test("between hands the next hand is coming, with no Ready to press")
+    func nextHandSoon() {
         var room = MatchRoomBuilder().build()
         room.seatAliceAndBobAndDeal()
         _ = room.handle(.act(.fold), from: TestPlayers.aliceConnection)
-        #expect(TableStatus.make(view: room.view(for: .one), departure: nil) == .readyPrompt)
-
-        _ = room.handle(.ready, from: TestPlayers.aliceConnection)
-        #expect(TableStatus.make(view: room.view(for: .one), departure: nil) == .waitingForOthersReady)
+        #expect(TableStatus.make(view: room.view(for: .one), departure: nil) == .nextHandSoon)
     }
 
     @Test("during a hand it reports whose turn it is, by name")
@@ -110,6 +107,7 @@ struct TableStatusTests {
         var room = MatchRoomBuilder().build()
         room.seatAliceAndBobAndDeal()
         _ = room.handle(.leave, from: TestPlayers.bobConnection)
+        _ = room.expire(room.absence(of: .two)!)
         #expect(TableStatus.make(view: room.view(for: .one), departure: "Bob") == .playerLeft(name: "Bob"))
     }
 
@@ -132,7 +130,74 @@ struct TableStatusTests {
         _ = room.handle(.act(.call), from: TestPlayers.carolConnection)
         #expect(room.match.isBusted(.three))
         #expect(TableStatus.make(view: room.view(for: .three), departure: nil) == .spectating)
-        #expect(TableStatus.make(view: room.view(for: .two), departure: nil) == .readyPrompt)
+        #expect(TableStatus.make(view: room.view(for: .two), departure: nil) == .nextHandSoon)
+    }
+}
+
+@Suite("TableSeating")
+struct TableSeatingTests {
+    private func threeHanded() -> MatchRoom {
+        var room = MatchRoomBuilder().maxPlayers(3).build()
+        room.seatThreeAndDeal()
+        return room
+    }
+
+    @Test("everyone still in the hand sits at the table")
+    func allActive() {
+        let seating = TableSeating(view: threeHanded().view(for: .one))
+        #expect(seating.active.map(\.seat) == [.two, .three])
+        #expect(seating.waiting.isEmpty)
+    }
+
+    @Test("a player who folds moves to the waiting zone until the next hand is dealt")
+    func foldedWait() {
+        var room = threeHanded()
+        _ = room.handle(.act(.call), from: TestPlayers.aliceConnection)
+        _ = room.handle(.act(.fold), from: TestPlayers.bobConnection)
+        var seating = TableSeating(view: room.view(for: .one))
+        #expect(seating.active.map(\.seat) == [.three])
+        #expect(seating.waiting.map(\.seat) == [.two])
+
+        _ = room.handle(.act(.check), from: TestPlayers.carolConnection)
+        _ = room.handle(.act(.check), from: TestPlayers.carolConnection)
+        _ = room.handle(.act(.check), from: TestPlayers.aliceConnection)
+        _ = room.handle(.act(.check), from: TestPlayers.carolConnection)
+        _ = room.handle(.act(.check), from: TestPlayers.aliceConnection)
+        _ = room.handle(.act(.check), from: TestPlayers.carolConnection)
+        _ = room.handle(.act(.check), from: TestPlayers.aliceConnection)
+        #expect(room.match.phase == .waitingForHand)
+        seating = TableSeating(view: room.view(for: .one))
+        #expect(seating.waiting.map(\.seat) == [.two], "still waiting while the result shows")
+
+        _ = room.dealNextHand()
+        seating = TableSeating(view: room.view(for: .one))
+        #expect(seating.waiting.isEmpty, "back at the table for the new hand")
+    }
+
+    @Test("knocked-out players always wait")
+    func bustedWait() {
+        var room = MatchRoomBuilder()
+            .maxPlayers(3)
+            .startingStack(100)
+            .deck(HandStateBuilder().stacks(100, 100, 100).holeCards(.one, "Ah Ad").holeCards(.two, "Kh Kd").holeCards(.three, "Qh Qc").deck())
+            .build()
+        room.seatThreeAndDeal()
+        _ = room.handle(.act(.fold), from: TestPlayers.aliceConnection)
+        _ = room.handle(.act(.allIn), from: TestPlayers.bobConnection)
+        _ = room.handle(.act(.call), from: TestPlayers.carolConnection)
+        _ = room.dealNextHand()
+        let seating = TableSeating(view: room.view(for: .one))
+        #expect(seating.waiting.map(\.seat) == [.three])
+    }
+
+    @Test("heads-up never splits the table")
+    func headsUp() {
+        var room = MatchRoomBuilder().build()
+        room.seatAliceAndBobAndDeal()
+        _ = room.handle(.act(.fold), from: TestPlayers.aliceConnection)
+        let seating = TableSeating(view: room.view(for: .two))
+        #expect(seating.active.map(\.seat) == [.one])
+        #expect(seating.waiting.isEmpty)
     }
 }
 

@@ -205,7 +205,12 @@ public func buildApplication(
 
     return Application(
         router: router,
-        server: .http1WebSocketUpgrade(webSocketRouter: router),
+        // Ping every 10 s so a phone that vanished from the network is noticed
+        // soon; its seat is then held for a reconnect (tdr/0016).
+        server: .http1WebSocketUpgrade(
+            webSocketRouter: router,
+            configuration: WebSocketServerConfiguration(autoPing: .enabled(timePeriod: .seconds(10)))
+        ),
         configuration: .init(address: .hostname(configuration.hostname, port: configuration.port)),
         logger: logger
     )

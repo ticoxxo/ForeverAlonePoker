@@ -9,17 +9,20 @@ struct OpponentSeatView: View {
     let revealedCards: [Card]
     let showsCards: Bool
     var isActing: Bool = false
+    var avatar: Data? = nil
+    var reaction: MatchSessionClient.Reaction? = nil
 
     var body: some View {
         VStack(spacing: 8) {
             if let summary {
+                PlayerAvatar(data: avatar, size: 44, name: summary.name, isReconnecting: summary.isReconnecting)
+                    .emoteBubble(reaction)
                 SeatHeaderView(
                     name: summary.name,
                     stack: summary.stack,
                     isOnButton: isOnButton,
                     isAllIn: summary.isAllIn,
                     hasFolded: summary.hasFolded,
-                    isConnected: summary.isConnected,
                     isBusted: summary.isBusted,
                     isActing: isActing
                 )
@@ -51,6 +54,7 @@ struct MySeatView: View {
     let summary: PlayerSummary?
     let isOnButton: Bool
     let holeCards: [Card]
+    var reaction: MatchSessionClient.Reaction? = nil
 
     var body: some View {
         VStack(spacing: 8) {
@@ -69,9 +73,9 @@ struct MySeatView: View {
                     isOnButton: isOnButton,
                     isAllIn: summary.isAllIn,
                     hasFolded: summary.hasFolded,
-                    isConnected: summary.isConnected,
                     isBusted: summary.isBusted
                 )
+                .emoteBubble(reaction)
             }
         }
     }
@@ -83,7 +87,6 @@ struct SeatHeaderView: View {
     let isOnButton: Bool
     let isAllIn: Bool
     let hasFolded: Bool
-    let isConnected: Bool
     var isBusted: Bool = false
     var isActing: Bool = false
 
@@ -106,10 +109,6 @@ struct SeatHeaderView: View {
                 StatusTag(text: "All-in")
             } else if hasFolded {
                 StatusTag(text: "Folded")
-            }
-            if !isConnected {
-                Image(systemName: "wifi.slash")
-                    .accessibilityLabel(Text("Disconnected"))
             }
         }
         .foregroundStyle(.white)
@@ -134,11 +133,12 @@ struct CompactSeatView: View {
     let isActing: Bool
     let revealedCards: [Card]
     let showsCards: Bool
+    var reaction: MatchSessionClient.Reaction? = nil
 
     var body: some View {
         VStack(spacing: 4) {
             ZStack(alignment: .bottomTrailing) {
-                AvatarView(data: avatar, size: 36, name: summary.name)
+                PlayerAvatar(data: avatar, size: 36, name: summary.name, isReconnecting: summary.isReconnecting)
                     .overlay {
                         if isActing {
                             Circle().strokeBorder(.yellow, lineWidth: 2)
@@ -153,18 +153,12 @@ struct CompactSeatView: View {
                         .accessibilityLabel(Text("Dealer button"))
                 }
             }
+            .emoteBubble(reaction)
             Text(summary.name)
                 .font(.caption.bold())
                 .lineLimit(1)
-            HStack(spacing: 4) {
-                ChipAmountView(amount: summary.stack)
-                    .font(.caption2)
-                if !summary.isConnected {
-                    Image(systemName: "wifi.slash")
-                        .font(.caption2)
-                        .accessibilityLabel(Text("Disconnected"))
-                }
-            }
+            ChipAmountView(amount: summary.stack)
+                .font(.caption2)
             if summary.isBusted {
                 StatusTag(text: "Out")
             } else if summary.isAllIn {
@@ -192,6 +186,61 @@ struct CompactSeatView: View {
         .opacity(summary.isBusted ? 0.5 : 1)
         .accessibilityElement(children: .combine)
     }
+}
+
+/// A player's picture. While they are reconnecting (tdr/0016) it is dimmed
+/// behind a `wifi.slash` symbol, with a spinning ring around it.
+struct PlayerAvatar: View {
+    let data: Data?
+    let size: CGFloat
+    let name: String
+    var isReconnecting: Bool = false
+
+    var body: some View {
+        AvatarView(data: data, size: size, name: name)
+            .overlay {
+                if isReconnecting {
+                    ZStack {
+                        Circle().fill(.black.opacity(0.55))
+                        Image(systemName: "wifi.slash")
+                            .font(.system(size: size * 0.42, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .symbolEffect(.pulse)
+                    }
+                    .transition(.opacity)
+                }
+            }
+            .overlay {
+                if isReconnecting {
+                    ReconnectRing(diameter: size + max(6, size * 0.16))
+                }
+            }
+            .animation(.easeInOut(duration: 0.25), value: isReconnecting)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(isReconnecting ? Text("\(name), reconnecting") : Text("Profile picture of \(name)"))
+    }
+}
+
+/// An arc that keeps spinning around a reconnecting player's picture.
+private struct ReconnectRing: View {
+    let diameter: CGFloat
+    @State private var isSpinning = false
+
+    var body: some View {
+        Circle()
+            .trim(from: 0, to: 0.7)
+            .stroke(.white, style: StrokeStyle(lineWidth: max(2, diameter * 0.05), lineCap: .round))
+            .frame(width: diameter, height: diameter)
+            .rotationEffect(.degrees(isSpinning ? 360 : 0))
+            .animation(.linear(duration: 1).repeatForever(autoreverses: false), value: isSpinning)
+            .onAppear { isSpinning = true }
+            .allowsHitTesting(false)
+    }
+}
+
+extension PlayerSummary {
+    /// Dropped but still holding the seat (tdr/0014, tdr/0016).
+    nonisolated var isReconnecting: Bool { !isConnected && !isBusted }
 }
 
 struct StatusTag: View {

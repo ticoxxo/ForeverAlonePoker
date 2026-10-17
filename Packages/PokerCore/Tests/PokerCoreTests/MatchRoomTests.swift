@@ -115,7 +115,7 @@ struct MatchRoomPlayTests {
         #expect(out.messages(for: TestPlayers.aliceConnection).isEmpty)
     }
 
-    @Test("a full hand flows through the room and the next hand needs both ready again")
+    @Test("a full hand flows through the room and the next hand is dealt without Ready")
     func fullHand() throws {
         var room = MatchRoomBuilder().build()
         room.seatAliceAndBobAndDeal()
@@ -127,9 +127,10 @@ struct MatchRoomPlayTests {
         #expect(view.me.stack == 1510)
         #expect(view.lastResult?.winners == [.two])
 
-        _ = room.handle(.ready, from: TestPlayers.aliceConnection)
-        #expect(room.match.phase == .waitingForHand)
-        _ = room.handle(.ready, from: TestPlayers.bobConnection)
+        #expect(room.handle(.ready, from: TestPlayers.aliceConnection).isEmpty, "Ready between hands does nothing")
+        #expect(room.nextHandTicket == 1)
+        let next = room.dealNextHand()
+        #expect(next.events(for: TestPlayers.aliceConnection).first == .handStarted(handNumber: 2, button: .two))
         #expect(room.match.currentHand?.handNumber == 2)
         #expect(room.match.currentHand?.button == .two)
     }
@@ -152,19 +153,74 @@ struct MatchRoomPlayTests {
         #expect(room.match.currentHand?.pot == 30)
     }
 
-    @Test("leaving mid-hand forfeits the pot and frees the seat")
+    @Test("leaving mid-match folds the hand at once and holds the seat, chips included")
     func leave() throws {
         var room = MatchRoomBuilder().build()
         room.seatAliceAndBobAndDeal()
         let out = room.handle(.leave, from: TestPlayers.bobConnection)
 
-        #expect(out.messages(for: TestPlayers.aliceConnection).contains(.playerLeft(seat: .two, name: "Bob")))
+        #expect(!out.messages(for: TestPlayers.aliceConnection).contains(.playerLeft(seat: .two, name: "Bob")), "not gone yet")
         let view = try #require(out.latestView(for: TestPlayers.aliceConnection))
         #expect(view.me.stack == 1520, "Alice collects the 30 in blinds")
-        #expect(view.opponent == nil)
-        #expect(view.phase == .finished(winner: .one), "the last player left wins")
-        #expect(!room.isFull)
+        #expect(view.opponent?.isConnected == false)
+        #expect(view.opponent?.stack == 1480)
+        #expect(view.phase == .waitingForHand)
+        #expect(room.isFull, "the seat is held")
+        #expect(room.absence(of: .two) != nil)
         #expect(out.messages(for: TestPlayers.bobConnection).isEmpty)
+    }
+
+    @Test("a player who left and stays away is knocked out when the absence expires")
+    func leaveExpires() throws {
+        var room = MatchRoomBuilder().build()
+        room.seatAliceAndBobAndDeal()
+        _ = room.handle(.leave, from: TestPlayers.bobConnection)
+        let out = room.expire(try #require(room.absence(of: .two)))
+
+        #expect(out.messages(for: TestPlayers.aliceConnection).contains(.playerLeft(seat: .two, name: "Bob")))
+        #expect(out.latestView(for: TestPlayers.aliceConnection)?.phase == .finished(winner: .one), "the last player left wins")
+        #expect(!room.isFull)
+    }
+
+    @Test("a player who left can come back with their chips")
+    func leaveAndReturn() throws {
+        var room = MatchRoomBuilder().build()
+        room.seatAliceAndBobAndDeal()
+        _ = room.handle(.leave, from: TestPlayers.bobConnection)
+        let back = ConnectionID("conn-bob-2")
+        let out = room.handle(.join(TestPlayers.bob), from: back)
+        #expect(out.messages(for: back).first == .welcome(seat: .two, roomCode: "TEST01"))
+        #expect(out.latestView(for: back)?.me.stack == 1480)
+        #expect(!room.dealNextHand().isEmpty, "both are connected again, so the next hand is dealt")
+    }
+
+    @Test("a join takes over a seat still held by a stale connection")
+    func takeover() throws {
+        var room = MatchRoomBuilder().build()
+        room.seatAliceAndBobAndDeal()
+        let fresh = ConnectionID("conn-bob-2")
+        let out = room.handle(.join(TestPlayers.bob), from: fresh)
+        #expect(out.messages(for: fresh).first == .welcome(seat: .two, roomCode: "TEST01"))
+        #expect(out.latestView(for: fresh)?.holeCards.count == 2, "the live hand carries on")
+        #expect(room.seat(of: TestPlayers.bobConnection) == nil)
+        #expect(out.rejections(for: TestPlayers.bobConnection) == ["You joined this table from another device."])
+
+        #expect(room.disconnect(TestPlayers.bobConnection).isEmpty, "the stale socket closing later changes nothing")
+        #expect(room.players[.two]?.connection == fresh)
+    }
+
+    @Test("leaving the lobby or a finished match frees the seat at once")
+    func leaveOutsidePlay() throws {
+        var room = MatchRoomBuilder()
+            .deck(HandStateBuilder().holeCards(.one, "Ah Kh").holeCards(.two, "Qs Qd").board("Ac 7d Ts 4h 9s").deck())
+            .build()
+        room.seatAliceAndBobAndDeal()
+        _ = room.handle(.act(.allIn), from: TestPlayers.aliceConnection)
+        _ = room.handle(.act(.call), from: TestPlayers.bobConnection)
+        #expect(room.match.phase == .finished(winner: .one))
+        let out = room.handle(.leave, from: TestPlayers.bobConnection)
+        #expect(out.messages(for: TestPlayers.aliceConnection).contains(.playerLeft(seat: .two, name: "Bob")))
+        #expect(room.players[.two] == nil)
     }
 
     @Test("a dropped connection keeps the seat for the same identity")
@@ -181,8 +237,62 @@ struct MatchRoomPlayTests {
         let newConnection = ConnectionID("conn-bob-2")
         let back = room.handle(.join(TestPlayers.bob), from: newConnection)
         #expect(back.messages(for: newConnection).first == .welcome(seat: .two, roomCode: "TEST01"))
-        #expect(back.latestView(for: newConnection)?.me.stack == 1480, "the forfeited hand already settled")
+        let bob = try #require(back.latestView(for: newConnection))
+        #expect(!bob.me.hasFolded, "a drop before the player's turn keeps their hand")
+        #expect(bob.holeCards.count == 2)
         #expect(back.latestView(for: TestPlayers.aliceConnection)?.opponent?.isConnected == true)
+    }
+}
+
+@Suite("MatchRoom: emotes")
+struct MatchRoomEmoteTests {
+    @Test("an emote is relayed to every connected player, sender included")
+    func relayed() {
+        var room = MatchRoomBuilder().build()
+        room.seatAliceAndBobAndDeal()
+        let out = room.handle(.emote(.laughing), from: TestPlayers.bobConnection)
+        #expect(out.messages(for: TestPlayers.aliceConnection) == [.emote(seat: .two, emote: .laughing)])
+        #expect(out.messages(for: TestPlayers.bobConnection).first == .emote(seat: .two, emote: .laughing))
+        #expect(out.latestView(for: TestPlayers.bobConnection)?.canEmote == false, "the sender learns their emote is spent")
+        #expect(room.view(for: .one).canEmote)
+    }
+
+    @Test("one emote per turn; the next action gives everyone another")
+    func onePerTurn() {
+        var room = MatchRoomBuilder().build()
+        room.seatAliceAndBobAndDeal()
+        _ = room.handle(.emote(.eyes), from: TestPlayers.bobConnection)
+        let again = room.handle(.emote(.cursing), from: TestPlayers.bobConnection)
+        #expect(again.rejections(for: TestPlayers.bobConnection) == ["One emoji per turn."])
+        #expect(again.messages(for: TestPlayers.aliceConnection).isEmpty)
+
+        let acted = room.handle(.act(.call), from: TestPlayers.aliceConnection)
+        #expect(acted.latestView(for: TestPlayers.bobConnection)?.canEmote == true)
+        let next = room.handle(.emote(.cursing), from: TestPlayers.bobConnection)
+        #expect(next.messages(for: TestPlayers.aliceConnection) == [.emote(seat: .two, emote: .cursing)])
+    }
+
+    @Test("knocked-out players can still emote")
+    func spectators() throws {
+        var room = MatchRoomBuilder()
+            .maxPlayers(3)
+            .startingStack(100)
+            .deck(HandStateBuilder().stacks(100, 100, 100).holeCards(.one, "Ah Ad").holeCards(.two, "Kh Kd").holeCards(.three, "Qh Qc").deck())
+            .build()
+        room.seatThreeAndDeal()
+        _ = room.handle(.act(.fold), from: TestPlayers.aliceConnection)
+        _ = room.handle(.act(.allIn), from: TestPlayers.bobConnection)
+        _ = room.handle(.act(.call), from: TestPlayers.carolConnection)
+        #expect(room.match.isBusted(.three))
+        let out = room.handle(.emote(.melting), from: TestPlayers.carolConnection)
+        #expect(out.messages(for: TestPlayers.aliceConnection) == [.emote(seat: .three, emote: .melting)])
+    }
+
+    @Test("an emote from someone not seated is rejected")
+    func mustBeSeated() {
+        var room = MatchRoomBuilder().build()
+        let out = room.handle(.emote(.smile), from: TestPlayers.aliceConnection)
+        #expect(out.rejections(for: TestPlayers.aliceConnection) == ["Join the room first."])
     }
 }
 
@@ -225,15 +335,42 @@ struct ProtocolTests {
         #expect(try JSONDecoder().decode(ServerEnvelope.self, from: data).message == .rated(update))
     }
 
-    @Test("the protocol version was bumped for multiway tables")
+    @Test("the protocol version was bumped for auto-dealing and emotes")
     func version() {
-        #expect(ProtocolVersion.current == 3)
+        #expect(ProtocolVersion.current == 4)
+    }
+
+    @Test("emotes round-trip as their emoji, and anything else fails to decode")
+    func emoteWireFormat() throws {
+        let message = ClientMessage.emote(.poop)
+        let data = try JSONEncoder().encode(ClientEnvelope(message))
+        #expect(String(decoding: data, as: UTF8.self).contains("💩"))
+        #expect(try JSONDecoder().decode(ClientEnvelope.self, from: data).message == message)
+        #expect(Emote.allCases.map(\.symbol) == ["😃", "🫠", "😂", "🙃", "🤬", "🥶", "💩", "😎", "👀"])
+
+        let forged = Data(String(decoding: data, as: UTF8.self).replacingOccurrences(of: "💩", with: "hello").utf8)
+        #expect(throws: DecodingError.self) { try JSONDecoder().decode(ClientEnvelope.self, from: forged) }
+
+        let relayed = ServerMessage.emote(seat: .two, emote: .cool)
+        let back = try JSONDecoder().decode(ServerEnvelope.self, from: JSONEncoder().encode(ServerEnvelope(relayed)))
+        #expect(back.message == relayed)
     }
 
     @Test("seats travel as bare integers")
     func seatWireFormat() throws {
         #expect(String(decoding: try JSONEncoder().encode(Seat.three), as: UTF8.self) == "2")
         #expect(try JSONDecoder().decode(Seat.self, from: Data("5".utf8)) == .six)
+    }
+
+    @Test("the authority reports the absence a leave starts")
+    func authorityLeave() async throws {
+        let authority = MatchAuthority(room: MatchRoomBuilder().build())
+        _ = await authority.receive(.join(TestPlayers.alice), from: TestPlayers.aliceConnection)
+        _ = await authority.receive(.join(TestPlayers.bob), from: TestPlayers.bobConnection)
+        let (_, absence) = await authority.receive(.leave, from: TestPlayers.bobConnection)
+        #expect(absence?.seat == .two)
+        let (_, none) = await authority.receive(.act(.call), from: TestPlayers.aliceConnection)
+        #expect(none == nil)
     }
 
     @Test("the match authority serialises room access")

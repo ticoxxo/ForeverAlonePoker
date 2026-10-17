@@ -64,10 +64,8 @@ nonisolated enum TableStatus: Hashable {
     case connecting
     /// Nobody else is seated yet.
     case waitingForOpponent
-    /// Between hands; the player has not pressed Ready yet.
-    case readyPrompt
-    /// Between hands; waiting for the others to press Ready.
-    case waitingForOthersReady
+    /// Between hands; the table deals the next one by itself (tdr/0014).
+    case nextHandSoon
     case yourTurn
     case othersTurn(name: String)
     /// Knocked out; watching until the match ends (tdr/0013).
@@ -92,8 +90,7 @@ nonisolated enum TableStatus: Hashable {
         case .finished(let winner):
             return .matchOver(youWon: winner == view.seat, place: view.me.place)
         case .waitingForHand:
-            if view.me.isBusted { return .spectating }
-            return view.me.isReady ? .waitingForOthersReady : .readyPrompt
+            return view.me.isBusted ? .spectating : .nextHandSoon
         case .inHand:
             if view.isMyTurn { return .yourTurn }
             let name = view.actor.flatMap { view.player(at: $0)?.name } ?? ""
@@ -143,6 +140,28 @@ nonisolated struct HandOutcome: Equatable {
             category = result.shownHands.first { $0.seat == named }?.rank.category
             endedByFold = false
         }
+    }
+}
+
+/// Who sits at the table and who waits at the side (tdr/0016). At a table of
+/// three or more, players out of the current hand (folded, or knocked out)
+/// move to the waiting zone, so the ring only shows players still in it.
+/// Folded players stay there until the next hand is dealt.
+nonisolated struct TableSeating: Equatable {
+    let active: [PlayerSummary]
+    let waiting: [PlayerSummary]
+
+    init(view: PlayerView) {
+        guard view.table.maxPlayers > TableSize.minPlayers else {
+            active = view.players
+            waiting = []
+            return
+        }
+        // `hasFolded` describes the current or just-finished hand, and is
+        // reset when the next one is dealt.
+        let isWaiting: (PlayerSummary) -> Bool = { $0.isBusted || (view.street != nil && $0.hasFolded) }
+        active = view.players.filter { !isWaiting($0) }
+        waiting = view.players.filter(isWaiting)
     }
 }
 

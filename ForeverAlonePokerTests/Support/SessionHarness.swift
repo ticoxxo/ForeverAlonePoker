@@ -13,8 +13,8 @@ struct SessionHarness {
     let alice: MatchSessionClient
     let bob: MatchSessionClient
 
-    init(room: MatchRoom = MatchRoomBuilder().build()) async {
-        table = HostedTable(room: room)
+    init(room: MatchRoom = MatchRoomBuilder().build(), absenceTimeout: Duration = HostedTable.defaultAbsenceTimeout) async {
+        table = HostedTable(room: room, absenceTimeout: absenceTimeout)
         alice = MatchSessionClient(identity: TestPlayers.alice, transport: await table.connect(id: TestPlayers.aliceConnection))
         bob = MatchSessionClient(identity: TestPlayers.bob, transport: await table.connect(id: TestPlayers.bobConnection))
     }
@@ -27,12 +27,11 @@ struct SessionHarness {
         return await eventually { alice.view?.opponent != nil && bob.view?.opponent != nil }
     }
 
-    /// Connects, readies both players and waits for the first hand to be dealt.
+    /// Connects both players and waits for the first hand, which a heads-up
+    /// table deals by itself.
     @discardableResult
     func deal() async -> Bool {
         guard await connectBoth() else { return false }
-        await alice.ready()
-        await bob.ready()
         return await eventually { alice.view?.phase == .inHand && bob.view?.phase == .inHand }
     }
 }

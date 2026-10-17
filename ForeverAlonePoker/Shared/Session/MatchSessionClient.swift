@@ -5,13 +5,28 @@ import PokerCore
 /// The player's side of a match. It owns a transport, turns the authority's
 /// messages into observable UI state, and exposes the actions a player can
 /// take. Views bind to this type and never see the transport or the protocol.
+///
+/// Given a `reconnect` factory (online play), a connection that drops after
+/// the player was seated is retried with fresh transports until the seat is
+/// back or the server's hold on it has run out (tdr/0016).
 @Observable
 final class MatchSessionClient {
+    typealias TransportFactory = @MainActor () async -> any MatchTransport
+
     enum ConnectionState: Equatable {
         case idle
         case connecting
         case seated(Seat, roomCode: String)
+        /// The connection dropped; trying to take the seat back.
+        case reconnecting
         case disconnected(reason: String?)
+    }
+
+    /// An emote showing by a player's seat (tdr/0015). Each one is distinct,
+    /// so the same emoji sent twice restarts the bubble.
+    nonisolated struct Reaction: Equatable, Sendable {
+        let id = UUID()
+        let emote: Emote
     }
 
     let identity: PlayerIdentity
@@ -34,6 +49,12 @@ final class MatchSessionClient {
     /// and cleared when the next match starts.
     private(set) var ratingUpdate: RatingUpdate?
     var onRated: ((RatingUpdate) -> Void)?
+    /// Emotes currently showing, by the seat that sent them.
+    private(set) var reactions: [Seat: Reaction] = [:]
+    /// How long an emote stays by the sender's seat.
+    var reactionDuration: Duration = .seconds(3)
+    /// Sent an emote the authority has not answered yet.
+    private var emotePending = false
     /// Sent with the join; `nil` plays unranked.
     private let sessionToken: String?
 
@@ -50,15 +71,41 @@ final class MatchSessionClient {
     /// A heads-up opponent left and nobody else is at the table.
     var opponentLeft: Bool { lastDeparture != nil && view?.players.isEmpty == true }
     var legalActions: LegalActions { view?.legalActions ?? .none }
+    /// One emote per turn; the authority says when another is allowed.
+    var canEmote: Bool { view?.canEmote == true && !emotePending }
+    /// The table should say the connection is gone: retrying, or given up
+    /// mid-match without the player choosing to leave.
+    var isConnectionLost: Bool {
+        switch connection {
+        case .reconnecting: true
+        case .disconnected: view != nil && !isLeaving
+        default: false
+        }
+    }
 
-    private let transport: any MatchTransport
+    /// Pause between reconnect attempts.
+    var reconnectInterval: Duration = .seconds(2)
+    /// How long to keep trying; the server holds a seat for 60 s.
+    var reconnectWindow: Duration = .seconds(60)
+
+    private var transport: any MatchTransport
+    private let reconnect: TransportFactory?
     private var receiveTask: Task<Void, Never>?
+    private var reconnectTask: Task<Void, Never>?
+    private var hasBeenSeated = false
+    private var isLeaving = false
     private let maxEvents = 50
 
-    init(identity: PlayerIdentity, transport: any MatchTransport, sessionToken: String? = nil) {
+    init(
+        identity: PlayerIdentity,
+        transport: any MatchTransport,
+        sessionToken: String? = nil,
+        reconnect: TransportFactory? = nil
+    ) {
         self.identity = identity
         self.transport = transport
         self.sessionToken = sessionToken
+        self.reconnect = reconnect
     }
 
     // MARK: - Lifecycle
@@ -73,6 +120,9 @@ final class MatchSessionClient {
     }
 
     func leave() async {
+        isLeaving = true
+        reconnectTask?.cancel()
+        reconnectTask = nil
         await send(.leave)
         await transport.close()
         receiveTask?.cancel()
@@ -93,6 +143,12 @@ final class MatchSessionClient {
     func raise(to total: Chips) async { await act(.raise(to: total)) }
     func allIn() async { await act(.allIn) }
 
+    func emote(_ emote: Emote) async {
+        guard canEmote else { return }
+        emotePending = true
+        await send(.emote(emote))
+    }
+
     // MARK: - Private
 
     private var isDisconnected: Bool {
@@ -104,7 +160,7 @@ final class MatchSessionClient {
         do {
             try await transport.send(message)
         } catch {
-            connection = .disconnected(reason: "\(error)")
+            connectionLost(reason: "\(error)")
         }
     }
 
@@ -118,29 +174,81 @@ final class MatchSessionClient {
             }
             guard let self, !Task.isCancelled else { return }
             if case .disconnected = self.connection { return }
-            self.connection = .disconnected(reason: "Connection closed.")
+            self.connectionLost(reason: "Connection closed.")
+        }
+    }
+
+    /// The transport is gone. Online, a seated player starts reconnecting;
+    /// otherwise the session ends.
+    private func connectionLost(reason: String) {
+        guard !isLeaving, reconnectTask == nil else { return }
+        guard reconnect != nil, hasBeenSeated else {
+            connection = .disconnected(reason: reason)
+            return
+        }
+        connection = .reconnecting
+        reconnectTask = Task { [weak self] in await self?.reconnectUntilSeated() }
+    }
+
+    /// Opens a fresh transport and asks for the seat again every
+    /// `reconnectInterval` until `.welcome` arrives or `reconnectWindow` ends.
+    private func reconnectUntilSeated() async {
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: reconnectWindow)
+        while !Task.isCancelled, connection == .reconnecting, clock.now < deadline, let reconnect {
+            await transport.close()
+            transport = await reconnect()
+            startReceiving()
+            try? await transport.send(.join(identity, sessionToken: sessionToken))
+            try? await clock.sleep(for: reconnectInterval)
+        }
+        reconnectTask = nil
+        if connection == .reconnecting {
+            connection = .disconnected(reason: String(localized: "Could not reconnect to the table."))
         }
     }
 
     private func handle(_ message: ServerMessage) {
         switch message {
         case .welcome(let seat, let roomCode):
+            hasBeenSeated = true
             connection = .seated(seat, roomCode: roomCode)
         case .state(let newView):
             if newView.phase == .inHand, newView.handNumber != view?.handNumber { lastDeparture = nil }
             view = newView
+            emotePending = false
             lastRejection = nil
             reportIfFinished(newView)
         case .event(let event):
             events.append(event)
             if events.count > maxEvents { events.removeFirst(events.count - maxEvents) }
         case .rejected(let reason):
+            emotePending = false
+            if connection == .reconnecting {
+                // The only thing sent while reconnecting is the join: the seat is gone.
+                reconnectTask?.cancel()
+                reconnectTask = nil
+                connection = .disconnected(reason: String(localized: "You were away too long and lost your seat."))
+                return
+            }
             lastRejection = reason
         case .playerLeft(_, let name):
             lastDeparture = name
         case .rated(let update):
             ratingUpdate = update
             onRated?(update)
+        case .emote(let seat, let emote):
+            show(Reaction(emote: emote), at: seat)
+        }
+    }
+
+    private func show(_ reaction: Reaction, at seat: Seat) {
+        reactions[seat] = reaction
+        let duration = reactionDuration
+        Task { [weak self] in
+            try? await Task.sleep(for: duration)
+            guard let self, self.reactions[seat] == reaction else { return }
+            self.reactions[seat] = nil
         }
     }
 

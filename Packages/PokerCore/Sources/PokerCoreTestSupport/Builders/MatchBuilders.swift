@@ -94,6 +94,14 @@ public extension MatchRoom {
         out += beginMatch()
         return out
     }
+
+    /// Deals the next hand as the hosting layer does after its pause between
+    /// hands (tdr/0014). Returns nothing when no hand is due.
+    @discardableResult
+    mutating func dealNextHand() -> [Outbound] {
+        guard let ticket = nextHandTicket else { return [] }
+        return dealNextHand(ticket: ticket)
+    }
 }
 
 public extension Array where Element == Outbound {

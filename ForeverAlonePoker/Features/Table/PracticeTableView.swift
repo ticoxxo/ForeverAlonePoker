@@ -11,7 +11,7 @@ struct PracticeTableView: View {
     var body: some View {
         ZStack {
             if let player = session.player {
-                TableView(client: player)
+                TableView(client: player, showsEmotes: false)
                     .onAppear { player.onMatchFinished = onMatchFinished }
             } else {
                 TableFelt()

@@ -43,6 +43,46 @@ struct MultiwayHandEngineTests {
         #expect(flop.pot == 140)
     }
 
+    @Test("a short all-in makes players who already acted call or fold, without reopening the raise")
+    func shortAllInDoesNotReopen() throws {
+        // Seat three (big blind) has 90: its all-in to 90 adds 30, short of the 40 raise.
+        let start = try HandStateBuilder().stacks(1500, 1500, 90).start()
+        let shoved = try HandEngine.play(start, [(.one, .raise(to: 60)), (.two, .call), (.three, .allIn)]).state
+        #expect(shoved.actor == .one, "everyone who acted must respond to the extra chips")
+        let legal = HandEngine.legalActions(in: shoved, for: .one)
+        #expect(legal.callAmount == 30)
+        #expect(legal.canFold)
+        #expect(legal.raiseRange == nil)
+        #expect(legal.allInAmount == nil)
+        #expect(throws: HandError.raiseNotAllowed) { try HandEngine.apply(.raise(to: 200), by: .one, to: shoved) }
+        #expect(throws: HandError.raiseNotAllowed) { try HandEngine.apply(.allIn, by: .one, to: shoved) }
+
+        let called = try HandEngine.apply(.call, by: .one, to: shoved).state
+        #expect(called.actor == .two)
+        #expect(HandEngine.legalActions(in: called, for: .two).raiseRange == nil)
+    }
+
+    @Test("a player who has not acted yet may still raise over a short all-in")
+    func shortAllInLetsNewActorsRaise() throws {
+        // Button one, blinds two and three, seat four opens. Seat one has 85 in all.
+        let start = try HandStateBuilder().stacks(85, 1500, 1500, 1500).start()
+        let shoved = try HandEngine.play(start, [(.four, .raise(to: 60)), (.one, .allIn)]).state
+        #expect(shoved.actor == .two)
+        #expect(HandEngine.legalActions(in: shoved, for: .two).raiseRange == 125...1500)
+    }
+
+    @Test("short all-ins that add up to a full raise reopen the raise")
+    func shortAllInsAddUp() throws {
+        // Seat four raises to 60; seat one's all-in to 85 and seat two's to 110
+        // each add 25, together 50: a full raise over seat four's 60.
+        let start = try HandStateBuilder().stacks(85, 110, 1500, 1500).start()
+        let shoved = try HandEngine.play(start, [(.four, .raise(to: 60)), (.one, .allIn), (.two, .allIn), (.three, .call)]).state
+        #expect(shoved.actor == .four)
+        let legal = HandEngine.legalActions(in: shoved, for: .four)
+        #expect(legal.callAmount == 50)
+        #expect(legal.raiseRange == 150...1500)
+    }
+
     @Test("a seat with no chips sits out and the rest play heads-up")
     func sitOut() throws {
         let state = try HandStateBuilder().stacks(1500, 0, 1500).start()
@@ -277,34 +317,118 @@ struct MatchRoomLobbyTests {
 
 @Suite("MatchRoom: multiway play")
 struct MatchRoomMultiwayTests {
-    @Test("a disconnected player is folded when the action reaches them")
+    @Test("a disconnected player keeps their hand until the action reaches them, then is folded")
     func autoFoldAbsent() throws {
         var room = MatchRoomBuilder().maxPlayers(3).build()
         room.seatThreeAndDeal()
         _ = room.disconnect(TestPlayers.bobConnection)
-        #expect(room.match.currentHand?[.two].hasFolded == true)
-        _ = room.handle(.act(.fold), from: TestPlayers.aliceConnection)
+        #expect(room.match.currentHand?[.two].hasFolded == false, "not folded out of turn")
+
+        let folded = room.handle(.act(.fold), from: TestPlayers.aliceConnection)
+        #expect(folded.events(for: TestPlayers.aliceConnection).contains(.acted(seat: .two, action: .fold, chips: 0)))
         #expect(room.match.phase == .waitingForHand)
         #expect(room.match.button == .two)
 
-        _ = room.handle(.ready, from: TestPlayers.aliceConnection)
-        let dealt = room.handle(.ready, from: TestPlayers.carolConnection)
+        let dealt = room.dealNextHand()
         #expect(dealt.events(for: TestPlayers.aliceConnection).contains(.acted(seat: .two, action: .fold, chips: 0)))
         #expect(room.match.currentHand?.actor == .three)
     }
 
-    @Test("a player who leaves mid-match is knocked out and the others play on")
+    @Test("a player who drops and comes back before their turn plays on")
+    func reconnectBeforeTurn() throws {
+        var room = MatchRoomBuilder().maxPlayers(3).build()
+        room.seatThreeAndDeal()
+        _ = room.disconnect(TestPlayers.bobConnection)
+        let back = ConnectionID("conn-bob-2")
+        _ = room.handle(.join(TestPlayers.bob), from: back)
+        _ = room.handle(.act(.call), from: TestPlayers.aliceConnection)
+        let out = room.handle(.act(.call), from: back)
+        #expect(out.rejections(for: back).isEmpty)
+        #expect(room.match.currentHand?[.two].hasFolded == false)
+    }
+
+    @Test("a dropped player still away when their absence expires is knocked out with their chips")
+    func absenceExpires() throws {
+        var room = MatchRoomBuilder().maxPlayers(3).build()
+        room.seatThreeAndDeal()
+        _ = room.disconnect(TestPlayers.bobConnection)
+        let absence = try #require(room.absence(of: .two))
+        _ = room.handle(.act(.fold), from: TestPlayers.aliceConnection)
+
+        let out = room.expire(absence)
+        #expect(out.messages(for: TestPlayers.aliceConnection).contains(.playerLeft(seat: .two, name: "Bob")))
+        #expect(room.players[.two] == nil)
+        #expect(room.match.isBusted(.two))
+        #expect(room.absence(of: .two) == nil)
+    }
+
+    @Test("an absence that ended with a reconnect never expires, even after a second drop")
+    func staleAbsence() throws {
+        var room = MatchRoomBuilder().maxPlayers(3).build()
+        room.seatThreeAndDeal()
+        _ = room.disconnect(TestPlayers.bobConnection)
+        let first = try #require(room.absence(of: .two))
+        let back = ConnectionID("conn-bob-2")
+        _ = room.handle(.join(TestPlayers.bob), from: back)
+        #expect(room.absence(of: .two) == nil)
+        #expect(room.expire(first).isEmpty)
+
+        _ = room.disconnect(back)
+        #expect(room.expire(first).isEmpty, "the first timer belongs to the first drop")
+        #expect(room.players[.two] != nil)
+        #expect(!room.expire(try #require(room.absence(of: .two))).isEmpty)
+    }
+
+    @Test("the next hand waits for two connected players with chips")
+    func nextHandNeedsTwoConnected() throws {
+        var room = MatchRoomBuilder().build()
+        room.seatAliceAndBobAndDeal()
+        #expect(room.nextHandTicket == nil, "a hand is in progress")
+        _ = room.handle(.act(.fold), from: TestPlayers.aliceConnection)
+        let ticket = try #require(room.nextHandTicket)
+
+        _ = room.disconnect(TestPlayers.bobConnection)
+        #expect(room.nextHandTicket == nil)
+        #expect(room.dealNextHand(ticket: ticket).isEmpty)
+        #expect(room.match.phase == .waitingForHand)
+
+        _ = room.handle(.join(TestPlayers.bob), from: ConnectionID("conn-bob-2"))
+        #expect(room.nextHandTicket == ticket)
+    }
+
+    @Test("a stale next-hand ticket never deals twice")
+    func staleNextHand() throws {
+        var room = MatchRoomBuilder().build()
+        room.seatAliceAndBobAndDeal()
+        _ = room.handle(.act(.fold), from: TestPlayers.aliceConnection)
+        let ticket = try #require(room.nextHandTicket)
+        #expect(!room.dealNextHand(ticket: ticket).isEmpty)
+        _ = room.handle(.act(.fold), from: TestPlayers.bobConnection)
+        #expect(room.dealNextHand(ticket: ticket).isEmpty)
+        #expect(room.match.handsPlayed == 2)
+        #expect(room.match.phase == .waitingForHand)
+    }
+
+    @Test("a player who leaves mid-hand is folded at once and comes back folded until the next hand")
     func leaveMidMatch() throws {
         var room = MatchRoomBuilder().maxPlayers(3).build()
         room.seatThreeAndDeal()
         let out = room.handle(.leave, from: TestPlayers.carolConnection)
-        #expect(out.messages(for: TestPlayers.aliceConnection).contains(.playerLeft(seat: .three, name: "Carol")))
-        #expect(room.players[.three] == nil)
-        #expect(room.match.phase == .inHand)
+        #expect(!out.messages(for: TestPlayers.aliceConnection).contains(.playerLeft(seat: .three, name: "Carol")))
+        #expect(room.match.currentHand?[.three].hasFolded == true)
+        #expect(room.players[.three] != nil)
+
+        let back = ConnectionID("conn-carol-2")
+        let rejoined = room.handle(.join(TestPlayers.carol), from: back)
+        let carol = try #require(rejoined.latestView(for: back))
+        #expect(carol.me.hasFolded)
+        #expect(carol.legalActions == .none)
 
         _ = room.handle(.act(.fold), from: TestPlayers.aliceConnection)
-        #expect(room.match.isBusted(.three))
-        #expect(room.match.phase == .waitingForHand, "Alice and Bob still have chips")
+        #expect(room.match.phase == .waitingForHand)
+        #expect(!room.match.isBusted(.three))
+        _ = room.dealNextHand()
+        #expect(room.match.currentHand?[.three].hasFolded == false, "dealt into the next hand")
     }
 
     @Test("knocked-out players stay at the table and see the result")

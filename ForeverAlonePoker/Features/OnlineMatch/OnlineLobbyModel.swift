@@ -92,7 +92,13 @@ final class OnlineLobbyModel {
     }
 
     private func connect(to code: String) async {
-        let client = MatchSessionClient(identity: identity, transport: service.makeTransport(roomCode: code), sessionToken: sessionToken)
+        let service = service
+        let client = MatchSessionClient(
+            identity: identity,
+            transport: service.makeTransport(roomCode: code),
+            sessionToken: sessionToken,
+            reconnect: { service.makeTransport(roomCode: code) }
+        )
         self.client = client
         phase = .connected(roomCode: code)
         await client.connect()
