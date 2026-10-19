@@ -4,7 +4,10 @@ import PokerCore
 /// The poker table. Works identically for local and online play because it
 /// only ever talks to a `MatchSessionClient`. Heads-up the opponent sits
 /// across; at a bigger table the others fan out over the top (tdr/0013), and
-/// players out of the hand wait in a column at the side (tdr/0016).
+/// players out of the hand wait in a column at the side (tdr/0016). The
+/// actions follow the size classes (tdr/0019): a panel under the table when
+/// both are regular, otherwise buttons in the bottom toolbar with the bet
+/// sizing in a strip just above it.
 struct TableView: View {
     let client: MatchSessionClient
     /// The emote tray (tdr/0015); off where nobody would see the reactions.
@@ -13,11 +16,19 @@ struct TableView: View {
     var onLeave: (() -> Void)? = nil
     @State private var avatars = AvatarLoader()
     @Namespace private var dealerButton
+    /// The chosen bet or raise. Held here rather than in the controls so it
+    /// survives the panel and the toolbar swapping on rotation or resize.
+    @State private var raiseAmount: Chips = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     private var view: PlayerView? { client.view }
     private var status: TableStatus { TableStatus.make(view: view, departure: client.lastDeparture) }
+    private var actionModel: TableActionModel { TableActionModel(legalActions: client.legalActions) }
+    private var placement: TableActionPlacement {
+        .make(isRegularWidth: horizontalSizeClass == .regular, isRegularHeight: verticalSizeClass == .regular)
+    }
 
     var body: some View {
         GeometryReader { geometry in
@@ -37,10 +48,24 @@ struct TableView: View {
             // foldable glides into the new arrangement instead of jumping.
             .motion(Theme.Motion.layout, value: arrangement)
         }
+        // The actions take their room from the safe area, so the table's
+        // `GeometryReader` measures only what is left above them.
+        .safeAreaInset(edge: .bottom, spacing: Theme.Spacing.medium) {
+            actions
+                .blur(radius: client.isConnectionLost ? 10 : 0)
+                .allowsHitTesting(!client.isConnectionLost)
+                .accessibilityHidden(client.isConnectionLost)
+        }
+        .safeAreaPadding(.horizontal, Theme.Spacing.large)
+        .safeAreaPadding(.vertical, Theme.Spacing.small)
         .background(TableFelt())
-        // The felt is dark in either appearance, so the navigation bar's
-        // title and buttons must be light to stay readable.
-        .toolbarColorScheme(.dark, for: .navigationBar)
+        .toolbar { toolbarContent }
+        // The felt is dark in either appearance, so the bars' titles and
+        // buttons must be light to stay readable.
+        .toolbarColorScheme(.dark, for: .navigationBar, .bottomBar)
+        .onChange(of: actionModel.sizing, initial: true) { _, sizing in
+            raiseAmount = sizing?.range.lowerBound ?? 0
+        }
         .environment(\.dealerButtonNamespace, dealerButton)
         // The dealer button moves on at each new hand.
         .motion(Theme.Motion.layout, value: view?.button)
@@ -49,44 +74,55 @@ struct TableView: View {
         }
     }
 
-    /// Portrait and spacious stack the actions under the table; landscape
-    /// docks them in a slim rail on the trailing edge so the short height
-    /// only holds the table. One `AnyLayout` for both keeps the table and
-    /// the action panel the same views when the arrangement changes, so
-    /// folding the phone or rotating it mid-hand keeps a half-chosen raise
-    /// amount (tdr/0018).
     private func table(_ arrangement: TableArrangement, size: CGSize) -> some View {
-        let cards = arrangement.cardHeights(in: size)
-        let docked = arrangement.docksActionsAtSide
-        let isAccessibilitySize = dynamicTypeSize.isAccessibilitySize
-        let layout = docked
-            ? AnyLayout(HStackLayout(spacing: Theme.Spacing.medium))
-            : AnyLayout(VStackLayout(spacing: Theme.Spacing.medium))
-        return layout {
-            scrollingIfNeeded(tableArea(arrangement, size: size, cards: cards))
-            ActionBar(
-                model: TableActionModel(legalActions: client.legalActions),
-                axis: docked ? .vertical : .horizontal,
-                stacksButtons: arrangement.stacksActionButtons(isAccessibilitySize: isAccessibilitySize)
-            ) { action in
-                Task { await client.act(action) }
-            }
-            .frame(width: docked ? arrangement.actionDockWidth(in: size, isAccessibilitySize: isAccessibilitySize) : nil)
-            .frame(maxWidth: arrangement == .spacious ? TableArrangement.actionPanelMaxWidth : .infinity)
+        scrollingIfNeeded(tableArea(arrangement, size: size, cards: arrangement.cardHeights(in: size)))
+    }
+
+    /// The panel under the table, or just the bet sizing when the buttons
+    /// are in the bottom toolbar.
+    @ViewBuilder
+    private var actions: some View {
+        switch placement {
+        case .panel:
+            ActionBar(model: actionModel, amount: $raiseAmount, onAction: act)
+                .frame(maxWidth: TableArrangement.actionPanelMaxWidth)
+        case .toolbar:
+            SizingStrip(model: actionModel, amount: $raiseAmount, onAction: act)
         }
-        .padding(.horizontal, docked ? Theme.Spacing.medium : Theme.Spacing.large)
-        .padding(.vertical, Theme.Spacing.small)
-        .toolbar {
-            if showsEmotes, view != nil {
-                // A secondary action, so it lives in the navigation bar
-                // rather than taking room from the table (HIG, toolbars).
-                ToolbarItem(placement: .topBarTrailing) {
-                    EmotePicker(isEnabled: client.canEmote) { emote in
-                        Task { await client.emote(emote) }
-                    }
+    }
+
+    @ToolbarContentBuilder
+    private var toolbarContent: some ToolbarContent {
+        if showsEmotes, view != nil {
+            // A secondary action, so it lives in the navigation bar
+            // rather than taking room from the table (HIG, toolbars).
+            ToolbarItem(placement: .topBarTrailing) {
+                EmotePicker(isEnabled: client.canEmote) { emote in
+                    Task { await client.emote(emote) }
                 }
             }
         }
+        if placement == .toolbar, view != nil {
+            // Fold leading, Check / Call in the middle, the one prominent
+            // action (Bet / Raise to) trailing. The bar stays for the whole
+            // match and only disables between turns, so the table above
+            // never changes height.
+            ToolbarItemGroup(placement: .bottomBar) {
+                Group {
+                    FoldActionButton(model: actionModel, onAction: act)
+                    Spacer()
+                    PassiveActionButton(model: actionModel, onAction: act)
+                    Spacer()
+                    SizedActionButton(model: actionModel, amount: raiseAmount, onAction: act)
+                }
+                .environment(\.actionLabelIsInToolbar, true)
+                .disabled(client.isConnectionLost)
+            }
+        }
+    }
+
+    private func act(_ action: PlayerAction) {
+        Task { await client.act(action) }
     }
 
     /// The table fills its space and never scrolls at normal sizes; at the

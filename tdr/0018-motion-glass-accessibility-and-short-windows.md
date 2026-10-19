@@ -74,3 +74,7 @@
 - `TableArrangementTests.swift` still covers arrangement choice, card-height ordering and clamps.
 - **No new UI tests (XCUITest) for this work, by decision.** The owner asked to skip UI tests to save effort. They are slow and need a simulator for every arrangement. Glass, motion and layout are verified by eye instead: SwiftUI previews (the table previews in portrait and landscape, the action panel's three previews) and a manual pass on devices. tdr/0017 phase 5 still lists per-arrangement UI tests as future work.
 - Manual checks: iPhone portrait and landscape at 2, 3 and 6 players, the largest accessibility text size, and Reduce Motion and Reduce Transparency on and off. Also a VoiceOver pass over the table, the store purchase flow, and an iOS 17 simulator for the fallbacks.
+
+## Notes
+
+- **2026-10-19:** The landscape control rail and the action panel's rise offset are superseded by tdr/0019: compact size classes put Fold / Check / Raise in the bottom toolbar with the bet sizing in a strip above it, and the panel is attached with `safeAreaInset`.

@@ -222,6 +222,21 @@ nonisolated enum DealTiming {
     }
 }
 
+/// Where the Fold / Check / Raise actions live (tdr/0019), decided from the
+/// size classes the system reports rather than the device or orientation.
+nonisolated enum TableActionPlacement: Equatable {
+    /// Regular width and height (iPad, an open foldable): the `ActionBar`
+    /// panel under the table.
+    case panel
+    /// Any compact dimension (a phone either way up, a narrow split view):
+    /// the buttons in the bottom toolbar, the bet sizing in a strip above it.
+    case toolbar
+
+    static func make(isRegularWidth: Bool, isRegularHeight: Bool) -> TableActionPlacement {
+        isRegularWidth && isRegularHeight ? .panel : .toolbar
+    }
+}
+
 /// How the table arranges itself for the space it has (tdr/0017). Decided
 /// from the container size alone, never the device model, so rotation, iPad
 /// split view and a foldable opening or closing all follow from the size.
@@ -229,8 +244,8 @@ nonisolated enum TableArrangement: Equatable {
     /// Taller than wide (an upright phone, a narrow split-view column):
     /// opponents on top, the player at the bottom, actions under them.
     case portrait
-    /// A phone on its side: the table on the left, the actions docked on the
-    /// trailing side so nothing is stacked into the short height.
+    /// A phone on its side: board and pot side by side, my seat inline with
+    /// the status, so nothing is stacked into the short height.
     case landscape
     /// Plenty of room both ways (iPad, an unfolded foldable): the portrait
     /// order with bigger cards and a width-limited action panel.
@@ -245,6 +260,9 @@ nonisolated enum TableArrangement: Equatable {
         return size.width / size.height > 1.25 ? .landscape : .portrait
     }
 
+    /// The landscape rail API below no longer drives any view: actions are
+    /// placed by size class (`TableActionPlacement`, tdr/0019). It stays
+    /// until its tests are replaced.
     var docksActionsAtSide: Bool { self == .landscape }
 
     /// The widest the action panel gets under the table, so buttons on a

@@ -67,3 +67,4 @@ Every later phase that changes a decision here supersedes this record or adds a 
 ## Notes
 
 - **2026-10-19:** The deployment target is iOS 17, not 27, so Liquid Glass is gated by availability with material fallbacks. Landscape now docks a slim control rail, seats sit inline in short windows, opponents are placed by `SeatArcLayout`, and the Min button is gone. Phase 2's motion and Reduce Motion pass and phase 3's home tiles are done. Phase 5's UI tests are deliberately not written for now. See tdr/0018.
+- **2026-10-19:** Where the actions sit is now decided by size classes, not by `TableArrangement` (tdr/0019). `docksActionsAtSide` and the trailing action column no longer drive any view.
