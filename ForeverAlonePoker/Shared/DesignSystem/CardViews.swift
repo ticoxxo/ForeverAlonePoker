@@ -187,38 +187,28 @@ struct CardRowView: View {
 }
 
 extension AnyTransition {
-    /// A card pitched from the dealer: it drops in from above, face down,
-    /// and turns over as it lands. `distance` is how far it travels.
+    /// A card pitched from the dealer: it slides down from above, tilted and
+    /// slightly small, and settles flat on the table. Only transforms and
+    /// opacity change, which the renderer interpolates on its own, so the
+    /// card is never rebuilt mid-flight and the motion stays smooth at the
+    /// display's full frame rate (tdr/0018).
     static func dealt(from distance: CGFloat) -> AnyTransition {
-        .modifier(active: DealEffect(progress: 0, distance: distance), identity: DealEffect(progress: 1, distance: distance))
+        .modifier(active: DealPose(isInFlight: true, distance: distance), identity: DealPose(isInFlight: false, distance: distance))
     }
 }
 
-/// The in-between states of `AnyTransition.dealt(from:)`.
-private struct DealEffect: ViewModifier, Animatable {
-    var progress: Double
+/// Where a dealt card is while in flight, and at rest.
+private struct DealPose: ViewModifier {
+    let isInFlight: Bool
     let distance: CGFloat
 
-    var animatableData: Double {
-        get { progress }
-        set { progress = newValue }
-    }
-
     func body(content: Content) -> some View {
-        // The first half of the turn shows the back, the second the face.
-        let angle = (1 - progress) * 180
         content
-            .opacity(angle < 90 ? 1 : 0)
-            .overlay {
-                if angle >= 90 {
-                    CardBackView()
-                        .rotation3DEffect(.degrees(180), axis: (x: 0, y: 1, z: 0))
-                        .accessibilityHidden(true)
-                }
-            }
-            .rotation3DEffect(.degrees(angle), axis: (x: 0, y: 1, z: 0), perspective: 0.4)
-            .offset(y: -distance * (1 - progress))
-            .scaleEffect(0.75 + 0.25 * progress)
+            .rotation3DEffect(.degrees(isInFlight ? 55 : 0), axis: (x: 1, y: 0, z: 0), anchor: .top, perspective: 0.5)
+            .rotationEffect(.degrees(isInFlight ? -8 : 0))
+            .scaleEffect(isInFlight ? 0.8 : 1)
+            .offset(y: isInFlight ? -distance * 0.9 : 0)
+            .opacity(isInFlight ? 0 : 1)
     }
 }
 

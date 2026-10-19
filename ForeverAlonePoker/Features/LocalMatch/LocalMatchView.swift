@@ -1,3 +1,4 @@
+import Network
 import SwiftUI
 import PokerCore
 
@@ -8,7 +9,11 @@ struct LocalMatchView: View {
     private let onMatchFinished: (MatchSummary) -> Void
 
     init(identity: PlayerIdentity, onMatchFinished: @escaping (MatchSummary) -> Void = { _ in }) {
-        _model = State(wrappedValue: LocalLobbyModel(identity: identity))
+        self.init(model: LocalLobbyModel(identity: identity), onMatchFinished: onMatchFinished)
+    }
+
+    init(model: LocalLobbyModel, onMatchFinished: @escaping (MatchSummary) -> Void = { _ in }) {
+        _model = State(wrappedValue: model)
         self.onMatchFinished = onMatchFinished
     }
 
@@ -60,26 +65,22 @@ struct LocalLobbyView: View {
             switch model.phase {
             case .idle:
                 Section {
-                    Button {
+                    PrimaryActionButton(title: "Host a table", systemImage: "antenna.radiowaves.left.and.right") {
                         model.host()
-                    } label: {
-                        Label("Host a table", systemImage: "antenna.radiowaves.left.and.right")
                     }
-                    Button {
+                    .accessibilityHint(Text("Your device referees the match and shows a passcode"))
+                    PrimaryActionButton(title: "Join a nearby table", systemImage: "person.2.wave.2", kind: .regular) {
                         model.browse()
-                    } label: {
-                        Label("Join a nearby table", systemImage: "person.2.wave.2")
                     }
+                    .accessibilityHint(Text("Looks for tables hosted on devices near you"))
                 } footer: {
                     Text("Every device needs Wi-Fi or Bluetooth on and the app open. The host's device referees the match and shows a passcode the other players must enter.")
                 }
             case .setup:
                 TableSizeSection(maxPlayers: $model.maxPlayers, isEnabled: true)
                 Section {
-                    Button {
+                    PrimaryActionButton(title: "Search opponents", systemImage: "magnifyingglass") {
                         Task { await model.startSearching() }
-                    } label: {
-                        Label("Search opponents", systemImage: "magnifyingglass")
                     }
                     Button("Back", role: .cancel) {
                         Task { await model.leave() }
@@ -101,10 +102,8 @@ struct LocalLobbyView: View {
                         if view.table.isStarting {
                             LobbyStatusRow(text: "Starting…")
                         } else {
-                            Button {
+                            PrimaryActionButton(title: "Start game", systemImage: "play.fill") {
                                 Task { await model.startGame() }
-                            } label: {
-                                Label("Start game", systemImage: "play.fill")
                             }
                             .disabled(view.players.filter(\.isConnected).isEmpty)
                         }
@@ -146,7 +145,7 @@ struct LocalLobbyView: View {
                 Section {
                     Label(reason, systemImage: "exclamationmark.triangle")
                         .foregroundStyle(.red)
-                    Button("Try again") {
+                    PrimaryActionButton(title: "Try again", systemImage: "arrow.clockwise") {
                         Task { await model.leave() }
                     }
                 }
@@ -155,27 +154,24 @@ struct LocalLobbyView: View {
     }
 }
 
-private struct LobbyStatusRow: View {
-    let text: LocalizedStringKey
-
-    var body: some View {
-        HStack {
-            ProgressView()
-            Text(text)
-        }
-    }
-}
+/// The lobby's spinner rows share the design system's `WorkingRow`.
+private typealias LobbyStatusRow = WorkingRow
 
 private struct PasscodeDisplay: View {
     let passcode: String
+    /// Big enough to read across a table, and bigger still with larger text.
+    @ScaledMetric(relativeTo: .largeTitle) private var digitSize: CGFloat = 52
 
     var body: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: Theme.Spacing.xSmall) {
             Text("Passcode")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
             Text(passcode)
-                .font(.system(size: 44, weight: .bold, design: .rounded))
+                .font(.system(size: digitSize, weight: .bold, design: .rounded))
+                .minimumScaleFactor(0.5)
+                .lineLimit(1)
                 .monospacedDigit()
                 .kerning(8)
                 .accessibilityLabel(Text("Passcode \(passcode.map(String.init).joined(separator: " "))"))
@@ -199,7 +195,9 @@ private struct NearbyPeersSection: View {
                     onSelect(peer)
                 } label: {
                     Label(peer.name, systemImage: "suit.spade.fill")
+                        .frame(minHeight: Theme.Target.minimum)
                 }
+                .accessibilityHint(Text("Asks for the passcode shown on the host's screen"))
             }
         } header: {
             Text("Nearby tables")
@@ -222,10 +220,12 @@ private struct PasscodeEntrySection: View {
                 .font(.title2.monospacedDigit())
                 .multilineTextAlignment(.center)
                 .focused($isFocused)
+                .accessibilityLabel(Text("Passcode"))
+                .accessibilityHint(Text("Four digits shown on the host's screen"))
                 .onChange(of: passcode) {
                     passcode = String(passcode.filter(\.isNumber).prefix(4))
                 }
-            Button("Join") { onJoin(passcode) }
+            PrimaryActionButton(title: "Join", systemImage: "arrow.right.circle.fill") { onJoin(passcode) }
                 .disabled(passcode.count != 4)
             Button("Back", role: .cancel, action: onCancel)
         } header: {
@@ -236,3 +236,88 @@ private struct PasscodeEntrySection: View {
         .onAppear { isFocused = true }
     }
 }
+
+#if DEBUG
+private enum LocalPreviews {
+    static let peers = ["Lucía's iPhone", "Mateo"].map {
+        NearbyPeer(name: $0, endpoint: .service(name: $0, type: "_preview._tcp", domain: "local.", interface: nil))
+    }
+}
+
+#Preview("Host or join") {
+    NavigationStack {
+        LocalMatchView(identity: PreviewPlayers.me)
+    }
+    .previewEnvironment()
+}
+
+#Preview("Choosing the table size") {
+    let model = LocalLobbyModel(identity: PreviewPlayers.me)
+    NavigationStack {
+        LocalMatchView(model: model)
+            .onAppear { model.host() }
+    }
+    .previewEnvironment()
+}
+
+#Preview("Hosting heads-up") {
+    NavigationStack {
+        LocalMatchView(model: .preview(.hosting(passcode: "4821"), identity: PreviewPlayers.me, role: .host))
+    }
+    .previewEnvironment()
+}
+
+#Preview("Hosting, players joined") {
+    let table = PreviewTable(maxPlayers: 4)
+    let client = MatchSessionClient(identity: PreviewPlayers.me, transport: table.transport())
+    NavigationStack {
+        LocalMatchView(model: .preview(
+            .hosting(passcode: "4821"),
+            identity: PreviewPlayers.me,
+            role: .host,
+            maxPlayers: 4,
+            client: client
+        ))
+        .task {
+            // You sit first, so you host; then the others arrive.
+            await client.connect()
+            await table.seat(["Lucía", "Sofía"])
+        }
+    }
+    .previewEnvironment()
+}
+
+#Preview("Nearby tables") {
+    NavigationStack {
+        LocalMatchView(model: .preview(.browsing, identity: PreviewPlayers.me, role: .guest, nearbyPeers: LocalPreviews.peers))
+    }
+    .previewEnvironment()
+}
+
+#Preview("Passcode entry") {
+    NavigationStack {
+        LocalMatchView(model: .preview(.passcodeEntry(LocalPreviews.peers[0]), identity: PreviewPlayers.me, role: .guest))
+    }
+    .previewEnvironment()
+}
+
+#Preview("Waiting for the host") {
+    let table = PreviewTable(maxPlayers: 4)
+    let client = MatchSessionClient(identity: PreviewPlayers.me, transport: table.transport())
+    NavigationStack {
+        LocalMatchView(model: .preview(.connected, identity: PreviewPlayers.me, role: .guest, client: client))
+            .task {
+                await table.seat(["Lucía", "Bob"])
+                await client.connect()
+            }
+    }
+    .previewEnvironment()
+}
+
+#Preview("Connection failed") {
+    NavigationStack {
+        LocalMatchView(model: .preview(.failed("The passcode did not match."), identity: PreviewPlayers.me, role: .guest))
+    }
+    .previewEnvironment()
+}
+#endif

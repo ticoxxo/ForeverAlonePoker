@@ -48,7 +48,7 @@ enum Theme {
     /// Named animations, so the same kind of change always moves the same way.
     enum Motion {
         /// A card leaving the dealer's hand.
-        static let deal = Animation.spring(duration: 0.45, bounce: 0.22)
+        static let deal = Animation.spring(duration: 0.35, bounce: 0.12)
         /// Layout following a new arrangement, a seat change.
         static let layout = Animation.smooth(duration: 0.35)
         /// Chip counts and other numbers ticking.

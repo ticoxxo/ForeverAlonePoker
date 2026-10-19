@@ -26,21 +26,19 @@ struct LeaderboardView: View {
                 }
                 .pickerStyle(.segmented)
                 .listRowBackground(Color.clear)
+                .accessibilityLabel(Text("Rankings for"))
             }
 
             switch model.phase {
             case .loading:
                 Section {
-                    HStack {
-                        ProgressView()
-                        Text("Loading rankings…")
-                    }
+                    WorkingRow(text: "Loading rankings…")
                 }
             case .failed(let reason):
                 Section {
                     Label(reason, systemImage: "exclamationmark.triangle")
                         .foregroundStyle(.red)
-                    Button("Try again") {
+                    PrimaryActionButton(title: "Try again", systemImage: "arrow.clockwise") {
                         Task { await model.load(myPlayerID: myPlayerID) }
                     }
                 }
@@ -92,13 +90,16 @@ struct LeaderboardRowView: View {
     let avatar: Data?
     let isMe: Bool
 
+    @ScaledMetric(relativeTo: .subheadline) private var rankWidth: CGFloat = 40
+    @ScaledMetric(relativeTo: .body) private var avatarSize: CGFloat = 36
+
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: Theme.Spacing.medium) {
             Text(rank.map { "#\($0)" } ?? "—")
                 .font(.subheadline.monospacedDigit())
                 .foregroundStyle(.secondary)
-                .frame(minWidth: 40, alignment: .leading)
-            AvatarView(data: avatar, size: 36)
+                .frame(minWidth: rankWidth, alignment: .leading)
+            AvatarView(data: avatar, size: min(avatarSize, 64))
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 4) {
                     if !row.countryCode.isEmpty {
@@ -115,7 +116,19 @@ struct LeaderboardRowView: View {
             Text(row.rating.value, format: .number)
                 .font(.title3.monospacedDigit().bold())
         }
-        .accessibilityElement(children: .combine)
+        // One phrase per row: "Rank 3, Ana, Mexico, rating 1,520, 12 wins, 4 losses".
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilityLabel)
         .listRowBackground(isMe ? Color.accentColor.opacity(0.12) : nil)
+    }
+
+    private var accessibilityLabel: Text {
+        var parts: [String] = []
+        if let rank { parts.append(String(localized: "Rank \(rank)")) }
+        parts.append(isMe ? String(localized: "\(row.displayName), you") : row.displayName)
+        if !row.countryCode.isEmpty { parts.append(CountryFlag.name(for: row.countryCode)) }
+        parts.append(String(localized: "rating \(row.rating.value.formatted())"))
+        parts.append(String(localized: "^[\(row.wins) win](inflect: true), ^[\(row.losses) loss](inflect: true)"))
+        return Text(parts.joined(separator: ", "))
     }
 }

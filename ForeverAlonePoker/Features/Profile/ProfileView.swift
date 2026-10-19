@@ -11,6 +11,7 @@ struct ProfileView: View {
     @State private var serverURL = ""
     @State private var selectedPhoto: PhotosPickerItem?
     @State private var ranked: RankedSignInModel?
+    @ScaledMetric(relativeTo: .largeTitle) private var avatarSize: CGFloat = 96
 
     var body: some View {
         Form {
@@ -18,13 +19,15 @@ struct ProfileView: View {
                 HStack {
                     Spacer()
                     PhotosPicker(selection: $selectedPhoto, matching: .images) {
-                        AvatarView(data: identity.profile.avatar, size: 96)
+                        AvatarView(data: identity.profile.avatar, size: min(avatarSize, 160), name: identity.profile.displayName)
                             .overlay(alignment: .bottomTrailing) {
                                 Image(systemName: "camera.circle.fill")
                                     .font(.title2)
                                     .symbolRenderingMode(.multicolor)
                             }
                     }
+                    .accessibilityLabel(Text("Profile picture"))
+                    .accessibilityHint(Text("Choose a photo for other players to see"))
                     Spacer()
                 }
                 .listRowBackground(Color.clear)
@@ -111,10 +114,7 @@ struct ProfileView: View {
             } else if let ranked {
                 switch ranked.phase {
                 case .working:
-                    HStack {
-                        ProgressView()
-                        Text("Checking with the server…")
-                    }
+                    WorkingRow(text: "Checking with the server…")
                 case .idle, .failed:
                     SignInWithAppleButton(.signIn) { request in
                         request.requestedScopes = []
@@ -122,7 +122,7 @@ struct ProfileView: View {
                         handleSignIn(result, with: ranked)
                     }
                     .signInWithAppleButtonStyle(colorScheme == .dark ? .white : .black)
-                    .frame(height: 44)
+                    .frame(height: Theme.Target.minimum)
                     .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
                     if case .failed(let reason) = ranked.phase {
                         Label(reason, systemImage: "exclamationmark.triangle")

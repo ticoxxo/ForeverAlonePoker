@@ -18,37 +18,63 @@ struct OpponentSeatView: View {
     var avatar: Data? = nil
     var reaction: MatchSessionClient.Reaction? = nil
     var cardHeight: CGFloat = 56
+    /// Picture, name plate and cards in one row (`TableArrangement.seatsInline`)
+    /// instead of stacked, for windows short on height.
+    var isInline: Bool = false
 
     @ScaledMetric(relativeTo: .headline) private var avatarSize: CGFloat = 48
 
     var body: some View {
-        VStack(spacing: Theme.Spacing.small) {
-            if let summary {
-                PlayerAvatar(data: avatar, size: min(avatarSize, 72), name: summary.name, isReconnecting: summary.isReconnecting)
-                    .emoteBubble(reaction)
-                SeatHeaderView(
-                    name: summary.name,
-                    stack: summary.stack,
-                    isOnButton: isOnButton,
-                    isAllIn: summary.isAllIn,
-                    hasFolded: summary.hasFolded,
-                    isBusted: summary.isBusted,
-                    isActing: isActing
-                )
-                HiddenOrRevealedCards(
-                    showsCards: showsCards,
-                    revealedCards: revealedCards,
-                    height: cardHeight,
-                    spacing: 6,
-                    ownerName: summary.name
-                )
-                BetView(amount: summary.streetCommitted)
+        if let summary {
+            if isInline {
+                VStack(spacing: Theme.Spacing.xSmall) {
+                    HStack(spacing: Theme.Spacing.small) {
+                        avatarView(summary, size: min(avatarSize * 0.75, 56))
+                        header(summary)
+                        cards(summary)
+                    }
+                    BetView(amount: summary.streetCommitted)
+                }
             } else {
-                Label("Waiting for an opponent…", systemImage: "person.badge.clock")
-                    .font(.headline)
-                    .foregroundStyle(.white.opacity(0.85))
+                VStack(spacing: Theme.Spacing.small) {
+                    avatarView(summary, size: min(avatarSize, 72))
+                    header(summary)
+                    cards(summary)
+                    BetView(amount: summary.streetCommitted)
+                }
             }
+        } else {
+            Label("Waiting for an opponent…", systemImage: "person.badge.clock")
+                .font(.headline)
+                .foregroundStyle(.white.opacity(0.85))
         }
+    }
+
+    private func avatarView(_ summary: PlayerSummary, size: CGFloat) -> some View {
+        PlayerAvatar(data: avatar, size: size, name: summary.name, isReconnecting: summary.isReconnecting)
+            .emoteBubble(reaction)
+    }
+
+    private func header(_ summary: PlayerSummary) -> some View {
+        SeatHeaderView(
+            name: summary.name,
+            stack: summary.stack,
+            isOnButton: isOnButton,
+            isAllIn: summary.isAllIn,
+            hasFolded: summary.hasFolded,
+            isBusted: summary.isBusted,
+            isActing: isActing
+        )
+    }
+
+    private func cards(_ summary: PlayerSummary) -> some View {
+        HiddenOrRevealedCards(
+            showsCards: showsCards,
+            revealedCards: revealedCards,
+            height: cardHeight,
+            spacing: 6,
+            ownerName: summary.name
+        )
     }
 }
 
@@ -59,10 +85,17 @@ struct MySeatView: View {
     let holeCards: [Card]
     var reaction: MatchSessionClient.Reaction? = nil
     var cardHeight: CGFloat = 88
+    /// Cards beside the name plate (`TableArrangement.mySeatInline`).
+    var isInline: Bool = false
 
     var body: some View {
-        VStack(spacing: Theme.Spacing.small) {
-            BetView(amount: summary?.streetCommitted ?? 0)
+        let layout = isInline
+            ? AnyLayout(HStackLayout(spacing: Theme.Spacing.medium))
+            : AnyLayout(VStackLayout(spacing: Theme.Spacing.small))
+        layout {
+            if !isInline {
+                BetView(amount: summary?.streetCommitted ?? 0)
+            }
             if !holeCards.isEmpty {
                 CardRowView(cards: holeCards, height: cardHeight)
                     .opacity(summary?.hasFolded == true ? 0.4 : 1)
@@ -70,18 +103,51 @@ struct MySeatView: View {
                     .accessibilityLabel(Text("Your cards"))
                     .accessibilityValue(Text(holeCards.spokenList))
             }
-            if let summary {
-                SeatHeaderView(
-                    name: summary.name,
-                    stack: summary.stack,
-                    isOnButton: isOnButton,
-                    isAllIn: summary.isAllIn,
-                    hasFolded: summary.hasFolded,
-                    isBusted: summary.isBusted
-                )
-                .emoteBubble(reaction)
+            VStack(spacing: Theme.Spacing.xSmall) {
+                if isInline {
+                    BetView(amount: summary?.streetCommitted ?? 0)
+                }
+                if let summary {
+                    SeatHeaderView(
+                        name: summary.name,
+                        stack: summary.stack,
+                        isOnButton: isOnButton,
+                        isAllIn: summary.isAllIn,
+                        hasFolded: summary.hasFolded,
+                        isBusted: summary.isBusted
+                    )
+                    .emoteBubble(reaction)
+                }
             }
         }
+    }
+}
+
+/// Places the other players of a bigger table on `SeatLayout`'s arc, then
+/// nudges each seat inward until it fits its area, so a seat near the top
+/// never reaches into the navigation bar and one at the side never leaves
+/// the window (tdr/0018). Seats keep their own size; only positions move.
+struct SeatArcLayout: Layout {
+    let points: [SeatLayout.Point]
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        proposal.replacingUnspecifiedDimensions()
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        for (index, subview) in subviews.enumerated() where index < points.count {
+            let size = subview.sizeThatFits(.unspecified)
+            let point = points[index]
+            let x = Self.clamp(bounds.minX + point.x * bounds.width, low: bounds.minX + size.width / 2, high: bounds.maxX - size.width / 2)
+            let y = Self.clamp(bounds.minY + point.y * bounds.height, low: bounds.minY + size.height / 2, high: bounds.maxY - size.height / 2)
+            subview.place(at: CGPoint(x: x, y: y), anchor: .center, proposal: ProposedViewSize(size))
+        }
+    }
+
+    /// Keeps `value` in `low...high`; when the seat is bigger than the area,
+    /// the low edge (top or leading) wins so its name stays visible.
+    private static func clamp(_ value: CGFloat, low: CGFloat, high: CGFloat) -> CGFloat {
+        max(low, min(value, high))
     }
 }
 
@@ -195,6 +261,9 @@ struct SeatHeaderView: View {
             }
         }
         .opacity(isBusted ? 0.5 : 1)
+        // A plate is the one thing a seat must show whole; neighbours such as
+        // the status banner give up width first.
+        .layoutPriority(1)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(name))
         .accessibilityValue(accessibilityValue)
@@ -384,9 +453,15 @@ struct BoardView: View {
     let pot: Chips
     let street: Street?
     var cardHeight: CGFloat = 64
+    /// The pot to the leading side of the cards rather than above them, to
+    /// save height in landscape.
+    var potBeside: Bool = false
 
     var body: some View {
-        VStack(spacing: Theme.Spacing.medium) {
+        let layout = potBeside
+            ? AnyLayout(HStackLayout(spacing: Theme.Spacing.medium))
+            : AnyLayout(VStackLayout(spacing: Theme.Spacing.medium))
+        layout {
             ZStack {
                 if pot > 0 {
                     HStack(spacing: Theme.Spacing.xSmall) {

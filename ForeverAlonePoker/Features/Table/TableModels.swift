@@ -211,7 +211,7 @@ nonisolated enum SeatLayout {
 /// wait. Under Reduce Motion everything lands at once.
 nonisolated enum DealTiming {
     /// Seconds between two cards of the same deal.
-    static let step: Double = 0.12
+    static let step: Double = 0.09
 
     /// - Parameters:
     ///   - index: the card's position in its row.
@@ -251,16 +251,25 @@ nonisolated enum TableArrangement: Equatable {
     /// big screen stay within easy reach of one thumb.
     static let actionPanelMaxWidth: CGFloat = 640
 
-    /// Width of the action panel docked at the side in landscape. Accessibility
+    /// Width of the control rail docked on the trailing edge in landscape,
+    /// a slim toolbar like the foldable's side bar (tdr/0018). Accessibility
     /// text sizes get more room so "Raise to 1,480" still fits on a button,
     /// but the table always keeps more than half the width.
     func actionDockWidth(in size: CGSize, isAccessibilitySize: Bool) -> CGFloat {
         let (share, range): (CGFloat, ClosedRange<CGFloat>) = isAccessibilitySize
-            ? (0.45, 320...460)
-            : (0.32, 260...340)
+            ? (0.42, 300...440)
+            : (0.26, 200...280)
         let width = min(max(size.width * share, range.lowerBound), range.upperBound)
         return min(width, (size.width * 0.49).rounded(.down)).rounded()
     }
+
+    /// Seats put their cards beside the name plate instead of under it, so
+    /// a short window (a phone on its side, an upright phone's table above
+    /// the action panel) fits without anything running off the edge.
+    var seatsInline: Bool { self != .spacious }
+
+    /// My own cards beside my name plate: only where height is scarcest.
+    var mySeatInline: Bool { self == .landscape }
 
     /// Fold / Call / Raise sit side by side under the table, but stack when
     /// docked at the side or when the text is too big to share a row.
@@ -288,7 +297,15 @@ nonisolated enum TableArrangement: Equatable {
         case .spacious: 0.11
         }
         let range = CardHeights.boardRange
-        let board = min(max(min(size.width, size.height) * factor, range.lowerBound), range.upperBound)
+        // The height caps the size too, so a short window never gets cards
+        // taller than its table can hold.
+        let heightCap: CGFloat = switch self {
+        case .portrait: 0.085
+        case .landscape: 0.16
+        case .spacious: 0.09
+        }
+        let preferred = min(min(size.width, size.height) * factor, size.height * heightCap)
+        let board = min(max(preferred, range.lowerBound), range.upperBound)
         return CardHeights(board: board.rounded())
     }
 
@@ -296,7 +313,7 @@ nonisolated enum TableArrangement: Equatable {
     func opponentsHeight(in size: CGSize) -> CGFloat {
         let share: CGFloat = switch self {
         case .portrait: 0.26
-        case .landscape: 0.3
+        case .landscape: 0.36
         case .spacious: 0.28
         }
         return (size.height * share).rounded()

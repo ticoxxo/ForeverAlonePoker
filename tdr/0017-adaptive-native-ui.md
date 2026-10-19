@@ -63,3 +63,7 @@ Every later phase that changes a decision here supersedes this record or adds a 
 - `ForeverAlonePokerTests/Features/Table/TableArrangementTests.swift` covers which arrangement each size gets (phone portrait and landscape, iPad, open foldable, narrow split view, empty size), card-height ordering and clamps, the opponents-area share, and where the actions dock.
 - `TableModelsTests.swift` › `TableActionModel` covers the − / + step size and clamping.
 - Manual checks: open the Practice table on an iPhone 17 simulator and rotate it; on an iPad simulator use full screen, Split View at ⅓ and ½, and a Stage Manager resize; use a foldable simulator when available. Then turn on the largest accessibility text size, Reduce Motion and Reduce Transparency, and do a VoiceOver pass over the action panel.
+
+## Notes
+
+- **2026-10-19:** The deployment target is iOS 17, not 27, so Liquid Glass is gated by availability with material fallbacks. Landscape now docks a slim control rail, seats sit inline in short windows, opponents are placed by `SeatArcLayout`, and the Min button is gone. Phase 2's motion and Reduce Motion pass and phase 3's home tiles are done. Phase 5's UI tests are deliberately not written for now. See tdr/0018.

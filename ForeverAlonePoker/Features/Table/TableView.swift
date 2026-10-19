@@ -38,6 +38,9 @@ struct TableView: View {
             .motion(Theme.Motion.layout, value: arrangement)
         }
         .background(TableFelt())
+        // The felt is dark in either appearance, so the navigation bar's
+        // title and buttons must be light to stay readable.
+        .toolbarColorScheme(.dark, for: .navigationBar)
         .environment(\.dealerButtonNamespace, dealerButton)
         // The dealer button moves on at each new hand.
         .motion(Theme.Motion.layout, value: view?.button)
@@ -47,24 +50,55 @@ struct TableView: View {
     }
 
     /// Portrait and spacious stack the actions under the table; landscape
-    /// docks them at the side so the short height only holds the table.
-    /// One `AnyLayout` for both keeps the table and the action panel the
-    /// same views when the arrangement changes, so folding the phone or
-    /// rotating it mid-hand keeps a half-chosen raise amount (tdr/0018).
+    /// docks them in a slim rail on the trailing edge so the short height
+    /// only holds the table. One `AnyLayout` for both keeps the table and
+    /// the action panel the same views when the arrangement changes, so
+    /// folding the phone or rotating it mid-hand keeps a half-chosen raise
+    /// amount (tdr/0018).
     private func table(_ arrangement: TableArrangement, size: CGSize) -> some View {
         let cards = arrangement.cardHeights(in: size)
         let docked = arrangement.docksActionsAtSide
         let isAccessibilitySize = dynamicTypeSize.isAccessibilitySize
         let layout = docked
-            ? AnyLayout(HStackLayout(spacing: Theme.Spacing.large))
-            : AnyLayout(VStackLayout(spacing: Theme.Spacing.large))
+            ? AnyLayout(HStackLayout(spacing: Theme.Spacing.medium))
+            : AnyLayout(VStackLayout(spacing: Theme.Spacing.medium))
         return layout {
-            tableArea(arrangement, size: size, cards: cards)
-            actions(axis: docked ? .vertical : .horizontal, stacksButtons: arrangement.stacksActionButtons(isAccessibilitySize: isAccessibilitySize))
-                .frame(width: docked ? arrangement.actionDockWidth(in: size, isAccessibilitySize: isAccessibilitySize) : nil)
-                .frame(maxWidth: arrangement == .spacious ? TableArrangement.actionPanelMaxWidth : .infinity)
+            scrollingIfNeeded(tableArea(arrangement, size: size, cards: cards))
+            ActionBar(
+                model: TableActionModel(legalActions: client.legalActions),
+                axis: docked ? .vertical : .horizontal,
+                stacksButtons: arrangement.stacksActionButtons(isAccessibilitySize: isAccessibilitySize)
+            ) { action in
+                Task { await client.act(action) }
+            }
+            .frame(width: docked ? arrangement.actionDockWidth(in: size, isAccessibilitySize: isAccessibilitySize) : nil)
+            .frame(maxWidth: arrangement == .spacious ? TableArrangement.actionPanelMaxWidth : .infinity)
         }
-        .padding(docked ? Theme.Spacing.medium : Theme.Spacing.large)
+        .padding(.horizontal, docked ? Theme.Spacing.medium : Theme.Spacing.large)
+        .padding(.vertical, Theme.Spacing.small)
+        .toolbar {
+            if showsEmotes, view != nil {
+                // A secondary action, so it lives in the navigation bar
+                // rather than taking room from the table (HIG, toolbars).
+                ToolbarItem(placement: .topBarTrailing) {
+                    EmotePicker(isEnabled: client.canEmote) { emote in
+                        Task { await client.emote(emote) }
+                    }
+                }
+            }
+        }
+    }
+
+    /// The table fills its space and never scrolls at normal sizes; at the
+    /// largest text sizes it scrolls rather than clipping seats or cards.
+    private func scrollingIfNeeded(_ content: some View) -> some View {
+        GeometryReader { geometry in
+            ScrollView {
+                content.frame(minHeight: geometry.size.height)
+            }
+            .scrollBounceBehavior(.basedOnSize)
+            .scrollIndicators(.hidden)
+        }
     }
 
     /// VoiceOver hears whose turn it is without hunting for the banner.
@@ -81,7 +115,7 @@ struct TableView: View {
     }
 
     private func tableArea(_ arrangement: TableArrangement, size: CGSize, cards: TableArrangement.CardHeights) -> some View {
-        VStack(spacing: arrangement == .landscape ? Theme.Spacing.small : Theme.Spacing.large) {
+        VStack(spacing: arrangement == .spacious ? Theme.Spacing.large : Theme.Spacing.small) {
             if let view {
                 if view.table.maxPlayers > TableSize.minPlayers {
                     let seating = TableSeating(view: view)
@@ -110,7 +144,8 @@ struct TableView: View {
                         isActing: view.actor != nil && view.actor == view.opponent?.seat,
                         avatar: view.opponent.flatMap { avatars.avatar(for: $0.playerID) },
                         reaction: view.opponent.flatMap { client.reactions[$0.seat] },
-                        cardHeight: cards.opponent
+                        cardHeight: cards.opponent,
+                        isInline: arrangement.seatsInline
                     )
                     .task(id: view.opponent?.playerID) {
                         if let id = view.opponent?.playerID { await avatars.load([id]) }
@@ -120,33 +155,29 @@ struct TableView: View {
             } else {
                 Spacer(minLength: 0)
             }
-            BoardView(community: view?.community ?? [], pot: collectedPot, street: view?.street, cardHeight: cards.board)
-                .accessibilitySortPriority(2)
-            StatusBanner(
-                status: status,
-                outcome: view.flatMap { HandOutcome(result: $0.lastResult, seat: $0.seat) },
-                winnerName: winnerName,
-                ratingUpdate: client.ratingUpdate,
-                onReady: { Task { await client.ready() } }
+            BoardView(
+                community: view?.community ?? [],
+                pot: collectedPot,
+                street: view?.street,
+                cardHeight: cards.board,
+                potBeside: arrangement == .landscape
             )
-            // VoiceOver starts with what is happening, then my cards, then
-            // the board; the other seats and the actions follow.
-            .accessibilitySortPriority(4)
-            if let table = view?.table, table.isRankedCapable, !table.isEloEnabled {
-                Label("Elo gain disabled for this game", systemImage: "chart.line.downtrend.xyaxis")
-                    .font(.footnote)
-                    .foregroundStyle(.white.opacity(0.85))
+            .accessibilitySortPriority(2)
+            if arrangement.mySeatInline {
+                // Landscape: my seat and the status share a row so the short
+                // height holds the whole table.
+                Spacer(minLength: 0)
+                HStack(alignment: .center, spacing: Theme.Spacing.large) {
+                    mySeat(cards: cards, isInline: true)
+                        .layoutPriority(1)
+                    statusBanner
+                }
+            } else {
+                statusBanner
+                eloNotice
+                Spacer(minLength: 0)
+                mySeat(cards: cards, isInline: false)
             }
-            Spacer(minLength: 0)
-            MySeatView(
-                summary: view?.me,
-                isOnButton: view?.isOnButton ?? false,
-                holeCards: view?.holeCards ?? [],
-                reaction: view.flatMap { client.reactions[$0.seat] },
-                cardHeight: cards.mine
-            )
-            .accessibilityElement(children: .contain)
-            .accessibilitySortPriority(3)
             if let rejection = client.lastRejection {
                 Label(rejection, systemImage: "exclamationmark.triangle.fill")
                     .font(.callout)
@@ -158,21 +189,39 @@ struct TableView: View {
         .accessibilityElement(children: .contain)
     }
 
-    /// The action panel and, beside or under it, the emote tray.
-    private func actions(axis: Axis, stacksButtons: Bool) -> some View {
-        let layout = axis == .vertical
-            ? AnyLayout(VStackLayout(spacing: Theme.Spacing.medium))
-            : AnyLayout(HStackLayout(alignment: .bottom, spacing: Theme.Spacing.medium))
-        return layout {
-            ActionBar(model: TableActionModel(legalActions: client.legalActions), axis: axis, stacksButtons: stacksButtons) { action in
-                Task { await client.act(action) }
-            }
-            if showsEmotes, view != nil {
-                EmotePicker(isEnabled: client.canEmote) { emote in
-                    Task { await client.emote(emote) }
-                }
-            }
+    private var statusBanner: some View {
+        StatusBanner(
+            status: status,
+            outcome: view.flatMap { HandOutcome(result: $0.lastResult, seat: $0.seat) },
+            winnerName: winnerName,
+            ratingUpdate: client.ratingUpdate,
+            onReady: { Task { await client.ready() } }
+        )
+        // VoiceOver starts with what is happening, then my cards, then the
+        // board; the other seats and the actions follow.
+        .accessibilitySortPriority(4)
+    }
+
+    @ViewBuilder
+    private var eloNotice: some View {
+        if let table = view?.table, table.isRankedCapable, !table.isEloEnabled {
+            Label("Elo gain disabled for this game", systemImage: "chart.line.downtrend.xyaxis")
+                .font(.footnote)
+                .foregroundStyle(.white.opacity(0.85))
         }
+    }
+
+    private func mySeat(cards: TableArrangement.CardHeights, isInline: Bool) -> some View {
+        MySeatView(
+            summary: view?.me,
+            isOnButton: view?.isOnButton ?? false,
+            holeCards: view?.holeCards ?? [],
+            reaction: view.flatMap { client.reactions[$0.seat] },
+            cardHeight: isInline ? cards.board * 1.15 : cards.mine,
+            isInline: isInline
+        )
+        .accessibilityElement(children: .contain)
+        .accessibilitySortPriority(3)
     }
 
     /// Chips already in the middle. Bets on the current street are shown in
@@ -207,11 +256,8 @@ private struct OpponentsRing: View {
     let cardHeight: CGFloat
 
     var body: some View {
-        GeometryReader { geometry in
-            let positions = SeatLayout.positions(count: players.count)
-            ZStack {
-                ForEach(Array(players.enumerated()), id: \.element.seat) { index, player in
-                    let point = positions[index]
+        SeatArcLayout(points: SeatLayout.positions(count: players.count)) {
+                ForEach(players, id: \.seat) { player in
                     CompactSeatView(
                         summary: player,
                         avatar: avatars.avatar(for: player.playerID),
@@ -222,12 +268,10 @@ private struct OpponentsRing: View {
                         reaction: reactions[player.seat],
                         cardHeight: cardHeight
                     )
-                    .position(x: point.x * geometry.size.width, y: point.y * geometry.size.height)
                     .transition(.opacity)
                 }
-            }
-            .motion(.spring(duration: 0.4), value: players.map(\.seat))
         }
+        .motion(.spring(duration: 0.4), value: players.map(\.seat))
         .environment(\.cardSkin, .standard)
     }
 }
@@ -440,6 +484,18 @@ private struct OutcomeText: View {
 
 #if DEBUG
 #Preview("Live table vs auto-caller") {
-    PracticeTableView()
+    NavigationStack {
+        PracticeTableView()
+            .navigationTitle("Practice")
+            .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+#Preview("Landscape", traits: .landscapeLeft) {
+    NavigationStack {
+        PracticeTableView()
+            .navigationTitle("Practice")
+            .navigationBarTitleDisplayMode(.inline)
+    }
 }
 #endif

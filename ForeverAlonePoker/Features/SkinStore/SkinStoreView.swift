@@ -26,26 +26,36 @@ struct SkinStoreView: View {
             }
 
             Section {
+            } footer: {
+                VStack(alignment: .leading, spacing: Theme.Spacing.xSmall) {
+                    Text("Prices are in your App Store currency. Purchases are tied to your Apple Account and appear on all your devices. Bought on another device? Tap Restore.")
+                    if let error = store.lastError {
+                        Label(error, systemImage: "exclamationmark.triangle")
+                            .foregroundStyle(.orange)
+                    }
+                }
+            }
+        }
+        .navigationTitle("Card store")
+        .toolbar {
+            // A store-wide action, so it lives in the navigation bar instead
+            // of at the bottom of a long list.
+            ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     Task { await store.restorePurchases() }
                 } label: {
                     if store.isRestoring {
                         ProgressView()
                     } else {
-                        Text("Restore purchases")
+                        Text("Restore")
                     }
                 }
                 .disabled(store.isRestoring)
-            } footer: {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Prices are in your App Store currency. Purchases are tied to your Apple Account and appear on all your devices.")
-                    if let error = store.lastError {
-                        Text(error).foregroundStyle(.orange)
-                    }
-                }
+                .accessibilityLabel(Text("Restore purchases"))
+                .accessibilityHint(Text("Brings back cards bought with your Apple Account"))
             }
         }
-        .navigationTitle("Card store")
+        .unlockCelebration()
         .refreshable {
             await store.refreshCatalog()
             await store.refreshEntitlements()
@@ -59,16 +69,20 @@ struct SkinStoreView: View {
 private struct SkinItemRow: View {
     @Environment(SkinStore.self) private var store
     let item: SkinItem
+    @ScaledMetric(relativeTo: .headline) private var cardHeight: CGFloat = 56
 
     var body: some View {
-        HStack(spacing: 12) {
-            HStack(spacing: -24) {
+        HStack(spacing: Theme.Spacing.medium) {
+            HStack(spacing: -min(cardHeight, 90) * 0.43) {
                 ForEach(["As", "Kh", "Qd"], id: \.self) { notation in
-                    CardView(card: Card(notation)!)
-                        .frame(height: 56)
+                    if let card = Card(notation) {
+                        CardView(card: card)
+                            .frame(height: min(cardHeight, 90))
+                    }
                 }
             }
             .environment(\.cardSkin, store.previewSkin(for: item))
+            .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack {
@@ -83,7 +97,9 @@ private struct SkinItemRow: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, Theme.Spacing.xSmall)
+        .accessibilityElement(children: .combine)
+        .accessibilityHint(Text("Shows every card of the set"))
     }
 
     private var status: String {
@@ -98,12 +114,14 @@ private struct SkinItemRow: View {
 private struct CardBackRow: View {
     @Environment(SkinStore.self) private var store
     let item: SkinItem
+    @ScaledMetric(relativeTo: .headline) private var cardHeight: CGFloat = 56
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: Theme.Spacing.medium) {
             CardBackView()
-                .frame(height: 56)
+                .frame(height: min(cardHeight, 90))
                 .environment(\.cardSkin, store.previewSkin(for: item))
+                .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 HStack {
                     Text(item.name(for: Locale.current.language.languageCode?.identifier))
@@ -114,43 +132,67 @@ private struct CardBackRow: View {
                 }
                 PurchaseStateText(state: item.productID.flatMap { store.purchaseStates[$0] })
             }
+            .accessibilityElement(children: .combine)
             Spacer()
-            if store.owns(.cardBack, of: item) {
-                if store.isShowing(item, in: .cardBack) {
-                    Label("In use", systemImage: "checkmark.circle.fill")
-                        .labelStyle(.iconOnly)
-                        .foregroundStyle(.green)
-                        .accessibilityLabel(Text("In use"))
-                } else {
-                    Button("Use") { store.equip(item, on: [.cardBack]) }
-                        .buttonStyle(.bordered)
+            Group {
+                if store.owns(.cardBack, of: item) {
+                    if store.isShowing(item, in: .cardBack) {
+                        Label("In use", systemImage: "checkmark.circle.fill")
+                            .labelStyle(.iconOnly)
+                            .font(.title2)
+                            .foregroundStyle(.green)
+                            .transition(.scale.combined(with: .opacity))
+                            .accessibilityLabel(Text("In use"))
+                    } else {
+                        Button("Use") { store.equip(item, on: [.cardBack]) }
+                            .glassButtonStyle()
+                            .accessibilityLabel(Text("Use \(itemName)"))
+                    }
+                } else if let productID = item.productID {
+                    BuyButton(productID: productID, itemName: itemName)
                 }
-            } else if let productID = item.productID {
-                BuyButton(productID: productID)
             }
+            .motion(Theme.Motion.reveal, value: store.isShowing(item, in: .cardBack))
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, Theme.Spacing.xSmall)
     }
 }
 
-/// Buys one product, showing its App Store price.
+extension CardBackRow {
+    fileprivate var itemName: String { item.name(for: Locale.current.language.languageCode?.identifier) }
+}
+
+/// Buys one product, showing its App Store price. The label morphs from the
+/// price to a spinner while the App Store sheet is up.
 struct BuyButton: View {
     @Environment(SkinStore.self) private var store
     let productID: String
+    /// What VoiceOver says is being bought: "Buy Red check for $0.99".
+    var itemName: String = ""
 
     var body: some View {
         let state = store.purchaseStates[productID]
+        let price = store.product(productID)?.displayPrice
         Button {
             Task { await store.purchase(productID) }
         } label: {
-            if state == .purchasing {
-                ProgressView()
-            } else {
-                Text(store.product(productID)?.displayPrice ?? "…")
+            ZStack {
+                if state == .purchasing {
+                    ProgressView()
+                        .transition(.opacity)
+                } else {
+                    Text(price ?? "…")
+                        .monospacedDigit()
+                        .transition(.opacity)
+                }
             }
+            .frame(minWidth: Theme.Target.minimum, minHeight: Theme.Target.minimum - 14)
         }
-        .buttonStyle(.borderedProminent)
-        .disabled(store.product(productID) == nil || state == .purchasing || state == .pending)
+        .glassButtonStyle(.prominent)
+        .disabled(price == nil || state == .purchasing || state == .pending)
+        .animation(.easeInOut(duration: 0.2), value: state)
+        .accessibilityLabel(price.map { Text("Buy \(itemName) for \($0)") } ?? Text("Price unavailable"))
+        .accessibilityValue(state == .purchasing ? Text("Purchasing") : state == .pending ? Text("Waiting for approval") : Text(""))
     }
 }
 
@@ -175,7 +217,7 @@ struct BadgeView: View {
     var body: some View {
         Text(text)
             .font(.caption2.bold())
-            .padding(.horizontal, 6)
+            .padding(.horizontal, Theme.Spacing.small - 2)
             .padding(.vertical, 2)
             .background(.yellow, in: Capsule())
             .foregroundStyle(.black)
@@ -187,6 +229,21 @@ struct BadgeView: View {
     NavigationStack {
         SkinStoreView()
     }
-    .environment(PreviewSkins.store)
+    .previewEnvironment()
+}
+
+#Preview("Offline, defaults only") {
+    NavigationStack {
+        SkinStoreView()
+    }
+    .previewEnvironment(identity: PreviewIdentity.newPlayer, skins: PreviewSkins.empty)
+}
+
+#Preview("Large text") {
+    NavigationStack {
+        SkinStoreView()
+    }
+    .previewEnvironment()
+    .dynamicTypeSize(.accessibility2)
 }
 #endif

@@ -34,10 +34,10 @@ struct DealTimingTests {
 struct ActionDockTests {
     private let phoneLandscape = CGSize(width: 852, height: 393)
 
-    @Test("the docked panel takes about a third of a phone on its side")
+    @Test("the docked rail takes about a quarter of a phone on its side")
     func regularText() {
         let width = TableArrangement.landscape.actionDockWidth(in: phoneLandscape, isAccessibilitySize: false)
-        #expect(width >= 260 && width <= 340)
+        #expect(width >= 200 && width <= 280)
     }
 
     @Test("accessibility text sizes get a wider panel so labels still fit")

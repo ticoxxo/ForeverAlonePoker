@@ -282,3 +282,26 @@ final class LocalLobbyModel {
         nearbyPeers = []
     }
 }
+
+#if DEBUG
+extension LocalLobbyModel {
+    /// Previews only: a lobby already in `phase`, without opening any
+    /// network connection. `client` stands in for the seated session.
+    static func preview(
+        _ phase: Phase,
+        identity: PlayerIdentity,
+        role: Role? = nil,
+        maxPlayers: Int = TableSize.minPlayers,
+        nearbyPeers: [NearbyPeer] = [],
+        client: MatchSessionClient? = nil
+    ) -> LocalLobbyModel {
+        let model = LocalLobbyModel(identity: identity)
+        model.phase = phase
+        model.role = role
+        model.chosenMaxPlayers = maxPlayers
+        model.nearbyPeers = nearbyPeers
+        model.client = client
+        return model
+    }
+}
+#endif
