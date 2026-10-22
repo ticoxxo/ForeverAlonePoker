@@ -61,6 +61,36 @@ struct TableArrangementTests {
         #expect(huge.board == TableArrangement.CardHeights.boardRange.upperBound)
     }
 
+    @Test("cards grow with a larger text size")
+    func cardsFollowDynamicType() {
+        let size = CGSize(width: 852, height: 320)
+        let regular = TableArrangement.landscape.cardHeights(in: size)
+        let larger = TableArrangement.landscape.cardHeights(in: size, textScale: 1.3)
+        #expect(larger.board > regular.board)
+    }
+
+    @Test("a smaller text size never shrinks the cards")
+    func smallTextKeepsCards() {
+        let size = CGSize(width: 393, height: 700)
+        let regular = TableArrangement.portrait.cardHeights(in: size)
+        let small = TableArrangement.portrait.cardHeights(in: size, textScale: 0.8)
+        #expect(small.board == regular.board)
+    }
+
+    @Test("text scaling never makes the cards taller than the window can hold")
+    func textScaleIsCappedByHeight() {
+        let size = CGSize(width: 852, height: 320)
+        let huge = TableArrangement.landscape.cardHeights(in: size, textScale: 3)
+        #expect(huge.board <= size.height * TableArrangement.landscape.maxBoardShare)
+    }
+
+    @Test("a phone on its side gives the board a readable share of its height")
+    func landscapeBoardIsReadable() {
+        let size = CGSize(width: 852, height: 320)
+        let cards = TableArrangement.landscape.cardHeights(in: size)
+        #expect(cards.board >= size.height * 0.17)
+    }
+
     @Test("the opponents area takes a share of the height, never a fixed size")
     func opponentsHeight() {
         let short = TableArrangement.landscape.opponentsHeight(in: CGSize(width: 852, height: 393))

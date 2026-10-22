@@ -19,6 +19,9 @@ struct TableView: View {
     /// The chosen bet or raise. Held here rather than in the controls so it
     /// survives the panel and the toolbar swapping on rotation or resize.
     @State private var raiseAmount: Chips = 0
+    /// 100 at the default text size; cards scale by it over 100 so they
+    /// grow with Dynamic Type like the rest of the table.
+    @ScaledMetric(relativeTo: .body) private var textScalePercent: CGFloat = 100
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.verticalSizeClass) private var verticalSizeClass
@@ -75,7 +78,7 @@ struct TableView: View {
     }
 
     private func table(_ arrangement: TableArrangement, size: CGSize) -> some View {
-        scrollingIfNeeded(tableArea(arrangement, size: size, cards: arrangement.cardHeights(in: size)))
+        scrollingIfNeeded(tableArea(arrangement, size: size, cards: arrangement.cardHeights(in: size, textScale: textScalePercent / 100)))
     }
 
     /// The panel under the table, or just the bet sizing when the buttons
@@ -107,13 +110,14 @@ struct TableView: View {
             // action (Bet / Raise to) trailing. The bar stays for the whole
             // match and only disables between turns, so the table above
             // never changes height.
-            ToolbarItemGroup(placement: .bottomBar) {
+            ToolbarItemGroup(placement: .automatic) {
                 Group {
                     FoldActionButton(model: actionModel, onAction: act)
-                    Spacer()
+                    
                     PassiveActionButton(model: actionModel, onAction: act)
-                    Spacer()
+                    
                     SizedActionButton(model: actionModel, amount: raiseAmount, onAction: act)
+                    
                 }
                 .environment(\.actionLabelIsInToolbar, true)
                 .disabled(client.isConnectionLost)

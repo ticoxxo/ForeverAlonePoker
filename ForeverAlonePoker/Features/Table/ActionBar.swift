@@ -75,7 +75,7 @@ struct FoldActionButton: View {
         } label: {
             ActionLabel { Text("Fold") }
         }
-        .glassButtonStyle()
+        .glassButtonStyle(.prominent)
         .tint(.red)
         .disabled(!model.canFold)
     }
@@ -124,7 +124,7 @@ struct SizedActionButton: View {
             .contentTransition(.numericText(value: Double(model.clamped(amount))))
         }
         .glassButtonStyle(.prominent)
-        .tint(.orange)
+        .tint(.mint)
         .disabled(model.sizedAction(amount) == nil)
     }
 }
@@ -289,11 +289,15 @@ private struct StepButton: View {
     let label: LocalizedStringKey
     let action: () -> Void
 
+    /// Grows with Dynamic Type so the circle keeps fitting its symbol; the
+    /// glass button's padding brings it to at least `Theme.Target.minimum`.
+    @ScaledMetric(relativeTo: .body) private var side: CGFloat = Theme.Target.minimum - 16
+
     var body: some View {
         Button(action: action) {
             Image(systemName: systemImage)
                 .font(.body.bold())
-                .frame(width: Theme.Target.minimum - 16, height: Theme.Target.minimum - 16)
+                .frame(width: side, height: side)
         }
         .glassButtonStyle()
         .buttonBorderShape(.circle)

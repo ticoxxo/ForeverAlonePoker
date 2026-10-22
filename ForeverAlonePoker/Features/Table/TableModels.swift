@@ -308,10 +308,24 @@ nonisolated enum TableArrangement: Equatable {
         var compact: CGFloat { board * 0.47 }
     }
 
-    func cardHeights(in size: CGSize) -> CardHeights {
+    /// The most of the window height the board cards may take, however big
+    /// the text: a hard ceiling over the Dynamic Type growth.
+    var maxBoardShare: CGFloat {
+        switch self {
+        case .portrait: 0.12
+        case .landscape: 0.24
+        case .spacious: 0.13
+        }
+    }
+
+    /// `textScale` is the Dynamic Type growth relative to the default size
+    /// (1 at Large). Cards grow with bigger text, so they keep pace with the
+    /// name plates and labels around them, but never shrink below their
+    /// default for smaller text: they are already the smallest readable.
+    func cardHeights(in size: CGSize, textScale: CGFloat = 1) -> CardHeights {
         let factor: CGFloat = switch self {
         case .portrait: 0.16
-        case .landscape: 0.14
+        case .landscape: 0.18
         case .spacious: 0.11
         }
         let range = CardHeights.boardRange
@@ -319,11 +333,14 @@ nonisolated enum TableArrangement: Equatable {
         // taller than its table can hold.
         let heightCap: CGFloat = switch self {
         case .portrait: 0.085
-        case .landscape: 0.16
+        case .landscape: 0.2
         case .spacious: 0.09
         }
-        let preferred = min(min(size.width, size.height) * factor, size.height * heightCap)
-        let board = min(max(preferred, range.lowerBound), range.upperBound)
+        let scale = min(max(textScale, 1), 1.6)
+        let preferred = min(min(size.width, size.height) * factor, size.height * heightCap) * scale
+        // Rounded down so rounding the result can't step over the ceiling.
+        let capped = min(preferred, (size.height * maxBoardShare).rounded(.down))
+        let board = min(max(capped, range.lowerBound), range.upperBound)
         return CardHeights(board: board.rounded())
     }
 
