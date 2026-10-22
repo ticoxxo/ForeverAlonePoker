@@ -21,7 +21,7 @@ struct CardView: View {
         .aspectRatio(CardMetrics.aspectRatio, contentMode: .fit)
         .shadow(radius: 1, y: 1)
         .accessibilityElement()
-        .accessibilityLabel(Text(card.notation))
+        .accessibilityLabel(Text(card.spokenName))
     }
 }
 
@@ -140,29 +140,79 @@ struct DrawnCardBack: View {
 }
 
 /// A row of cards, with optional face-down placeholders filling to `slots`.
+/// New cards are dealt in one after another (tdr/0018): the flop lands card
+/// by card, the turn and river on their own, and a new hand replaces the
+/// old one.
 struct CardRowView: View {
     let cards: [Card]
     var slots: Int = 0
     var height: CGFloat = 64
+    /// Cards come face down from above and flip; off for rows that only
+    /// preview cards (the store).
+    var dealsIn: Bool = true
+
+    /// The cards showing before the latest change, so only new ones wait
+    /// their turn. Updated after each render that changes `cards`.
+    @State private var shown: [Card] = []
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
+        // Read during the render that inserts new cards, before `shown`
+        // catches up, so it still counts only the cards already showing.
+        let previousCount = cards.filter(shown.contains).count
         HStack(spacing: 6) {
-            ForEach(cards, id: \.self) { card in
+            ForEach(Array(cards.enumerated()), id: \.element) { index, card in
                 CardView(card: card)
                     .frame(height: height)
-                    .transition(.scale.combined(with: .opacity))
+                    .transition(transition(delay: DealTiming.delay(index: index, previousCount: previousCount, reduceMotion: reduceMotion)))
             }
             ForEach(0..<max(0, slots - cards.count), id: \.self) { _ in
                 RoundedRectangle(cornerRadius: CardMetrics.cornerRadius)
                     .strokeBorder(.white.opacity(0.3), style: StrokeStyle(lineWidth: 1, dash: [4]))
                     .aspectRatio(CardMetrics.aspectRatio, contentMode: .fit)
                     .frame(height: height)
+                    .accessibilityHidden(true)
             }
         }
+        .onChange(of: cards, initial: true) { shown = cards }
+    }
+
+    private func transition(delay: Double) -> AnyTransition {
+        guard dealsIn, !reduceMotion else { return .opacity }
+        return .asymmetric(
+            insertion: .dealt(from: height).animation(Theme.Motion.deal.delay(delay)),
+            removal: .opacity.combined(with: .scale(scale: 0.85))
+        )
     }
 }
 
-/// A chip amount with a consistent style.
+extension AnyTransition {
+    /// A card pitched from the dealer: it slides down from above, tilted and
+    /// slightly small, and settles flat on the table. Only transforms and
+    /// opacity change, which the renderer interpolates on its own, so the
+    /// card is never rebuilt mid-flight and the motion stays smooth at the
+    /// display's full frame rate (tdr/0018).
+    static func dealt(from distance: CGFloat) -> AnyTransition {
+        .modifier(active: DealPose(isInFlight: true, distance: distance), identity: DealPose(isInFlight: false, distance: distance))
+    }
+}
+
+/// Where a dealt card is while in flight, and at rest.
+private struct DealPose: ViewModifier {
+    let isInFlight: Bool
+    let distance: CGFloat
+
+    func body(content: Content) -> some View {
+        content
+            .rotation3DEffect(.degrees(isInFlight ? 55 : 0), axis: (x: 1, y: 0, z: 0), anchor: .top, perspective: 0.5)
+            .rotationEffect(.degrees(isInFlight ? -8 : 0))
+            .scaleEffect(isInFlight ? 0.8 : 1)
+            .offset(y: isInFlight ? -distance * 0.9 : 0)
+            .opacity(isInFlight ? 0 : 1)
+    }
+}
+
+/// A chip amount with a consistent style. The digits roll when it changes.
 struct ChipAmountView: View {
     let amount: Chips
 
@@ -170,10 +220,15 @@ struct ChipAmountView: View {
         Label {
             Text(amount, format: .number)
                 .monospacedDigit()
+                .contentTransition(.numericText(value: Double(amount)))
         } icon: {
             Image(systemName: "circle.circle.fill")
+                .accessibilityHidden(true)
         }
         .font(.subheadline.weight(.semibold))
+        .motion(Theme.Motion.count, value: amount)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("^[\(amount) chip](inflect: true)"))
     }
 }
 

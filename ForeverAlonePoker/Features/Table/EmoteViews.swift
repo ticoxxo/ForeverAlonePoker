@@ -34,7 +34,7 @@ struct EmoteBubble: View {
                     .shadow(color: .black.opacity(0.25), radius: 3, y: 1)
                     .transition(.scale(scale: 0.4, anchor: .bottomLeading).combined(with: .opacity))
                     .id(reaction.id)
-                    .accessibilityLabel(Text("Reaction \(reaction.emote.symbol)"))
+                    .accessibilityLabel(Text("Reaction: \(reaction.emote.spokenName)"))
             }
         }
         .animation(.spring(duration: 0.3), value: reaction)
@@ -71,8 +71,8 @@ extension View {
     }
 }
 
-/// The emote tray: one button that opens the nine emojis. Disabled once this
-/// turn's emote is spent.
+/// The emote tray: one navigation-bar button that opens the nine emojis
+/// (tdr/0018). Disabled once this turn's emote is spent.
 struct EmotePicker: View {
     let isEnabled: Bool
     let onPick: (Emote) -> Void
@@ -83,17 +83,12 @@ struct EmotePicker: View {
         Button {
             isPresented = true
         } label: {
-            Image(systemName: "face.smiling")
-                .font(.title2)
-                .padding(10)
-                .background(.black.opacity(0.35), in: Circle())
-                .foregroundStyle(.white)
+            Label("Send a reaction", systemImage: "face.smiling")
         }
         .disabled(!isEnabled)
-        .opacity(isEnabled ? 1 : 0.5)
-        .accessibilityLabel(Text("Send a reaction"))
+        .accessibilityHint(isEnabled ? Text("Shows emojis the other players see by your seat") : Text("You can react again on your next turn"))
         .popover(isPresented: $isPresented) {
-            LazyVGrid(columns: Array(repeating: GridItem(.fixed(48)), count: 3), spacing: 8) {
+            LazyVGrid(columns: Array(repeating: GridItem(.fixed(Theme.Target.primary)), count: 3), spacing: Theme.Spacing.small) {
                 ForEach(Emote.allCases, id: \.self) { emote in
                     Button {
                         isPresented = false
@@ -101,14 +96,31 @@ struct EmotePicker: View {
                     } label: {
                         Text(emote.symbol)
                             .font(.system(size: 32))
-                            .frame(width: 48, height: 48)
+                            .frame(width: Theme.Target.primary, height: Theme.Target.primary)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel(Text(emote.symbol))
+                    .accessibilityLabel(Text(emote.spokenName))
                 }
             }
             .padding()
             .presentationCompactAdaptation(.popover)
+        }
+    }
+}
+
+extension Emote {
+    /// What VoiceOver says for the emoji: its meaning, not "image".
+    nonisolated var spokenName: String {
+        switch self {
+        case .smile: String(localized: "Smiling face")
+        case .melting: String(localized: "Melting face")
+        case .laughing: String(localized: "Laughing with tears")
+        case .upsideDown: String(localized: "Upside-down face")
+        case .cursing: String(localized: "Cursing face")
+        case .freezing: String(localized: "Freezing face")
+        case .poop: String(localized: "Pile of poo")
+        case .cool: String(localized: "Cool face with sunglasses")
+        case .eyes: String(localized: "Eyes")
         }
     }
 }

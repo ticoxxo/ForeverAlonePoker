@@ -46,7 +46,7 @@ Dependency direction: `App → Features → Shared → PokerCore`. Features neve
 
 ## Build & test
 
-Single scheme `ForeverAlonePoker`; targets: `ForeverAlonePoker`, `ForeverAlonePokerTests`, `ForeverAlonePokerUITests`. Deployment target is iOS 27.0, so a matching simulator runtime is required.
+Single scheme `ForeverAlonePoker`; targets: `ForeverAlonePoker`, `ForeverAlonePokerTests`, `ForeverAlonePokerUITests`. Deployment target is iOS 17 (the packages declare `.iOS(.v17)` too); Liquid Glass is iOS 26+, so it is only used through the availability-gated helpers in `Theme.swift` (tdr/0018).
 
 ```sh
 # CORE package (fastest feedback; run after every engine change)
@@ -80,7 +80,7 @@ xcodebuild ... test -only-testing:'ForeverAlonePokerTests/AppLinksPokerCoreTests
 xcodebuild ... test -only-testing:ForeverAlonePokerUITests/ForeverAlonePokerUITests/testExample
 ```
 
-Use `xcrun simctl list devices available` to pick a valid simulator name if `iPhone 17` on iOS 27.0 isn't installed. Specify `OS=27.0`, because the same device name also exists on older runtimes that are below the deployment target.
+Use `xcrun simctl list devices available` to pick a valid simulator name if `iPhone 17` on iOS 27.0 isn't installed, and specify `OS=` to choose the runtime. Run tests on a simulator: Xcode's active destination may be a physical iPhone, where the unit-test runner fails to bootstrap.
 
 ## Things that aren't obvious from the code
 
@@ -94,6 +94,8 @@ Use `xcrun simctl list devices available` to pick a valid simulator name if `iPh
 - **SwiftData in tests:** keep the `ModelContainer` alive for the whole test (see `Fixture` in `IdentityStoreTests`); a model whose container was released asserts on property access.
 - **CloudKit mirroring traps without the entitlement.** `Persistence.store()` only tries `cloudKitDatabase: .private(...)` when `Persistence.isCloudEligible` (not a test host, `disableCloudSync` default unset). Building with `CODE_SIGNING_ALLOWED=NO` (useful when signing is blocked) produces an unsigned app: unit tests still work because the test host is detected, but do not run such a build as an app with cloud enabled.
 - **Signing needs the capabilities registered.** `ForeverAlonePoker.entitlements` carries iCloud/CloudKit, Push and Sign in with Apple; Xcode registers them on the App ID with automatic signing, which fails until the current Program License Agreement is accepted on developer.apple.com.
+- **Glass only through `Theme`** (tdr/0018). Use `tableGlass`/`surfaceGlass`/`glassButtonStyle`/`GlassGroup`; calling `glassEffect` or `.buttonStyle(.glass)` directly breaks the iOS 17 build. Movement goes through `motion(_:value:)` so Reduce Motion is honoured.
+- **Layout follows space, not device** (tdr/0017). The table picks `TableArrangement` (portrait / landscape / spacious) from its container size, so rotation, iPad split view and the foldable all go through one rule; never branch on `UIDevice` or hard-code card sizes. Use `Theme` tokens (`Shared/DesignSystem/Theme.swift`): tap targets ≥ 44 pt, main actions 56 pt, semantic text styles only.
 - **Skins never reach the game.** Cards read `@Environment(\.cardSkin)`; ownership comes only from StoreKit entitlements, never SwiftData; prices come only from the App Store (`Product.displayPrice`), never the catalog. Every fallback goes through `SkinResolver` (tdr/0011, tdr/0012).
 - **SkinKit is a second local package** linked through Xcode's UI like PokerCore: `SkinKit` to the app, `SkinKit` + `SkinKitTestSupport` to `ForeverAlonePokerTests`.
 - **Skin artwork is PNG** (750×1050). SVG masters cannot be rendered at runtime on iOS (no public renderer; CoreSVG drops `<text>`). Jokers are never shipped.

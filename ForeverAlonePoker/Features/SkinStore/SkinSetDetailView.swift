@@ -8,14 +8,18 @@ struct SkinSetDetailView: View {
     @Environment(SkinStore.self) private var store
     let item: SkinItem
     @State private var selectedCard: Card?
+    /// Cards grow with the text size so the set stays easy to see and tap.
+    @ScaledMetric(relativeTo: .body) private var cellWidth: CGFloat = 64
 
-    private let columns = [GridItem(.adaptive(minimum: 56), spacing: 8)]
+    private var columns: [GridItem] {
+        [GridItem(.adaptive(minimum: max(Theme.Target.minimum, min(cellWidth, 140))), spacing: Theme.Spacing.small)]
+    }
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: Theme.Spacing.large) {
                 header
-                LazyVGrid(columns: columns, spacing: 8) {
+                LazyVGrid(columns: columns, spacing: Theme.Spacing.small) {
                     ForEach(item.slots.compactMap(\.card), id: \.self) { card in
                         Button {
                             // Locked cards have nothing to offer: they come with the set.
@@ -24,14 +28,18 @@ struct SkinSetDetailView: View {
                             CardCell(item: item, card: card)
                         }
                         .buttonStyle(.plain)
+                        .accessibilityHint(store.owns(.cardFront(card), of: item) ? Text("Choose whether this card uses the set") : Text("Comes with the set"))
                     }
                 }
                 .environment(\.cardSkin, store.previewSkin(for: item))
             }
             .padding()
+            .frame(maxWidth: Theme.Width.readable)
+            .frame(maxWidth: .infinity)
         }
         .navigationTitle(item.name(for: Locale.current.language.languageCode?.identifier))
         .navigationBarTitleDisplayMode(.inline)
+        .unlockCelebration()
         .confirmationDialog(
             selectedCard.map { Text($0.notation) } ?? Text(""),
             isPresented: Binding(get: { selectedCard != nil }, set: { if !$0 { selectedCard = nil } }),
@@ -43,21 +51,22 @@ struct SkinSetDetailView: View {
 
     @ViewBuilder
     private var header: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: Theme.Spacing.small) {
             if item.isDefault {
                 Text("The classic deck is free and always available.")
                     .foregroundStyle(.secondary)
-                Button("Use for every card") { store.equipAll(item) }
-                    .buttonStyle(.borderedProminent)
+                PrimaryActionButton(title: "Use for every card", systemImage: "rectangle.stack.fill") { store.equipAll(item) }
             } else if store.ownsAll(of: item) {
-                Button("Use for every card") { store.equipAll(item) }
-                    .buttonStyle(.borderedProminent)
+                PrimaryActionButton(title: "Use for every card", systemImage: "rectangle.stack.fill") { store.equipAll(item) }
             } else if let productID = item.productID {
                 Text("Buy the set to use all \(item.slots.count) cards.")
                     .foregroundStyle(.secondary)
                 HStack {
                     Text("Whole set")
-                    BuyButton(productID: productID)
+                        .font(.headline)
+                    Spacer()
+                    BuyButton(productID: productID, itemName: item.name(for: Locale.current.language.languageCode?.identifier))
+                        .controlSize(.large)
                 }
                 PurchaseStateText(state: store.purchaseStates[productID])
             }
@@ -92,6 +101,7 @@ private struct CardCell: View {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundStyle(.white, .green)
                         .offset(x: 4, y: -4)
+                        .transition(.scale.combined(with: .opacity))
                 } else if !owned {
                     Image(systemName: "lock.fill")
                         .font(.caption2)
@@ -100,6 +110,9 @@ private struct CardCell: View {
                         .offset(x: 4, y: -4)
                 }
             }
+            .motion(Theme.Motion.reveal, value: store.isShowing(item, in: slot))
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text(card.spokenName))
             .accessibilityValue(Text(store.isShowing(item, in: slot) ? "In use" : owned ? "Owned" : "Locked"))
     }
 }

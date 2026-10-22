@@ -24,6 +24,16 @@ final class SkinStore {
         case failed(String)
     }
 
+    /// A purchase that just completed, for the store's celebration (tdr/0018).
+    /// Only a purchase made on this device in this session raises one; restores,
+    /// other devices and Ask to Buy approvals arrive quietly.
+    struct Unlock: Equatable, Identifiable {
+        let id = UUID()
+        let productID: String
+        /// The catalog items the product unlocked.
+        let items: [SkinItem]
+    }
+
     /// Kinds this build can draw. Supporting the mat or chips means adding
     /// their renderer and listing them here; catalogs can carry them earlier.
     static let supportedKinds: Set<CosmeticKind> = [.cardFront, .cardBack]
@@ -36,6 +46,8 @@ final class SkinStore {
     private(set) var products: [String: StoreProduct] = [:]
     private(set) var purchaseStates: [String: PurchaseState] = [:]
     private(set) var isRestoring = false
+    /// The latest purchase to celebrate, until the UI acknowledges it.
+    private(set) var lastUnlock: Unlock?
     /// The latest catalog or restore problem, for a non-blocking message.
     private(set) var lastError: String?
 
@@ -270,9 +282,11 @@ final class SkinStore {
                 purchaseStates[productID] = nil
                 // The player just paid to see it: show it everywhere it fits.
                 // Files appear as they download; until then the default shows.
-                for item in catalog.items where item.productID == productID {
+                let unlocked = catalog.items.filter { $0.productID == productID }
+                for item in unlocked {
                     equipAll(item)
                 }
+                lastUnlock = Unlock(productID: productID, items: unlocked)
                 await syncAssets()
             case .pending:
                 purchaseStates[productID] = .pending
@@ -282,6 +296,11 @@ final class SkinStore {
         } catch {
             purchaseStates[productID] = .failed("The purchase could not be completed.")
         }
+    }
+
+    /// The celebration for `lastUnlock` has been shown.
+    func acknowledgeUnlock() {
+        lastUnlock = nil
     }
 
     /// Required for non-consumables (App Review): re-syncs and re-downloads.

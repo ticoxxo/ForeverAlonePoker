@@ -15,7 +15,19 @@ struct OnlineMatchView: View {
         onMatchFinished: @escaping (MatchSummary) -> Void = { _ in },
         onRated: @escaping (RatingUpdate) -> Void = { _ in }
     ) {
-        _model = State(wrappedValue: OnlineLobbyModel(identity: identity, service: service, sessionToken: sessionToken))
+        self.init(
+            model: OnlineLobbyModel(identity: identity, service: service, sessionToken: sessionToken),
+            onMatchFinished: onMatchFinished,
+            onRated: onRated
+        )
+    }
+
+    init(
+        model: OnlineLobbyModel,
+        onMatchFinished: @escaping (MatchSummary) -> Void = { _ in },
+        onRated: @escaping (RatingUpdate) -> Void = { _ in }
+    ) {
+        _model = State(wrappedValue: model)
         self.onMatchFinished = onMatchFinished
         self.onRated = onRated
     }
@@ -53,6 +65,7 @@ struct OnlineMatchView: View {
                 if let code = model.roomCode {
                     ToolbarItem(placement: .primaryAction) {
                         RoomCodeBadge(code: code)
+                            .font(.callout.monospaced().bold())
                     }
                 }
             }
@@ -82,10 +95,12 @@ struct RoomCodeBadge: View {
             HStack(spacing: 4) {
                 Image(systemName: copied ? "checkmark" : "doc.on.doc")
                 Text(copied ? "Copied" : code)
-                    .font(.callout.monospaced().bold())
+                    .contentTransition(.opacity)
             }
         }
-        .accessibilityLabel(Text("Room code \(code). Double tap to copy."))
+        .accessibilityLabel(copied ? Text("Copied") : Text("Room code \(code.map(String.init).joined(separator: " "))"))
+        .accessibilityHint(Text("Copies the code so you can send it to a friend"))
+        .sensoryFeedback(.success, trigger: copied) { _, copied in copied }
     }
 }
 
@@ -100,10 +115,8 @@ struct OnlineLobbyView: View {
             case .idle:
                 TableSizeSection(maxPlayers: $model.maxPlayers, isEnabled: true)
                 Section {
-                    Button {
+                    PrimaryActionButton(title: "Search opponents", systemImage: "magnifyingglass") {
                         Task { await model.searchOpponents() }
-                    } label: {
-                        Label("Search opponents", systemImage: "magnifyingglass")
                     }
                 } footer: {
                     Text("You get a 6-character code to share. The server referees the match.")
@@ -113,25 +126,34 @@ struct OnlineLobbyView: View {
                         .textInputAutocapitalization(.characters)
                         .autocorrectionDisabled()
                         .font(.title3.monospaced())
+                        .accessibilityLabel(Text("Room code"))
+                        .accessibilityHint(Text("Six letters and numbers from the friend who made the table"))
                         .onChange(of: code) {
                             code = String(code.uppercased().filter { $0.isLetter || $0.isNumber }.prefix(6))
                         }
-                    Button("Join") {
+                    PrimaryActionButton(title: "Join", systemImage: "arrow.right.circle.fill", kind: .regular) {
                         Task { await model.join(code: code) }
                     }
                     .disabled(code.count != 6)
                 }
             case .working:
                 Section {
-                    HStack {
-                        ProgressView()
-                        Text("Contacting the server…")
-                    }
+                    WorkingRow(text: "Contacting the server…")
                 }
             case .connected(let roomCode):
                 if let client = model.client, let view = client.view, view.phase == .lobby {
                     Section {
-                        Text("Share the code \(roomCode) with your opponents.")
+                        VStack(spacing: Theme.Spacing.small) {
+                            Text("Share this code with your opponents")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                            RoomCodeBadge(code: roomCode)
+                                .font(.title.monospaced().bold())
+                                .glassButtonStyle()
+                                .controlSize(.large)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, Theme.Spacing.small)
                     }
                     TableSizeSection(maxPlayers: .constant(view.table.maxPlayers), isEnabled: false)
                     LobbyPlayersSection(view: view, avatars: avatars)
@@ -139,10 +161,8 @@ struct OnlineLobbyView: View {
                         if view.table.isStarting {
                             WaitingRow(text: "Starting…")
                         } else if client.isHost {
-                            Button {
+                            PrimaryActionButton(title: "Start game", systemImage: "play.fill") {
                                 Task { await model.startGame() }
-                            } label: {
-                                Label("Start game", systemImage: "play.fill")
                             }
                             .disabled(view.players.filter(\.isConnected).isEmpty)
                         } else {
@@ -174,20 +194,77 @@ struct OnlineLobbyView: View {
                 Section {
                     Label(reason, systemImage: "exclamationmark.triangle")
                         .foregroundStyle(.red)
-                    Button("Try again") { model.reset() }
+                    PrimaryActionButton(title: "Try again", systemImage: "arrow.clockwise") { model.reset() }
                 }
             }
         }
     }
 }
 
-private struct WaitingRow: View {
-    let text: LocalizedStringKey
+private typealias WaitingRow = WorkingRow
 
-    var body: some View {
-        HStack {
-            ProgressView()
-            Text(text)
-        }
+#if DEBUG
+#Preview("Create or join") {
+    NavigationStack {
+        OnlineMatchView(identity: PreviewPlayers.me, service: PreviewRoomService(.hostTable(opponents: [])))
     }
+    .previewEnvironment()
 }
+
+#Preview("Hosting, players joining") {
+    let model = OnlineLobbyModel(
+        identity: PreviewPlayers.me,
+        service: PreviewRoomService(.hostTable(opponents: ["Lucía", "Mateo"]))
+    )
+    NavigationStack {
+        OnlineMatchView(model: model)
+            .task {
+                model.maxPlayers = 4
+                await model.searchOpponents()
+            }
+    }
+    .previewEnvironment()
+}
+
+#Preview("Waiting for the host") {
+    let model = OnlineLobbyModel(
+        identity: PreviewPlayers.me,
+        service: PreviewRoomService(.joinTable(host: "Sofía", others: ["Bob"], maxPlayers: 4))
+    )
+    NavigationStack {
+        OnlineMatchView(model: model)
+            .task { await model.join(code: PreviewRoomService.roomCode) }
+    }
+    .previewEnvironment()
+}
+
+#Preview("Heads-up match") {
+    let model = OnlineLobbyModel(
+        identity: PreviewPlayers.me,
+        service: PreviewRoomService(.hostTable(opponents: ["Mateo"]))
+    )
+    NavigationStack {
+        OnlineMatchView(model: model)
+            .task { await model.searchOpponents() }
+    }
+    .previewEnvironment()
+}
+
+#Preview("Contacting the server") {
+    let model = OnlineLobbyModel(identity: PreviewPlayers.me, service: PreviewRoomService(.slowServer))
+    NavigationStack {
+        OnlineMatchView(model: model)
+            .task { await model.searchOpponents() }
+    }
+    .previewEnvironment()
+}
+
+#Preview("Room not found") {
+    let model = OnlineLobbyModel(identity: PreviewPlayers.me, service: PreviewRoomService(.noSuchRoom))
+    NavigationStack {
+        OnlineMatchView(model: model)
+            .task { await model.join(code: "ZZZ999") }
+    }
+    .previewEnvironment()
+}
+#endif

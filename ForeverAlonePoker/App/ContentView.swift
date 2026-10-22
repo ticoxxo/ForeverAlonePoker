@@ -11,8 +11,14 @@ struct ContentView: View {
     }
 }
 
-#Preview {
+#if DEBUG
+#Preview("Returning player") {
     ContentView()
-        .environment(PreviewIdentity.store)
-        .environment(PreviewSkins.store)
+        .previewEnvironment()
 }
+
+#Preview("First launch") {
+    ContentView()
+        .previewEnvironment(identity: PreviewIdentity.newPlayer, skins: PreviewSkins.empty)
+}
+#endif
