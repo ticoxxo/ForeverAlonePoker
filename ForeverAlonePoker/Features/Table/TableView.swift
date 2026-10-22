@@ -22,6 +22,10 @@ struct TableView: View {
     /// 100 at the default text size; cards scale by it over 100 so they
     /// grow with Dynamic Type like the rest of the table.
     @ScaledMetric(relativeTo: .body) private var textScalePercent: CGFloat = 100
+    /// A foldable's hinge partially open, and the whole window wider than
+    /// tall: together they mean the book posture (tdr/0020).
+    @State private var isHingePartiallyOpen = false
+    @State private var windowSize: CGSize = .zero
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.verticalSizeClass) private var verticalSizeClass
@@ -32,10 +36,16 @@ struct TableView: View {
     private var placement: TableActionPlacement {
         .make(isRegularWidth: horizontalSizeClass == .regular, isRegularHeight: verticalSizeClass == .regular)
     }
+    /// Decided from the whole window, not the table's `GeometryReader`,
+    /// because the book moves the actions out of the bottom inset and so
+    /// changes what that reader measures.
+    private var isBookPosture: Bool {
+        TableArrangement.isBookPosture(isHingePartiallyOpen: isHingePartiallyOpen, size: windowSize)
+    }
 
     var body: some View {
         GeometryReader { geometry in
-            let arrangement = TableArrangement.make(size: geometry.size)
+            let arrangement = TableArrangement.make(size: geometry.size, isBookPosture: isBookPosture)
             ZStack {
                 table(arrangement, size: geometry.size)
                     .blur(radius: client.isConnectionLost ? 10 : 0)
@@ -52,16 +62,21 @@ struct TableView: View {
             .motion(Theme.Motion.layout, value: arrangement)
         }
         // The actions take their room from the safe area, so the table's
-        // `GeometryReader` measures only what is left above them.
+        // `GeometryReader` measures only what is left above them. In the
+        // book posture they sit in the right half of the table instead.
         .safeAreaInset(edge: .bottom, spacing: Theme.Spacing.medium) {
-            actions
-                .blur(radius: client.isConnectionLost ? 10 : 0)
-                .allowsHitTesting(!client.isConnectionLost)
-                .accessibilityHidden(client.isConnectionLost)
+            if !isBookPosture {
+                actions
+                    .blur(radius: client.isConnectionLost ? 10 : 0)
+                    .allowsHitTesting(!client.isConnectionLost)
+                    .accessibilityHidden(client.isConnectionLost)
+            }
         }
         .safeAreaPadding(.horizontal, Theme.Spacing.large)
         .safeAreaPadding(.vertical, Theme.Spacing.small)
         .background(TableFelt())
+        .onGeometryChange(for: CGSize.self) { $0.size } action: { windowSize = $0 }
+        .onHingePartiallyOpenChange { isHingePartiallyOpen = $0 }
         .toolbar { toolbarContent }
         // The felt is dark in either appearance, so the bars' titles and
         // buttons must be light to stay readable.
@@ -77,8 +92,52 @@ struct TableView: View {
         }
     }
 
+    @ViewBuilder
     private func table(_ arrangement: TableArrangement, size: CGSize) -> some View {
-        scrollingIfNeeded(tableArea(arrangement, size: size, cards: arrangement.cardHeights(in: size, textScale: textScalePercent / 100)))
+        let cards = arrangement.cardHeights(in: size, textScale: textScalePercent / 100)
+        if arrangement == .book {
+            bookArea(size: size, cards: cards)
+        } else {
+            scrollingIfNeeded(tableArea(arrangement, size: size, cards: cards))
+        }
+    }
+
+    /// The book posture (tdr/0020): what happens across the table on the
+    /// left half, my hand and what I can do about it on the right. Each half
+    /// keeps clear of the fold and scrolls on its own at the largest text
+    /// sizes.
+    private func bookArea(size: CGSize, cards: TableArrangement.CardHeights) -> some View {
+        HStack(spacing: 0) {
+            scrollingIfNeeded(
+                VStack(spacing: Theme.Spacing.large) {
+                    opponents(.book, size: size, cards: cards)
+                    BoardView(
+                        community: view?.community ?? [],
+                        pot: collectedPot,
+                        street: view?.street,
+                        cardHeight: cards.board,
+                        potBeside: false
+                    )
+                    .accessibilitySortPriority(2)
+                    statusBanner
+                    eloNotice
+                    Spacer(minLength: 0)
+                }
+                .padding(.trailing, Theme.Spacing.xLarge)
+            )
+            .frame(maxWidth: .infinity)
+            scrollingIfNeeded(
+                VStack(spacing: Theme.Spacing.large) {
+                    Spacer(minLength: 0)
+                    mySeat(cards: cards, isInline: false)
+                    rejectionNotice
+                    actions
+                }
+                .padding(.leading, Theme.Spacing.xLarge)
+            )
+            .frame(maxWidth: .infinity)
+        }
+        .accessibilityElement(children: .contain)
     }
 
     /// The panel under the table, or just the bet sizing when the buttons
@@ -156,45 +215,7 @@ struct TableView: View {
 
     private func tableArea(_ arrangement: TableArrangement, size: CGSize, cards: TableArrangement.CardHeights) -> some View {
         VStack(spacing: arrangement == .spacious ? Theme.Spacing.large : Theme.Spacing.small) {
-            if let view {
-                if view.table.maxPlayers > TableSize.minPlayers {
-                    let seating = TableSeating(view: view)
-                    OpponentsRing(
-                        view: view,
-                        players: seating.active,
-                        avatars: avatars,
-                        reactions: client.reactions,
-                        cardHeight: cards.compact
-                    )
-                    .frame(height: arrangement.opponentsHeight(in: size))
-                    .task(id: view.players.map(\.playerID)) {
-                        await avatars.load(view.players.map(\.playerID))
-                    }
-                    Spacer(minLength: 0)
-                        .frame(maxWidth: .infinity)
-                        .overlay(alignment: .trailing) {
-                            WaitingZone(players: seating.waiting, avatars: avatars, reactions: client.reactions)
-                        }
-                } else {
-                    OpponentSeatView(
-                        summary: view.opponent,
-                        isOnButton: view.opponent.map { view.button == $0.seat } ?? false,
-                        revealedCards: view.opponent.map { revealedCards(for: $0.seat, in: view) } ?? [],
-                        showsCards: view.street != nil && view.opponent?.hasFolded == false,
-                        isActing: view.actor != nil && view.actor == view.opponent?.seat,
-                        avatar: view.opponent.flatMap { avatars.avatar(for: $0.playerID) },
-                        reaction: view.opponent.flatMap { client.reactions[$0.seat] },
-                        cardHeight: cards.opponent,
-                        isInline: arrangement.seatsInline
-                    )
-                    .task(id: view.opponent?.playerID) {
-                        if let id = view.opponent?.playerID { await avatars.load([id]) }
-                    }
-                    Spacer(minLength: 0)
-                }
-            } else {
-                Spacer(minLength: 0)
-            }
+            opponents(arrangement, size: size, cards: cards)
             BoardView(
                 community: view?.community ?? [],
                 pot: collectedPot,
@@ -218,15 +239,66 @@ struct TableView: View {
                 Spacer(minLength: 0)
                 mySeat(cards: cards, isInline: false)
             }
-            if let rejection = client.lastRejection {
-                Label(rejection, systemImage: "exclamationmark.triangle.fill")
-                    .font(.callout)
-                    .foregroundStyle(.yellow)
-            }
+            rejectionNotice
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         // A container so the sort priorities above order its children.
         .accessibilityElement(children: .contain)
+    }
+
+    /// The other players, then the room that pushes the board down: the
+    /// opponent across heads-up, the ring and the waiting zone at a bigger
+    /// table.
+    @ViewBuilder
+    private func opponents(_ arrangement: TableArrangement, size: CGSize, cards: TableArrangement.CardHeights) -> some View {
+        if let view {
+            if view.table.maxPlayers > TableSize.minPlayers {
+                let seating = TableSeating(view: view)
+                OpponentsRing(
+                    view: view,
+                    players: seating.active,
+                    avatars: avatars,
+                    reactions: client.reactions,
+                    cardHeight: cards.compact
+                )
+                .frame(height: arrangement.opponentsHeight(in: size))
+                .task(id: view.players.map(\.playerID)) {
+                    await avatars.load(view.players.map(\.playerID))
+                }
+                Spacer(minLength: 0)
+                    .frame(maxWidth: .infinity)
+                    .overlay(alignment: .trailing) {
+                        WaitingZone(players: seating.waiting, avatars: avatars, reactions: client.reactions)
+                    }
+            } else {
+                OpponentSeatView(
+                    summary: view.opponent,
+                    isOnButton: view.opponent.map { view.button == $0.seat } ?? false,
+                    revealedCards: view.opponent.map { revealedCards(for: $0.seat, in: view) } ?? [],
+                    showsCards: view.street != nil && view.opponent?.hasFolded == false,
+                    isActing: view.actor != nil && view.actor == view.opponent?.seat,
+                    avatar: view.opponent.flatMap { avatars.avatar(for: $0.playerID) },
+                    reaction: view.opponent.flatMap { client.reactions[$0.seat] },
+                    cardHeight: cards.opponent,
+                    isInline: arrangement.seatsInline
+                )
+                .task(id: view.opponent?.playerID) {
+                    if let id = view.opponent?.playerID { await avatars.load([id]) }
+                }
+                Spacer(minLength: 0)
+            }
+        } else {
+            Spacer(minLength: 0)
+        }
+    }
+
+    @ViewBuilder
+    private var rejectionNotice: some View {
+        if let rejection = client.lastRejection {
+            Label(rejection, systemImage: "exclamationmark.triangle.fill")
+                .font(.callout)
+                .foregroundStyle(.yellow)
+        }
     }
 
     private var statusBanner: some View {

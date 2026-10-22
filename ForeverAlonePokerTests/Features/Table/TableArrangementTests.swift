@@ -38,6 +38,37 @@ struct TableArrangementTests {
         #expect(TableArrangement.make(size: CGSize(width: 500, height: 480)) == .portrait)
     }
 
+    @Test("a foldable half open on its side, fold running top to bottom, is a book")
+    func halfOpenWideIsBook() {
+        #expect(TableArrangement.isBookPosture(isHingePartiallyOpen: true, size: CGSize(width: 1000, height: 780)))
+    }
+
+    @Test("a foldable half open upright, fold running side to side, keeps its layout")
+    func halfOpenTallIsNotBook() {
+        #expect(!TableArrangement.isBookPosture(isHingePartiallyOpen: true, size: CGSize(width: 780, height: 1000)))
+    }
+
+    @Test("a foldable opened flat is not a book")
+    func fullyOpenIsNotBook() {
+        #expect(!TableArrangement.isBookPosture(isHingePartiallyOpen: false, size: CGSize(width: 1000, height: 780)))
+    }
+
+    @Test("the book posture gets the book arrangement whatever the size")
+    func bookArrangement() {
+        #expect(TableArrangement.make(size: CGSize(width: 1000, height: 780), isBookPosture: true) == .book)
+        #expect(TableArrangement.make(size: CGSize(width: 1000, height: 780), isBookPosture: false) == .spacious)
+    }
+
+    @Test("a book sizes its cards for one half and stacks every seat")
+    func bookCardsFitHalf() {
+        let size = CGSize(width: 1000, height: 780)
+        let cards = TableArrangement.book.cardHeights(in: size)
+        #expect(cards.mine <= size.width / 2)
+        #expect(cards.board <= size.height * TableArrangement.book.maxBoardShare)
+        #expect(!TableArrangement.book.seatsInline)
+        #expect(!TableArrangement.book.mySeatInline)
+    }
+
     @Test("an empty size falls back to portrait")
     func emptySize() {
         #expect(TableArrangement.make(size: .zero) == .portrait)

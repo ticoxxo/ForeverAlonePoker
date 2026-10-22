@@ -250,11 +250,23 @@ nonisolated enum TableArrangement: Equatable {
     /// Plenty of room both ways (iPad, an unfolded foldable): the portrait
     /// order with bigger cards and a width-limited action panel.
     case spacious
+    /// A foldable half open on its side, the fold running top to bottom
+    /// like an open book (tdr/0020): the opponents, board and status on the
+    /// left half, my seat and the actions on the right, nothing on the fold.
+    case book
 
     /// Below this on the short side a screen is phone-sized.
     static let spaciousShortSide: CGFloat = 600
 
-    static func make(size: CGSize) -> TableArrangement {
+    /// A half-open hinge in a window wider than tall means the fold runs top
+    /// to bottom. The hinge reports no direction, so the shape decides; a
+    /// half-open foldable held upright keeps its usual layout.
+    static func isBookPosture(isHingePartiallyOpen: Bool, size: CGSize) -> Bool {
+        isHingePartiallyOpen && size.width > size.height
+    }
+
+    static func make(size: CGSize, isBookPosture: Bool = false) -> TableArrangement {
+        if isBookPosture { return .book }
         guard size.width > 0, size.height > 0 else { return .portrait }
         if min(size.width, size.height) >= spaciousShortSide { return .spacious }
         return size.width / size.height > 1.25 ? .landscape : .portrait
@@ -284,7 +296,7 @@ nonisolated enum TableArrangement: Equatable {
     /// Seats put their cards beside the name plate instead of under it, so
     /// a short window (a phone on its side, an upright phone's table above
     /// the action panel) fits without anything running off the edge.
-    var seatsInline: Bool { self != .spacious }
+    var seatsInline: Bool { self != .spacious && self != .book }
 
     /// My own cards beside my name plate: only where height is scarcest.
     var mySeatInline: Bool { self == .landscape }
@@ -315,6 +327,7 @@ nonisolated enum TableArrangement: Equatable {
         case .portrait: 0.12
         case .landscape: 0.24
         case .spacious: 0.13
+        case .book: 0.14
         }
     }
 
@@ -327,6 +340,7 @@ nonisolated enum TableArrangement: Equatable {
         case .portrait: 0.16
         case .landscape: 0.18
         case .spacious: 0.11
+        case .book: 0.2
         }
         let range = CardHeights.boardRange
         // The height caps the size too, so a short window never gets cards
@@ -335,9 +349,12 @@ nonisolated enum TableArrangement: Equatable {
         case .portrait: 0.085
         case .landscape: 0.2
         case .spacious: 0.09
+        case .book: 0.12
         }
         let scale = min(max(textScale, 1), 1.6)
-        let preferred = min(min(size.width, size.height) * factor, size.height * heightCap) * scale
+        // A book lays each side out in one half of the width.
+        let width = self == .book ? size.width / 2 : size.width
+        let preferred = min(min(width, size.height) * factor, size.height * heightCap) * scale
         // Rounded down so rounding the result can't step over the ceiling.
         let capped = min(preferred, (size.height * maxBoardShare).rounded(.down))
         let board = min(max(capped, range.lowerBound), range.upperBound)
@@ -350,6 +367,7 @@ nonisolated enum TableArrangement: Equatable {
         case .portrait: 0.26
         case .landscape: 0.36
         case .spacious: 0.28
+        case .book: 0.4
         }
         return (size.height * share).rounded()
     }
