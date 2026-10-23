@@ -171,11 +171,11 @@ struct TableView: View {
             // never changes height.
             ToolbarItemGroup(placement: .automatic) {
                 Group {
-                    FoldActionButton(model: actionModel, onAction: act)
+                    FoldActionToolbarItem(model: actionModel, onAction: act)
                     
-                    PassiveActionButton(model: actionModel, onAction: act)
-                    
-                    SizedActionButton(model: actionModel, amount: raiseAmount, onAction: act)
+                    //PassiveActionButton(model: actionModel, onAction: act)
+                    PassiveActionToolbarItem(model: actionModel, onAction: act)
+                    SizedActionToolbarItem(model: actionModel, amount: raiseAmount, onAction: act)
                     
                 }
                 .environment(\.actionLabelIsInToolbar, true)
