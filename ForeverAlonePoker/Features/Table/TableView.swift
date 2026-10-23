@@ -171,11 +171,11 @@ struct TableView: View {
             // never changes height.
             ToolbarItemGroup(placement: .automatic) {
                 Group {
-                    FoldActionButton(model: actionModel, onAction: act)
+                    FoldActionToolbarItem(model: actionModel, onAction: act)
                     
-                    PassiveActionButton(model: actionModel, onAction: act)
-                    
-                    SizedActionButton(model: actionModel, amount: raiseAmount, onAction: act)
+                    //PassiveActionButton(model: actionModel, onAction: act)
+                    PassiveActionToolbarItem(model: actionModel, onAction: act)
+                    SizedActionToolbarItem(model: actionModel, amount: raiseAmount, onAction: act)
                     
                 }
                 .environment(\.actionLabelIsInToolbar, true)
@@ -234,10 +234,21 @@ struct TableView: View {
                     statusBanner
                 }
             } else {
-                statusBanner
+                if !turnBesideSeat {
+                    statusBanner
+                }
                 eloNotice
                 Spacer(minLength: 0)
-                mySeat(cards: cards, isInline: false)
+                // Compact width: the turn cue shrinks to its icon and sits
+                // to the right of my hand instead of above it.
+                HStack(alignment: .center, spacing: Theme.Spacing.medium) {
+                    mySeat(cards: cards, isInline: false)
+                        .overlay(alignment: .topTrailing) {
+                            if turnBesideSeat {
+                                statusBanner
+                            }
+                        }
+                }
             }
             rejectionNotice
         }
@@ -301,12 +312,20 @@ struct TableView: View {
         }
     }
 
+    /// Compact width has no room for the "Your turn" text above my hand.
+    private var isCompactWidth: Bool { horizontalSizeClass == .compact }
+
+    /// It is my turn on a compact width, so the icon-only cue goes beside
+    /// my hand rather than in the column above it.
+    private var turnBesideSeat: Bool { isCompactWidth && status == .yourTurn }
+
     private var statusBanner: some View {
         StatusBanner(
             status: status,
             outcome: view.flatMap { HandOutcome(result: $0.lastResult, seat: $0.seat) },
             winnerName: winnerName,
             ratingUpdate: client.ratingUpdate,
+            showsTurnIconOnly: isCompactWidth,
             onReady: { Task { await client.ready() } }
         )
         // VoiceOver starts with what is happening, then my cards, then the
@@ -481,6 +500,9 @@ struct StatusBanner: View {
     var winnerName: String = ""
     /// Shown with the match result once the server has rated a ranked match.
     var ratingUpdate: RatingUpdate? = nil
+    /// "Your turn" as just its icon, for compact widths. VoiceOver still
+    /// reads the title.
+    var showsTurnIconOnly = false
     let onReady: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -500,9 +522,20 @@ struct StatusBanner: View {
             case .nextHandSoon:
                 ProgressView("Next hand…")
             case .yourTurn:
-                Label("Your turn", systemImage: "hand.point.down.fill")
-                    .font(.title3.bold())
-                    .foregroundStyle(Theme.Palette.highlight)
+                if showsTurnIconOnly {
+                    Label("Your turn", systemImage: "hand.point.down.fill")
+                        .labelStyle(.iconOnly)
+                        .font(.title3.bold())
+                        .foregroundStyle(Theme.Palette.highlight)
+                } else {
+                    Label("Your turn", systemImage: "hand.point.down.fill")
+                        .font(.title3.bold())
+                        .padding(.horizontal, Theme.Spacing.large)
+                        .padding(.vertical, Theme.Spacing.medium)
+                        .tablePanel(cornerRadius: Theme.Radius.control)
+                        .foregroundStyle(Theme.Palette.highlight)
+                        
+                }
             case .othersTurn(let name):
                 if name.isEmpty {
                     Text("Opponent is thinking…")
@@ -538,12 +571,9 @@ struct StatusBanner: View {
         .font(.body)
         .foregroundStyle(.white)
         .multilineTextAlignment(.center)
-        .padding(.horizontal, Theme.Spacing.large)
-        .padding(.vertical, Theme.Spacing.medium)
-        .tablePanel(cornerRadius: Theme.Radius.control)
+        .symbolEffect(.pulse)
         .id(status)
         .transition(reduceMotion ? .opacity : AnyTransition(.blurReplace))
-        .motion(Theme.Motion.reveal, value: status)
         // A tap of success when the player takes a pot or the match.
         .sensoryFeedback(.success, trigger: celebrates) { _, celebrates in celebrates }
     }
@@ -558,6 +588,28 @@ struct StatusBanner: View {
         switch status {
         case .nextHandSoon, .spectating, .matchOver: true
         default: false
+        }
+    }
+}
+
+/// Keeps "Your turn" breathing for as long as it is shown: a gentle scale,
+/// or only a fade when Reduce Motion is on.
+private struct TurnPulse: ViewModifier {
+    let isActive: Bool
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func body(content: Content) -> some View {
+        if isActive {
+            content.phaseAnimator([false, true]) { content, isExpanded in
+                content
+                    .scaleEffect(reduceMotion ? 1 : (isExpanded ? 1.08 : 1))
+                    .opacity(reduceMotion && isExpanded ? 0.7 : 1)
+            } animation: { _ in
+                .easeInOut(duration: 0.8)
+            }
+        } else {
+            content
         }
     }
 }

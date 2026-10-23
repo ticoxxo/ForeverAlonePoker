@@ -81,6 +81,21 @@ struct FoldActionButton: View {
     }
 }
 
+struct FoldActionToolbarItem: View {
+    let model: TableActionModel
+    let onAction: (PlayerAction) -> Void
+
+    var body: some View {
+        Button(role: .destructive) {
+            onAction(.fold)
+        } label: {
+            Image(systemName: "flag.2.crossed.circle.fill")
+        }
+        .tint(.red)
+        .disabled(!model.canFold)
+    }
+}
+
 /// Check, or Call with the amount; a disabled Check when neither is legal.
 struct PassiveActionButton: View {
     let model: TableActionModel
@@ -99,6 +114,27 @@ struct PassiveActionButton: View {
             }
         }
         .glassButtonStyle(.prominent)
+        .disabled(!model.canCheck && model.callAmount == nil)
+    }
+}
+
+struct PassiveActionToolbarItem: View {
+    let model: TableActionModel
+    let onAction: (PlayerAction) -> Void
+    
+    private var amount: Int {
+        if !model.canCheck, let callAmount = model.callAmount {
+            return callAmount
+        } else {
+            return 0
+        }
+    }
+    
+    var body: some View {
+        ButtonChips(systemImage: "checkmark.circle.fill", count: amount) {
+            onAction(model.canCheck ? .check : .call)
+        }
+        .tint(.blue)
         .disabled(!model.canCheck && model.callAmount == nil)
     }
 }
@@ -125,6 +161,28 @@ struct SizedActionButton: View {
         }
         .glassButtonStyle(.prominent)
         .tint(.mint)
+        .disabled(model.sizedAction(amount) == nil)
+    }
+}
+
+struct SizedActionToolbarItem: View {
+    let model: TableActionModel
+    let amount: Chips
+    let onAction: (PlayerAction) -> Void
+    
+    var icon: String {
+        switch model.sizing {
+        case .bet: "chevron.up.2"
+        case .raise: "arrow.up.circle.fill"
+        case nil: "chevron.up.2"
+        }
+    }
+
+    var body: some View {
+        ButtonChips(systemImage: icon, count: model.clamped(amount)) {
+            if let action = model.sizedAction(amount) { onAction(action) }
+        }
+        .tint(.orange)
         .disabled(model.sizedAction(amount) == nil)
     }
 }
@@ -337,7 +395,7 @@ private struct StepButton: View {
                     .safeAreaPadding(.horizontal, Theme.Spacing.large)
             }
             .toolbar {
-                ToolbarItemGroup(placement: .bottomBar) {
+                ToolbarItemGroup(placement: .automatic) {
                     FoldActionButton(model: model, onAction: { _ in })
                         .environment(\.actionLabelIsInToolbar, true)
                     Spacer()
