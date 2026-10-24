@@ -45,9 +45,16 @@ struct OnlineMatchView: View {
                         client.onMatchFinished = onMatchFinished
                         client.onRated = onRated
                     }
+            } else if model.phase == .searching {
+                MatchSearchView { model.cancelSearch() }
             } else {
                 OnlineLobbyView(model: model)
             }
+        }
+        .alert("No match found :(", isPresented: $model.showsNoMatchFound) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Nobody had an open table in the last 3 minutes. Try again, or create a table and share its code.")
         }
         .navigationTitle("Online match")
         .navigationBarTitleDisplayMode(.inline)
@@ -121,6 +128,13 @@ struct OnlineLobbyView: View {
                 } footer: {
                     Text("You get a 6-character code to share. The server referees the match.")
                 }
+                Section {
+                    PrimaryActionButton(title: "Find a match", systemImage: "globe", kind: .regular) {
+                        model.startMatchSearch()
+                    }
+                } footer: {
+                    Text("Join any open table with a free seat, no code needed.")
+                }
                 Section("Join a table") {
                     TextField("Room code", text: $code)
                         .textInputAutocapitalization(.characters)
@@ -136,7 +150,7 @@ struct OnlineLobbyView: View {
                     }
                     .disabled(code.count != 6)
                 }
-            case .working:
+            case .working, .searching:
                 Section {
                     WorkingRow(text: "Contacting the server…")
                 }
@@ -246,6 +260,28 @@ private typealias WaitingRow = WorkingRow
     NavigationStack {
         OnlineMatchView(model: model)
             .task { await model.searchOpponents() }
+    }
+    .previewEnvironment()
+}
+
+#Preview("Searching for a match") {
+    let model = OnlineLobbyModel(identity: PreviewPlayers.me, service: PreviewRoomService(.slowServer))
+    NavigationStack {
+        OnlineMatchView(model: model)
+            .task { await model.findMatch() }
+    }
+    .previewEnvironment()
+}
+
+#Preview("No match found") {
+    let model = OnlineLobbyModel(
+        identity: PreviewPlayers.me,
+        service: PreviewRoomService(.noSuchRoom),
+        searchTimeout: .seconds(4)
+    )
+    NavigationStack {
+        OnlineMatchView(model: model)
+            .task { await model.findMatch() }
     }
     .previewEnvironment()
 }

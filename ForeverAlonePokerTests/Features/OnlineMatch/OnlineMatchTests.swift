@@ -112,13 +112,21 @@ private final class CreatedSizes: @unchecked Sendable {
     var values: [Int] = []
 }
 
+/// How many times the fake service was asked for open rooms.
+private final class Polls: @unchecked Sendable {
+    var count = 0
+}
+
 /// Fake service: known codes connect to an in-process authority so the lobby
 /// test exercises the real client against the real room.
 private struct FakeRoomService: RoomService {
     let transport: InMemoryTransport
     let knownCodes: Set<String>
     let createdCode: String
+    /// What `GET /rooms` answers when searching without a code.
+    var listed: [OpenRoom] = []
     let created = CreatedSizes()
+    let polls = Polls()
 
     func createRoom(maxPlayers: Int) async throws -> String {
         created.values.append(maxPlayers)
@@ -129,16 +137,32 @@ private struct FakeRoomService: RoomService {
         guard knownCodes.contains(code) else { throw RoomServiceError.roomNotFound }
     }
 
+    func openRooms() async throws -> [OpenRoom] {
+        polls.count += 1
+        return listed
+    }
+
     func makeTransport(roomCode: String) -> any MatchTransport { transport }
 }
 
 @Suite("OnlineLobbyModel")
 @MainActor
 struct OnlineLobbyModelTests {
-    private func makeModel(known: Set<String> = ["ABC234"], maxPlayers: Int = 2) async -> (OnlineLobbyModel, HostedTable, FakeRoomService) {
+    private func makeModel(
+        known: Set<String> = ["ABC234"],
+        maxPlayers: Int = 2,
+        listed: [OpenRoom] = [],
+        searchTimeout: Duration = .seconds(180)
+    ) async -> (OnlineLobbyModel, HostedTable, FakeRoomService) {
         let table = HostedTable(room: MatchRoomBuilder().code("ABC234").maxPlayers(maxPlayers).build())
-        let service = FakeRoomService(transport: await table.connect(), knownCodes: known, createdCode: "ABC234")
-        return (OnlineLobbyModel(identity: TestPlayers.alice, service: service), table, service)
+        let service = FakeRoomService(transport: await table.connect(), knownCodes: known, createdCode: "ABC234", listed: listed)
+        let model = OnlineLobbyModel(
+            identity: TestPlayers.alice,
+            service: service,
+            searchTimeout: searchTimeout,
+            searchInterval: .milliseconds(10)
+        )
+        return (model, table, service)
     }
 
     @Test("searching creates a room, connects a client and exposes the code")
@@ -210,5 +234,42 @@ struct OnlineLobbyModelTests {
         #expect(model.client == nil)
         let room = await table.authority.room
         #expect(room.isEmpty)
+    }
+
+    @Test("searching without a code joins the first open room with a free seat")
+    func findMatch() async {
+        let (model, _, _) = await makeModel(listed: [
+            OpenRoom(code: "FULL22", seatsTaken: 2, maxPlayers: 2),
+            OpenRoom(code: "ABC234", seatsTaken: 1, maxPlayers: 2),
+        ])
+        await model.findMatch()
+        #expect(model.phase == .connected(roomCode: "ABC234"), "the full room is skipped")
+        #expect(!model.showsNoMatchFound)
+        #expect(await eventually { model.client?.isInLobby == true })
+    }
+
+    @Test("a search that finds only full rooms gives up after the timeout and says so")
+    func noMatchFound() async {
+        let (model, _, service) = await makeModel(
+            listed: [OpenRoom(code: "FULL22", seatsTaken: 2, maxPlayers: 2)],
+            searchTimeout: .milliseconds(100)
+        )
+        await model.findMatch()
+        #expect(model.phase == .idle)
+        #expect(model.client == nil, "a full room is never entered")
+        #expect(model.showsNoMatchFound)
+        #expect(service.polls.count > 1, "the server is asked again while searching")
+    }
+
+    @Test("cancelling a search returns to idle without the no-match message")
+    func cancelSearch() async {
+        let (model, _, _) = await makeModel()
+        model.startMatchSearch()
+        #expect(model.phase == .searching)
+        model.cancelSearch()
+        #expect(model.phase == .idle)
+        try? await Task.sleep(for: .milliseconds(50))
+        #expect(model.phase == .idle)
+        #expect(!model.showsNoMatchFound)
     }
 }

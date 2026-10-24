@@ -188,6 +188,24 @@ public actor Room {
 
     public var connectionCount: Int { connections.count }
 
+    /// What `GET /rooms/{code}` and `GET /rooms` report about this table.
+    public func info() async -> RoomInfo {
+        let snapshot = await authority.room
+        return RoomInfo(
+            code: code,
+            seatsTaken: snapshot.players.count,
+            connected: connections.count,
+            maxPlayers: snapshot.maxPlayers
+        )
+    }
+
+    /// A stranger searching without a code may sit here: still in the lobby,
+    /// not starting, a seat free, and somebody connected to play against.
+    public func isOpen() async -> Bool {
+        let snapshot = await authority.room
+        return snapshot.phase == .lobby && !snapshot.isStarting && !snapshot.isFull && !connections.isEmpty
+    }
+
     /// Seats whose player proved their identity with a session token.
     public var rankedSeatCount: Int { rankedSeats.count }
 
@@ -295,6 +313,18 @@ public actor RoomRegistry {
     }
 
     public var count: Int { rooms.count }
+
+    /// Tables a player searching without a code may join, the longest
+    /// waiting first.
+    public func openRooms() async -> [RoomInfo] {
+        var open: [(createdAt: Date, info: RoomInfo)] = []
+        for room in rooms.values where await room.isOpen() {
+            open.append((room.createdAt, await room.info()))
+        }
+        return open
+            .sorted { ($0.createdAt, $0.info.code) < ($1.createdAt, $1.info.code) }
+            .map(\.info)
+    }
 
     /// Drops rooms nobody has touched for a while. Returns how many were removed.
     public func sweep(idleLongerThan interval: TimeInterval, now: Date = Date()) async -> Int {

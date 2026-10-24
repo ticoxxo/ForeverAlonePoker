@@ -41,6 +41,26 @@ struct HTTPTests {
             }
         }
     }
+
+    @Test("listing rooms returns only the open ones")
+    func listOpenRooms() async throws {
+        let registry = RoomRegistry(generateCode: { "ABC234" })
+        let room = await registry.create()
+        let app = buildApplication(registry: registry)
+        try await app.test(.router) { client in
+            try await client.execute(uri: "/rooms", method: .get) { response in
+                #expect(response.status == .ok)
+                let open = try JSONDecoder().decode(OpenRooms.self, from: response.body)
+                #expect(open.rooms.isEmpty, "nobody is waiting")
+            }
+            _ = await room.attach(TestPlayers.aliceConnection)
+            await room.receive(.join(TestPlayers.alice), from: TestPlayers.aliceConnection)
+            try await client.execute(uri: "/rooms", method: .get) { response in
+                let open = try JSONDecoder().decode(OpenRooms.self, from: response.body)
+                #expect(open.rooms == [RoomInfo(code: "ABC234", seatsTaken: 1, connected: 1, maxPlayers: 2)])
+            }
+        }
+    }
 }
 
 /// Reads protocol messages from one test WebSocket. A class so it can be

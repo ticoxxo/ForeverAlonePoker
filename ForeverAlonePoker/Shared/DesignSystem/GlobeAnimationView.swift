@@ -18,6 +18,9 @@ struct GlobeAnimationView: View {
         "globe.asia.australia"
     ]
 
+    /// Shows the Pause/Spin button; off when the globe only says "searching".
+    var showsControls = true
+
     @State private var phaseIndex = 0
     @State private var isSpinning = true
     /// Bumped each time the clapping hands replace the globe, so they bounce
@@ -37,10 +40,12 @@ struct GlobeAnimationView: View {
                     OrbitingArc(isActive: isSpinning)
                 }
 
-            Button(isSpinning ? "Pause" : "Spin") {
-                isSpinning.toggle()
+            if showsControls {
+                Button(isSpinning ? "Pause" : "Spin") {
+                    isSpinning.toggle()
+                }
+                .buttonStyle(.borderedProminent)
             }
-            .buttonStyle(.borderedProminent)
         }
         .padding()
         .onChange(of: isSpinning) { _, spinning in

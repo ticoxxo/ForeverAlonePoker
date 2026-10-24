@@ -52,6 +52,20 @@ nonisolated struct PreviewRoomService: RoomService {
         }
     }
 
+    func openRooms() async throws -> [OpenRoom] {
+        switch scenario {
+        case .joinTable(let host, let others, let maxPlayers):
+            await room.open(maxPlayers: maxPlayers)
+            await room.seat([host] + others)
+            return [OpenRoom(code: Self.roomCode, seatsTaken: others.count + 1, maxPlayers: maxPlayers)]
+        case .slowServer:
+            try await Task.sleep(for: .seconds(3600))
+            return []
+        case .hostTable, .noSuchRoom:
+            return []
+        }
+    }
+
     func makeTransport(roomCode: String) -> any MatchTransport {
         let opponents: [String]
         if case .hostTable(let names) = scenario {
