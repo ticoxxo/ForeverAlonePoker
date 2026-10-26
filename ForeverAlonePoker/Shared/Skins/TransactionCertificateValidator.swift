@@ -1,5 +1,6 @@
 import Foundation
 import Security
+import StoreKit
 
 /// Pins StoreKit transactions to a bundled root certificate (tdr/0022).
 /// StoreKit already verifies every transaction; this also checks that the
@@ -11,22 +12,35 @@ nonisolated struct TransactionCertificateValidator: Sendable {
     /// bundle) denies every transaction, so a forgotten file shows up in
     /// testing instead of granting skins unchecked.
     let rootCertificate: Data?
+    /// Accept transactions from Xcode's local StoreKit testing on StoreKit's
+    /// own verification. Their JWS carries a per-machine key that chains to
+    /// no shippable root (the saved `StoreKitTestCertificate` only signs
+    /// legacy receipts), so they cannot be pinned. Debug builds only.
+    let trustsLocalTesting: Bool
 
-    init(rootCertificate: Data?) {
+    init(rootCertificate: Data?, trustsLocalTesting: Bool = false) {
         self.rootCertificate = rootCertificate
+        self.trustsLocalTesting = trustsLocalTesting
     }
 
-    /// Xcode's StoreKit testing signs locally with its own root; everything
-    /// else is signed by the App Store under Apple Root CA - G3.
+    /// Every App Store transaction (production, sandbox, TestFlight) chains
+    /// to Apple Root CA - G3; Debug builds also trust Xcode's local testing.
     static func bundled(in bundle: Bundle = .main) -> TransactionCertificateValidator {
+        // Holds Apple Root CA - G3: the root of StoreKit 2 JWS chains.
+        let data = bundle.url(forResource: "AppleIncRootCertificate", withExtension: "cer").flatMap { try? Data(contentsOf: $0) }
         #if DEBUG
-            let certificate = "StoreKitTestCertificate"
+            return TransactionCertificateValidator(rootCertificate: data, trustsLocalTesting: true)
         #else
-            // Holds Apple Root CA - G3: the root of StoreKit 2 JWS chains.
-            let certificate = "AppleIncRootCertificate"
+            return TransactionCertificateValidator(rootCertificate: data)
         #endif
-        let data = bundle.url(forResource: certificate, withExtension: "cer").flatMap { try? Data(contentsOf: $0) }
-        return TransactionCertificateValidator(rootCertificate: data)
+    }
+
+    /// `environment` is `Transaction.environment`, which StoreKit has already
+    /// verified. Xcode transactions pass only when local testing is trusted;
+    /// all others must chain to the pinned root.
+    func validate(jws: String, environment: AppStore.Environment) -> Bool {
+        if environment == .xcode { return trustsLocalTesting }
+        return validate(jws: jws)
     }
 
     /// `jws` is `VerificationResult.jwsRepresentation`.

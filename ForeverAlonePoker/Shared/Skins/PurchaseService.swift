@@ -198,7 +198,8 @@ nonisolated final class StoreKitPurchaseService: PurchaseService {
 
     /// Verified by StoreKit and chained to the pinned root, or `nil`.
     private func trusted(_ result: VerificationResult<Transaction>) -> Transaction? {
-        guard case .verified(let transaction) = result, validator.validate(jws: result.jwsRepresentation) else { return nil }
+        guard case .verified(let transaction) = result,
+              validator.validate(jws: result.jwsRepresentation, environment: transaction.environment) else { return nil }
         return transaction
     }
 

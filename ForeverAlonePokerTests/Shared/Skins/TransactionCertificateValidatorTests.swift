@@ -1,4 +1,5 @@
 import Foundation
+import StoreKit
 import Testing
 @testable import ForeverAlonePoker
 
@@ -43,5 +44,25 @@ struct TransactionCertificateValidatorTests {
         let validator = TransactionCertificateValidator(rootCertificate: root.certificate)
         #expect(!validator.validate(jws: "not.a.jws"))
         #expect(!validator.validate(jws: ""))
+    }
+
+    @Test("an Xcode-signed transaction is accepted when local testing is trusted")
+    func xcodeTrusted() {
+        let validator = TransactionCertificateValidator(rootCertificate: root.certificate, trustsLocalTesting: true)
+        #expect(validator.validate(jws: TestCertificateAuthority(commonName: "Xcode").jws(), environment: .xcode))
+    }
+
+    @Test("an Xcode-signed transaction is denied when local testing is not trusted")
+    func xcodeUntrusted() {
+        let validator = TransactionCertificateValidator(rootCertificate: root.certificate)
+        #expect(!validator.validate(jws: root.jws(), environment: .xcode))
+    }
+
+    @Test("App Store transactions stay pinned while local testing is trusted")
+    func appStoreStillPinned() {
+        let validator = TransactionCertificateValidator(rootCertificate: root.certificate, trustsLocalTesting: true)
+        #expect(validator.validate(jws: root.jws(), environment: .sandbox))
+        #expect(!validator.validate(jws: TestCertificateAuthority(commonName: "Impostor").jws(), environment: .sandbox))
+        #expect(!validator.validate(jws: TestCertificateAuthority(commonName: "Impostor").jws(), environment: .production))
     }
 }

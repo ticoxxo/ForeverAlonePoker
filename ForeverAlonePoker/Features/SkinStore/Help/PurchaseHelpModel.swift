@@ -45,7 +45,7 @@ final class PurchaseHelpModel {
             let item = store.item(forProduct: record.productID)
             let name = item?.name(for: language) ?? store.product(record.productID)?.displayName ?? record.productID
             return Row(record: record, name: name, item: item)
-        }
+        }.sorted(by: { $0.record.purchaseDate > $1.record.purchaseDate})
         hasLoaded = true
     }
 
