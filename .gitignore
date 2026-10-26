@@ -21,7 +21,7 @@ cloudkit.pem
 *.key
 *.cer
 !StoreKitTestCertificate.cer
-!AppleRootCA-G3.cer
+!AppleIncRootCertificate.cer
 *.mobileprovision
 *.provisionprofile
 .env

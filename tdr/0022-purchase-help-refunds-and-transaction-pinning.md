@@ -80,3 +80,14 @@ The card store (tdr/0012) sells non-consumable skins with StoreKit 2. Several th
   - remove the `.cer` and check purchases are denied;
   - Screen Time › Content & Privacy › In-App Purchases: Don't Allow shows the explanation;
   - Contact Us opens Mail.
+
+## Notes
+
+### 2026-10-26: certificates bundled
+
+- Both certificates live in `ForeverAlonePoker/Resources/Certificates/`. The synchronized group bundles them, and they are found by name at the bundle root.
+- `AppleIncRootCertificate.cer` is Apple Root CA – G3, downloaded from apple.com/certificateauthority:
+  - SHA-256 `63:34:3A:BF:B8:9A:6A:03:EB:B5:7E:9B:3F:5F:A7:BE:7C:4F:5C:75:6F:30:17:B3:A8:C4:88:C3:65:3E:91:79`;
+  - expires 2039-04-30.
+- `StoreKitTestCertificate.cer` is exported from `StoreKit/SkinStore.storekit` (Editor › Save Public Certificate). Re-export it if the configuration file is ever recreated.
+- `.gitignore` ignores `*.cer` and whitelists exactly these two names.
