@@ -46,6 +46,9 @@ final class SkinStore {
     private(set) var products: [String: StoreProduct] = [:]
     private(set) var purchaseStates: [String: PurchaseState] = [:]
     private(set) var isRestoring = false
+    /// `false` when purchases are turned off on this device (Screen Time,
+    /// parental controls): the store hides prices and explains why (tdr/0022).
+    private(set) var canMakePayments = true
     /// The latest purchase to celebrate, until the UI acknowledges it.
     private(set) var lastUnlock: Unlock?
     /// The latest catalog or restore problem, for a non-blocking message.
@@ -175,6 +178,7 @@ final class SkinStore {
     /// refreshes catalog and entitlements in parallel, loads prices and
     /// downloads whatever the player owns but does not have yet.
     func start() async {
+        canMakePayments = purchases.canMakePayments
         if let cached = await catalogClient.cachedCatalog() { apply(cached) }
         async let catalogRefreshed: Void = refreshCatalog()
         async let entitlementsRefreshed: Void = refreshEntitlements()
@@ -314,6 +318,24 @@ final class SkinStore {
         }
         await refreshEntitlements()
         await syncAssets()
+    }
+
+    // MARK: - Purchase help (tdr/0022)
+
+    /// The catalog item a product unlocks, if this build knows it.
+    func item(forProduct productID: String) -> SkinItem? {
+        catalog.items.first { $0.productID == productID }
+    }
+
+    /// The latest transaction of each product, newest first, refunds included.
+    func purchaseHistory() async -> [PurchaseRecord] {
+        await purchases.purchaseHistory()
+    }
+
+    /// Opens the system refund sheet. Ownership does not change here: a
+    /// granted refund arrives later through `observeTransactions`.
+    func requestRefund(for transactionID: UInt64) async throws -> RefundOutcome {
+        try await purchases.requestRefund(for: transactionID)
     }
 
     private func apply(_ remote: SkinCatalog) {

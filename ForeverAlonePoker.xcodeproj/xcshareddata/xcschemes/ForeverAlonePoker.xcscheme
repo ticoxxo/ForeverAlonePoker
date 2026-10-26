@@ -72,7 +72,7 @@
          </BuildableReference>
       </BuildableProductRunnable>
       <StoreKitConfigurationFileReference
-         identifier = "../../SkinStore.storekit">
+         identifier = "../../StoreKit/SkinStore.storekit">
       </StoreKitConfigurationFileReference>
    </LaunchAction>
    <ProfileAction

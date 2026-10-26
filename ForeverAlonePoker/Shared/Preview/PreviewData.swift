@@ -167,6 +167,16 @@ enum PreviewSkins {
         func sync() async throws {}
         var updates: AsyncStream<EntitlementUpdate> { AsyncStream { $0.finish() } }
         var storefrontChanges: AsyncStream<String> { AsyncStream { $0.finish() } }
+        var canMakePayments: Bool { true }
+
+        /// Every owned product, bought a day apart, newest first.
+        func purchaseHistory() async -> [PurchaseRecord] {
+            entitlements.sorted().enumerated().map { index, id in
+                PurchaseRecord(id: UInt64(index + 1), productID: id, purchaseDate: .now.addingTimeInterval(-86_400 * Double(index + 1)), isRevoked: false)
+            }
+        }
+
+        func requestRefund(for transactionID: UInt64) async throws -> RefundOutcome { .cancelled }
     }
 }
 

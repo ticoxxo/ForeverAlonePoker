@@ -28,7 +28,16 @@ struct SkinStoreView: View {
             Section {
             } footer: {
                 VStack(alignment: .leading, spacing: Theme.Spacing.xSmall) {
-                    Text("Prices are in your App Store currency. Purchases are tied to your Apple Account and appear on all your devices. Bought on another device? Tap Restore.")
+                    if store.canMakePayments {
+                        Text("Prices are in your App Store currency. Purchases are tied to your Apple Account and appear on all your devices. Bought on another device? Tap Restore.")
+                    } else {
+                        // HIG: explain a store that cannot take payments.
+                        Label("Purchases are turned off on this device (Screen Time or parental controls). You can still use skins you already own.", systemImage: "lock")
+                    }
+                    NavigationLink("Need help with a purchase?") {
+                        PurchaseHelpView()
+                    }
+                    .font(.footnote.weight(.semibold))
                     if let error = store.lastError {
                         Label(error, systemImage: "exclamationmark.triangle")
                             .foregroundStyle(.orange)
@@ -38,6 +47,14 @@ struct SkinStoreView: View {
         }
         .navigationTitle("Card store")
         .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                NavigationLink {
+                    PurchaseHelpView()
+                } label: {
+                    Label("Help", systemImage: "questionmark.circle")
+                }
+                .accessibilityHint(Text("Missing purchases, questions, refunds and contact"))
+            }
             // A store-wide action, so it lives in the navigation bar instead
             // of at the bottom of a long list.
             ToolbarItem(placement: .topBarTrailing) {
@@ -171,9 +188,16 @@ struct BuyButton: View {
     var itemName: String = ""
 
     var body: some View {
+        // Hidden while purchases are turned off; the store footer says why.
+        if store.canMakePayments {
+            button
+        }
+    }
+
+    private var button: some View {
         let state = store.purchaseStates[productID]
         let price = store.product(productID)?.displayPrice
-        Button {
+        return Button {
             Task { await store.purchase(productID) }
         } label: {
             ZStack {
