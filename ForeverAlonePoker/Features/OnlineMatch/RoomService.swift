@@ -8,12 +8,24 @@ nonisolated enum RoomServiceError: Error, Equatable {
     case badResponse
 }
 
+/// A table waiting in its lobby that a player searching without a code may
+/// join (`GET /rooms`, tdr/0021).
+nonisolated struct OpenRoom: Decodable, Equatable, Sendable {
+    let code: String
+    let seatsTaken: Int
+    let maxPlayers: Int
+
+    var hasFreeSeat: Bool { seatsTaken < maxPlayers }
+}
+
 /// Creating and finding rooms on the server, and opening the transport to one.
 nonisolated protocol RoomService: Sendable {
     /// Creates a room seating `maxPlayers` (tdr/0013) and returns its code.
     func createRoom(maxPlayers: Int) async throws -> String
     /// Throws `roomNotFound` when the code is unknown.
     func checkRoom(_ code: String) async throws
+    /// Tables open to a search without a code, the longest waiting first.
+    func openRooms() async throws -> [OpenRoom]
     func makeTransport(roomCode: String) -> any MatchTransport
 }
 
@@ -52,6 +64,15 @@ nonisolated struct HTTPRoomService: RoomService {
         try Self.ensureOK(response)
     }
 
+    func openRooms() async throws -> [OpenRoom] {
+        let (data, response) = try await session.data(from: baseURL.appending(path: "rooms"))
+        try Self.ensureOK(response)
+        guard let listed = try? JSONDecoder().decode(OpenRooms.self, from: data) else {
+            throw RoomServiceError.badResponse
+        }
+        return listed.rooms
+    }
+
     func makeTransport(roomCode: String) -> any MatchTransport {
         WebSocketTransport(url: webSocketURL(roomCode: Self.normalize(roomCode)), session: session)
     }
@@ -77,6 +98,10 @@ nonisolated struct HTTPRoomService: RoomService {
 
     private struct RoomCreated: Decodable {
         let code: String
+    }
+
+    private struct OpenRooms: Decodable {
+        let rooms: [OpenRoom]
     }
 
     private struct CreateRoom: Encodable {

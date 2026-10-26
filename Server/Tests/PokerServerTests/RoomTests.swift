@@ -69,6 +69,29 @@ struct RoomRegistryTests {
         #expect(await room.authority.room.maxPlayers == 5)
     }
 
+    @Test("only lobbies with someone present and a free seat are open, oldest first")
+    func openRooms() async {
+        let codes = ["EMPTY2", "WAIT02", "FULL02", "WAIT03"]
+        let index = Counter()
+        let registry = RoomRegistry(generateCode: { codes[index.next() % codes.count] })
+        _ = await registry.create()
+        let waiting = await registry.create()
+        let full = await registry.create()
+        let bigger = await registry.create(configuration: MatchConfiguration(maxPlayers: 3))
+
+        for room in [waiting, full, bigger] {
+            _ = await room.attach(TestPlayers.aliceConnection)
+            await room.receive(.join(TestPlayers.alice), from: TestPlayers.aliceConnection)
+        }
+        _ = await full.attach(TestPlayers.bobConnection)
+        await full.receive(.join(TestPlayers.bob), from: TestPlayers.bobConnection)
+
+        #expect(await registry.openRooms() == [
+            RoomInfo(code: "WAIT02", seatsTaken: 1, connected: 1, maxPlayers: 2),
+            RoomInfo(code: "WAIT03", seatsTaken: 1, connected: 1, maxPlayers: 3),
+        ])
+    }
+
     @Test("idle empty rooms are swept, active ones are kept")
     func sweep() async {
         let registry = RoomRegistry()

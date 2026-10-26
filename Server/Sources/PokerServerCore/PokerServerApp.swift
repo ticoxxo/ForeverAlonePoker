@@ -28,6 +28,15 @@ public struct RoomInfo: ResponseCodable, Sendable, Equatable {
     }
 }
 
+/// Reply of `GET /rooms`: the tables open to a search without a code (tdr/0021).
+public struct OpenRooms: ResponseCodable, Sendable, Equatable {
+    public let rooms: [RoomInfo]
+
+    public init(rooms: [RoomInfo]) {
+        self.rooms = rooms
+    }
+}
+
 /// Optional body of `POST /rooms` (tdr/0013). No body means heads-up.
 public struct CreateRoomRequest: Codable, Sendable, Equatable {
     public let maxPlayers: Int?
@@ -152,16 +161,15 @@ public func buildApplication(
         return RoomCreated(code: room.code)
     }
 
+    // Search without a code (tdr/0021): only lobbies a newcomer can sit at.
+    router.get("rooms") { _, _ in
+        OpenRooms(rooms: await registry.openRooms())
+    }
+
     router.get("rooms/{code}") { _, context in
         let code = RoomCode.normalize(try context.parameters.require("code"))
         guard let room = await registry.room(code) else { throw HTTPError(.notFound) }
-        let snapshot = await room.authority.room
-        return RoomInfo(
-            code: code,
-            seatsTaken: snapshot.players.count,
-            connected: await room.connectionCount,
-            maxPlayers: snapshot.maxPlayers
-        )
+        return await room.info()
     }
 
     router.ws("rooms/{code}/ws") { _, context in
