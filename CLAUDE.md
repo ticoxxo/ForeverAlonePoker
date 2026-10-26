@@ -19,7 +19,7 @@ Packages/SkinKit/              Pure skin model: slots, catalog, loadout, resolve
   Sources/SkinKitTestSupport   SkinCatalogBuilder, LoadoutBuilder
 ForeverAlonePoker/             app target (files auto-included)
   App/                         @main entry and routing only
-  Shared/                      Transport, Session, Persistence, Identity, DesignSystem, Skins (store, StoreKit, catalog, downloads)
+  Shared/                      Transport, Session, Persistence, Identity, DesignSystem, Skins (store, StoreKit, catalog, downloads, transaction pinning, support contact)
   Features/<Name>/             one folder per user-facing feature
 ForeverAlonePokerTests/        Swift Testing; imports PokerCoreTestSupport
 ForeverAlonePokerUITests/      XCTest smoke tests
@@ -97,6 +97,7 @@ Use `xcrun simctl list devices available` to pick a valid simulator name if `iPh
 - **Glass only through `Theme`** (tdr/0018). Use `tableGlass`/`surfaceGlass`/`glassButtonStyle`/`GlassGroup`; calling `glassEffect` or `.buttonStyle(.glass)` directly breaks the iOS 17 build. Movement goes through `motion(_:value:)` so Reduce Motion is honoured.
 - **Layout follows space, not device** (tdr/0017). The table picks `TableArrangement` (portrait / landscape / spacious) from its container size, so rotation, iPad split view and the foldable all go through one rule; never branch on `UIDevice` or hard-code card sizes. Use `Theme` tokens (`Shared/DesignSystem/Theme.swift`): tap targets ≥ 44 pt, main actions 56 pt, semantic text styles only.
 - **Skins never reach the game.** Cards read `@Environment(\.cardSkin)`; ownership comes only from StoreKit entitlements, never SwiftData; prices come only from the App Store (`Product.displayPrice`), never the catalog. Every fallback goes through `SkinResolver` (tdr/0011, tdr/0012).
+- **Transactions are pinned to a bundled root** (tdr/0022, tdr/0024). `TransactionCertificateValidator` pins every App Store transaction (production, sandbox, TestFlight) to `AppleIncRootCertificate.cer` (holds Apple Root CA – G3) in `ForeverAlonePoker/Resources/Certificates/` (whitelisted in `.gitignore`, which ignores `*.cer`); without it every purchase is denied. Xcode StoreKit testing transactions cannot be pinned (their key chains to no bundleable root; the saved `StoreKitTestCertificate.cer` only signs legacy receipts), so Debug builds accept `environment == .xcode` on StoreKit's verification and Release builds deny them. Refunds go through Apple's sheet only (`Features/SkinStore/Help`); support mail is in `SupportContact`.
 - **SkinKit is a second local package** linked through Xcode's UI like PokerCore: `SkinKit` to the app, `SkinKit` + `SkinKitTestSupport` to `ForeverAlonePokerTests`.
 - **Skin artwork is PNG** (750×1050). SVG masters cannot be rendered at runtime on iOS (no public renderer; CoreSVG drops `<text>`). Jokers are never shipped.
 - **Ranked play on the server is opt-in by environment** (`SESSION_SECRET`, `CLOUDKIT_KEY_ID`, `CLOUDKIT_PRIVATE_KEY[_PATH]`, see tdr/0010). Without them every match is unranked and `POST /auth/apple` answers 503.

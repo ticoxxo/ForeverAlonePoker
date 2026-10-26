@@ -33,10 +33,30 @@ nonisolated struct EntitlementUpdate: Sendable {
     let finish: @Sendable () async -> Void
 }
 
+/// A past purchase for the purchase-help screens (tdr/0022): the latest
+/// verified transaction of each product, refunded ones included.
+nonisolated struct PurchaseRecord: Identifiable, Equatable, Sendable {
+    /// The App Store transaction id, which the refund sheet takes.
+    let id: UInt64
+    let productID: String
+    let purchaseDate: Date
+    /// Refunded or revoked.
+    let isRevoked: Bool
+}
+
+/// How the system refund sheet was closed. Whether Apple grants the refund
+/// is decided later; a granted one arrives through `PurchaseService.updates`.
+nonisolated enum RefundOutcome: Equatable, Sendable {
+    case submitted
+    case cancelled
+}
+
 nonisolated enum PurchaseError: Error, Equatable {
     case unknownProduct
     case failedVerification
     case noActiveScene
+    /// The App Store would not open a refund request for this transaction.
+    case refundUnavailable
 }
 
 /// Everything the app needs from in-app purchase, behind a protocol so the
@@ -56,12 +76,24 @@ nonisolated protocol PurchaseService: Sendable {
     var updates: AsyncStream<EntitlementUpdate> { get }
     /// Emits the storefront's country when the player's App Store region changes.
     var storefrontChanges: AsyncStream<String> { get }
+    /// `false` when purchases are turned off (Screen Time, parental controls).
+    var canMakePayments: Bool { get }
+    /// The latest verified transaction per product, newest first.
+    func purchaseHistory() async -> [PurchaseRecord]
+    /// Presents the system refund sheet for one transaction.
+    func requestRefund(for transactionID: UInt64) async throws -> RefundOutcome
 }
 
 /// StoreKit 2 implementation. Transactions are JWS signed by the App Store
-/// and verified by StoreKit; unverified ones are finished and never granted.
+/// and verified by StoreKit, then pinned to the bundled root certificate
+/// (tdr/0022); any that fail are finished and never granted.
 nonisolated final class StoreKitPurchaseService: PurchaseService {
     private let cache = ProductCache()
+    private let validator: TransactionCertificateValidator
+
+    init(validator: TransactionCertificateValidator = .bundled()) {
+        self.validator = validator
+    }
 
     func products(for ids: [String]) async throws -> [StoreProduct] {
         // One product per item; ask in parallel batches as the catalog grows.
@@ -85,11 +117,12 @@ nonisolated final class StoreKitPurchaseService: PurchaseService {
 
         let result = try await Self.purchase(product, options: [.appAccountToken(accountToken)])
         switch result {
-        case .success(.verified(let transaction)):
+        case .success(let verification):
+            guard let transaction = trusted(verification) else {
+                await verification.unsafePayloadValue.finish()
+                throw PurchaseError.failedVerification
+            }
             return .purchased(finish: { await transaction.finish() })
-        case .success(.unverified(let transaction, _)):
-            await transaction.finish()
-            throw PurchaseError.failedVerification
         case .pending:
             return .pending
         case .userCancelled:
@@ -102,7 +135,7 @@ nonisolated final class StoreKitPurchaseService: PurchaseService {
     func currentEntitlements() async -> Set<String> {
         var owned: Set<String> = []
         for await result in Transaction.currentEntitlements {
-            if case .verified(let transaction) = result, transaction.revocationDate == nil {
+            if let transaction = trusted(result), transaction.revocationDate == nil {
                 owned.insert(transaction.productID)
             }
         }
@@ -115,18 +148,17 @@ nonisolated final class StoreKitPurchaseService: PurchaseService {
 
     var updates: AsyncStream<EntitlementUpdate> {
         AsyncStream { continuation in
-            let task = Task {
+            let task = Task { [self] in
                 for await result in Transaction.updates {
-                    switch result {
-                    case .verified(let transaction):
-                        continuation.yield(EntitlementUpdate(
-                            productID: transaction.productID,
-                            isRevoked: transaction.revocationDate != nil,
-                            finish: { await transaction.finish() }
-                        ))
-                    case .unverified(let transaction, _):
-                        await transaction.finish()
+                    guard let transaction = trusted(result) else {
+                        await result.unsafePayloadValue.finish()
+                        continue
                     }
+                    continuation.yield(EntitlementUpdate(
+                        productID: transaction.productID,
+                        isRevoked: transaction.revocationDate != nil,
+                        finish: { await transaction.finish() }
+                    ))
                 }
                 continuation.finish()
             }
@@ -146,13 +178,59 @@ nonisolated final class StoreKitPurchaseService: PurchaseService {
         }
     }
 
+    var canMakePayments: Bool { AppStore.canMakePayments }
+
+    func purchaseHistory() async -> [PurchaseRecord] {
+        var latest: [String: Transaction] = [:]
+        for await result in Transaction.all {
+            guard let transaction = trusted(result) else { continue }
+            if let known = latest[transaction.productID], known.purchaseDate >= transaction.purchaseDate { continue }
+            latest[transaction.productID] = transaction
+        }
+        return latest.values
+            .sorted { $0.purchaseDate > $1.purchaseDate }
+            .map { PurchaseRecord(id: $0.id, productID: $0.productID, purchaseDate: $0.purchaseDate, isRevoked: $0.revocationDate != nil) }
+    }
+
+    func requestRefund(for transactionID: UInt64) async throws -> RefundOutcome {
+        try await Self.refund(transactionID)
+    }
+
+    /// Verified by StoreKit and chained to the pinned root, or `nil`.
+    private func trusted(_ result: VerificationResult<Transaction>) -> Transaction? {
+        guard case .verified(let transaction) = result,
+              validator.validate(jws: result.jwsRepresentation, environment: transaction.environment) else { return nil }
+        return transaction
+    }
+
     /// The App Store sheet is presented over the active window scene.
     @MainActor
     private static func purchase(_ product: Product, options: Set<Product.PurchaseOption>) async throws -> Product.PurchaseResult {
-        guard let scene = UIApplication.shared.connectedScenes.first(where: { $0.activationState == .foregroundActive }) else {
+        try await product.purchase(confirmIn: activeScene(), options: options)
+    }
+
+    /// The system refund sheet, over the active window scene (tdr/0022).
+    @MainActor
+    private static func refund(_ transactionID: UInt64) async throws -> RefundOutcome {
+        let scene = try activeScene()
+        do {
+            switch try await Transaction.beginRefundRequest(for: transactionID, in: scene) {
+            case .success: return .submitted
+            case .userCancelled: return .cancelled
+            @unknown default: return .cancelled
+            }
+        } catch is Transaction.RefundRequestError {
+            throw PurchaseError.refundUnavailable
+        }
+    }
+
+    @MainActor
+    private static func activeScene() throws -> UIWindowScene {
+        guard let scene = UIApplication.shared.connectedScenes
+            .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene else {
             throw PurchaseError.noActiveScene
         }
-        return try await product.purchase(confirmIn: scene, options: options)
+        return scene
     }
 }
 

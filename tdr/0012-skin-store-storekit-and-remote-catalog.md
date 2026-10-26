@@ -139,3 +139,10 @@ Bought items did not appear in the store until the app was relaunched: after `.p
 - A completed purchase equips the item on every slot it covers (a set on all 52 cards, a back on the back). Files show as they download, the default until then; per-slot equipping (tdr/0011) is unchanged.
 - Pull to refresh in the store also refreshes entitlements.
 - Tests: `SkinStoreTests` (a back or a set unlocks and downloads before StoreKit lists it, a purchase is equipped, an approved update grants before it is listed, a refund revokes an unlisted purchase).
+
+### 2026-10-26: purchase help, refunds and pinning
+
+- tdr/0022 adds the purchase-help screens and the system refund flow (`Transaction.beginRefundRequest`), plus the `canMakePayments` gate.
+- It also pins every verified transaction to a bundled root certificate (`StoreKitTestCertificate` in Debug, Apple Root CA – G3 as `AppleIncRootCertificate` in Release).
+- Refunds still reach the app through `Transaction.updates`, as decided here.
+- The scheme now points at `StoreKit/SkinStore.storekit`.

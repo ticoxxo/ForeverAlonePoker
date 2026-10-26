@@ -8,6 +8,7 @@ struct SkinSetDetailView: View {
     @Environment(SkinStore.self) private var store
     let item: SkinItem
     @State private var selectedCard: Card?
+    @State private var preview: SkinPreview?
     /// Cards grow with the text size so the set stays easy to see and tap.
     @ScaledMetric(relativeTo: .body) private var cellWidth: CGFloat = 64
 
@@ -21,14 +22,16 @@ struct SkinSetDetailView: View {
                 header
                 LazyVGrid(columns: columns, spacing: Theme.Spacing.small) {
                     ForEach(item.slots.compactMap(\.card), id: \.self) { card in
-                        Button {
-                            // Locked cards have nothing to offer: they come with the set.
-                            if store.owns(.cardFront(card), of: item) { selectedCard = card }
-                        } label: {
-                            CardCell(item: item, card: card)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityHint(store.owns(.cardFront(card), of: item) ? Text("Choose whether this card uses the set") : Text("Comes with the set"))
+                        // Not a Button: a Button would also fire when a long
+                        // press lifts, opening the dialog behind the preview.
+                        CardCell(item: item, card: card)
+                            .contentShape(Rectangle())
+                            .onTapGesture { choose(card) }
+                            .onLongPressGesture { preview = SkinPreview(item: item, subject: .face(card)) }
+                            .accessibilityAddTraits(.isButton)
+                            .accessibilityAction { choose(card) }
+                            .accessibilityAction(named: Text("Preview")) { preview = SkinPreview(item: item, subject: .face(card)) }
+                            .accessibilityHint(store.owns(.cardFront(card), of: item) ? Text("Choose whether this card uses the set") : Text("Comes with the set"))
                     }
                 }
                 .environment(\.cardSkin, store.previewSkin(for: item))
@@ -37,6 +40,7 @@ struct SkinSetDetailView: View {
             .frame(maxWidth: Theme.Width.readable)
             .frame(maxWidth: .infinity)
         }
+        .skinPreview($preview)
         .navigationTitle(item.name(for: Locale.current.language.languageCode?.identifier))
         .navigationBarTitleDisplayMode(.inline)
         .unlockCelebration()
@@ -47,6 +51,11 @@ struct SkinSetDetailView: View {
         ) { card in
             cardActions(card)
         }
+    }
+
+    private func choose(_ card: Card) {
+        // Locked cards have nothing to offer: they come with the set.
+        if store.owns(.cardFront(card), of: item) { selectedCard = card }
     }
 
     @ViewBuilder

@@ -6,6 +6,7 @@ import SkinKit
 /// catalog, with prices from the App Store in the player's storefront currency.
 struct SkinStoreView: View {
     @Environment(SkinStore.self) private var store
+    @State private var preview: SkinPreview?
 
     var body: some View {
         List {
@@ -21,14 +22,25 @@ struct SkinStoreView: View {
 
             Section("Card backs") {
                 ForEach(store.items(of: .cardBack)) { item in
-                    CardBackRow(item: item)
+                    CardBackRow(item: item) {
+                        preview = SkinPreview(item: item, subject: .back)
+                    }
                 }
             }
 
             Section {
             } footer: {
                 VStack(alignment: .leading, spacing: Theme.Spacing.xSmall) {
-                    Text("Prices are in your App Store currency. Purchases are tied to your Apple Account and appear on all your devices. Bought on another device? Tap Restore.")
+                    if store.canMakePayments {
+                        Text("Prices are in your App Store currency. Purchases are tied to your Apple Account and appear on all your devices. Bought on another device? Tap Restore.")
+                    } else {
+                        // HIG: explain a store that cannot take payments.
+                        Label("Purchases are turned off on this device (Screen Time or parental controls). You can still use skins you already own.", systemImage: "lock")
+                    }
+                    NavigationLink("Need help with a purchase?") {
+                        PurchaseHelpView()
+                    }
+                    .font(.footnote.weight(.semibold))
                     if let error = store.lastError {
                         Label(error, systemImage: "exclamationmark.triangle")
                             .foregroundStyle(.orange)
@@ -36,8 +48,17 @@ struct SkinStoreView: View {
                 }
             }
         }
+        .skinPreview($preview)
         .navigationTitle("Card store")
         .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                NavigationLink {
+                    PurchaseHelpView()
+                } label: {
+                    Label("Help", systemImage: "questionmark.circle")
+                }
+                .accessibilityHint(Text("Missing purchases, questions, refunds and contact"))
+            }
             // A store-wide action, so it lives in the navigation bar instead
             // of at the bottom of a long list.
             ToolbarItem(placement: .topBarTrailing) {
@@ -110,10 +131,11 @@ private struct SkinItemRow: View {
     }
 }
 
-/// A card back: buy it, or use it once owned.
+/// A card back: buy it, or use it once owned. A long press previews it.
 private struct CardBackRow: View {
     @Environment(SkinStore.self) private var store
     let item: SkinItem
+    let onPreview: () -> Void
     @ScaledMetric(relativeTo: .headline) private var cardHeight: CGFloat = 56
 
     var body: some View {
@@ -155,6 +177,10 @@ private struct CardBackRow: View {
             .motion(Theme.Motion.reveal, value: store.isShowing(item, in: .cardBack))
         }
         .padding(.vertical, Theme.Spacing.xSmall)
+        .contentShape(Rectangle())
+        // The Use / Buy buttons keep their taps; holding anywhere else previews.
+        .onLongPressGesture(perform: onPreview)
+        .accessibilityAction(named: Text("Preview"), onPreview)
     }
 }
 
@@ -171,9 +197,16 @@ struct BuyButton: View {
     var itemName: String = ""
 
     var body: some View {
+        // Hidden while purchases are turned off; the store footer says why.
+        if store.canMakePayments {
+            button
+        }
+    }
+
+    private var button: some View {
         let state = store.purchaseStates[productID]
         let price = store.product(productID)?.displayPrice
-        Button {
+        return Button {
             Task { await store.purchase(productID) }
         } label: {
             ZStack {

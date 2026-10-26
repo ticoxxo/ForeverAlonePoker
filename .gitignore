@@ -20,6 +20,8 @@ cloudkit.pem
 *.p12
 *.key
 *.cer
+!StoreKitTestCertificate.cer
+!AppleIncRootCertificate.cer
 *.mobileprovision
 *.provisionprofile
 .env

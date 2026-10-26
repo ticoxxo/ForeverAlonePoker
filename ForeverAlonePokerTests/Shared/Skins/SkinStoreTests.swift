@@ -318,4 +318,20 @@ struct SkinStoreTests {
         await fixture.store.start()
         #expect(fixture.store.catalog.item("felt_green") == nil)
     }
+
+    @Test("purchases turned off on the device are reported once the store starts")
+    func paymentsDisabled() async {
+        let fixture = Fixture()
+        fixture.purchases.canMakePayments = false
+        await fixture.store.start()
+        #expect(!fixture.store.canMakePayments)
+    }
+
+    @Test("a product id finds the catalog item it unlocks")
+    func itemForProduct() async {
+        let fixture = Fixture()
+        await fixture.store.start()
+        #expect(fixture.store.item(forProduct: ProductIDs.set("spanish_001"))?.id == "spanish_001")
+        #expect(fixture.store.item(forProduct: "fap.skin.unknown") == nil)
+    }
 }
