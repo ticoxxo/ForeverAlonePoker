@@ -6,6 +6,7 @@ import SkinKit
 /// catalog, with prices from the App Store in the player's storefront currency.
 struct SkinStoreView: View {
     @Environment(SkinStore.self) private var store
+    @State private var preview: SkinPreview?
 
     var body: some View {
         List {
@@ -21,7 +22,9 @@ struct SkinStoreView: View {
 
             Section("Card backs") {
                 ForEach(store.items(of: .cardBack)) { item in
-                    CardBackRow(item: item)
+                    CardBackRow(item: item) {
+                        preview = SkinPreview(item: item, subject: .back)
+                    }
                 }
             }
 
@@ -45,6 +48,7 @@ struct SkinStoreView: View {
                 }
             }
         }
+        .skinPreview($preview)
         .navigationTitle("Card store")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -127,10 +131,11 @@ private struct SkinItemRow: View {
     }
 }
 
-/// A card back: buy it, or use it once owned.
+/// A card back: buy it, or use it once owned. A long press previews it.
 private struct CardBackRow: View {
     @Environment(SkinStore.self) private var store
     let item: SkinItem
+    let onPreview: () -> Void
     @ScaledMetric(relativeTo: .headline) private var cardHeight: CGFloat = 56
 
     var body: some View {
@@ -172,6 +177,10 @@ private struct CardBackRow: View {
             .motion(Theme.Motion.reveal, value: store.isShowing(item, in: .cardBack))
         }
         .padding(.vertical, Theme.Spacing.xSmall)
+        .contentShape(Rectangle())
+        // The Use / Buy buttons keep their taps; holding anywhere else previews.
+        .onLongPressGesture(perform: onPreview)
+        .accessibilityAction(named: Text("Preview"), onPreview)
     }
 }
 
