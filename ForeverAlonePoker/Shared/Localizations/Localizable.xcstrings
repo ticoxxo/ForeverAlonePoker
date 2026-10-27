@@ -2,10 +2,150 @@
   "sourceLanguage" : "en",
   "strings" : {
     "" : {
-
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " "
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " "
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " "
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " "
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " "
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " "
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " "
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " "
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " "
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " "
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " "
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " "
+          }
+        }
+      }
     },
     "—" : {
-
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "—"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "—"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "—"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "—"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "—"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "—"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "—"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "—"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "—"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "—"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "—"
+          }
+        }
+      }
     },
     "(you)" : {
       "comment" : "A suffix appended to a player's name when it's",
@@ -1201,24 +1341,6 @@
         "ar" : {
           "variations" : {
             "plural" : {
-              "zero" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld رقاقة"
-                }
-              },
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "رقاقة واحدة"
-                }
-              },
-              "two" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "رقاقتان"
-                }
-              },
               "few" : {
                 "stringUnit" : {
                   "state" : "translated",
@@ -1231,7 +1353,25 @@
                   "value" : "%lld رقاقة"
                 }
               },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "رقاقة واحدة"
+                }
+              },
               "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld رقاقة"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "رقاقتان"
+                }
+              },
+              "zero" : {
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld رقاقة"
@@ -1243,12 +1383,6 @@
         "cs" : {
           "variations" : {
             "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld žeton"
-                }
-              },
               "few" : {
                 "stringUnit" : {
                   "state" : "translated",
@@ -1259,6 +1393,12 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld žetonu"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld žeton"
                 }
               },
               "other" : {
@@ -1321,13 +1461,13 @@
                   "value" : "ז׳יטון אחד"
                 }
               },
-              "two" : {
+              "other" : {
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld ז׳יטונים"
                 }
               },
-              "other" : {
+              "two" : {
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld ז׳יטונים"
@@ -1419,24 +1559,6 @@
               "formatSpecifier" : "lld",
               "variations" : {
                 "plural" : {
-                  "zero" : {
-                    "stringUnit" : {
-                      "state" : "translated",
-                      "value" : "%arg خسارة"
-                    }
-                  },
-                  "one" : {
-                    "stringUnit" : {
-                      "state" : "translated",
-                      "value" : "خسارة واحدة"
-                    }
-                  },
-                  "two" : {
-                    "stringUnit" : {
-                      "state" : "translated",
-                      "value" : "خسارتان"
-                    }
-                  },
                   "few" : {
                     "stringUnit" : {
                       "state" : "translated",
@@ -1449,7 +1571,25 @@
                       "value" : "%arg خسارة"
                     }
                   },
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "خسارة واحدة"
+                    }
+                  },
                   "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg خسارة"
+                    }
+                  },
+                  "two" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "خسارتان"
+                    }
+                  },
+                  "zero" : {
                     "stringUnit" : {
                       "state" : "translated",
                       "value" : "%arg خسارة"
@@ -1463,24 +1603,6 @@
               "formatSpecifier" : "lld",
               "variations" : {
                 "plural" : {
-                  "zero" : {
-                    "stringUnit" : {
-                      "state" : "translated",
-                      "value" : "%arg فوز"
-                    }
-                  },
-                  "one" : {
-                    "stringUnit" : {
-                      "state" : "translated",
-                      "value" : "فوز واحد"
-                    }
-                  },
-                  "two" : {
-                    "stringUnit" : {
-                      "state" : "translated",
-                      "value" : "فوزان"
-                    }
-                  },
                   "few" : {
                     "stringUnit" : {
                       "state" : "translated",
@@ -1493,7 +1615,25 @@
                       "value" : "%arg فوزًا"
                     }
                   },
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "فوز واحد"
+                    }
+                  },
                   "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg فوز"
+                    }
+                  },
+                  "two" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "فوزان"
+                    }
+                  },
+                  "zero" : {
                     "stringUnit" : {
                       "state" : "translated",
                       "value" : "%arg فوز"
@@ -1515,12 +1655,6 @@
               "formatSpecifier" : "lld",
               "variations" : {
                 "plural" : {
-                  "one" : {
-                    "stringUnit" : {
-                      "state" : "translated",
-                      "value" : "%arg prohra"
-                    }
-                  },
                   "few" : {
                     "stringUnit" : {
                       "state" : "translated",
@@ -1531,6 +1665,12 @@
                     "stringUnit" : {
                       "state" : "translated",
                       "value" : "%arg prohry"
+                    }
+                  },
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg prohra"
                     }
                   },
                   "other" : {
@@ -1547,12 +1687,6 @@
               "formatSpecifier" : "lld",
               "variations" : {
                 "plural" : {
-                  "one" : {
-                    "stringUnit" : {
-                      "state" : "translated",
-                      "value" : "%arg výhra"
-                    }
-                  },
                   "few" : {
                     "stringUnit" : {
                       "state" : "translated",
@@ -1563,6 +1697,12 @@
                     "stringUnit" : {
                       "state" : "translated",
                       "value" : "%arg výhry"
+                    }
+                  },
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg výhra"
                     }
                   },
                   "other" : {
@@ -1701,13 +1841,13 @@
                       "value" : "הפסד אחד"
                     }
                   },
-                  "two" : {
+                  "other" : {
                     "stringUnit" : {
                       "state" : "translated",
                       "value" : "%arg הפסדים"
                     }
                   },
-                  "other" : {
+                  "two" : {
                     "stringUnit" : {
                       "state" : "translated",
                       "value" : "%arg הפסדים"
@@ -1727,13 +1867,13 @@
                       "value" : "ניצחון אחד"
                     }
                   },
-                  "two" : {
+                  "other" : {
                     "stringUnit" : {
                       "state" : "translated",
                       "value" : "%arg ניצחונות"
                     }
                   },
-                  "other" : {
+                  "two" : {
                     "stringUnit" : {
                       "state" : "translated",
                       "value" : "%arg ניצחונות"
@@ -1977,24 +2117,6 @@
               "formatSpecifier" : "lld",
               "variations" : {
                 "plural" : {
-                  "zero" : {
-                    "stringUnit" : {
-                      "state" : "translated",
-                      "value" : "%arg خسارة"
-                    }
-                  },
-                  "one" : {
-                    "stringUnit" : {
-                      "state" : "translated",
-                      "value" : "خسارة واحدة"
-                    }
-                  },
-                  "two" : {
-                    "stringUnit" : {
-                      "state" : "translated",
-                      "value" : "خسارتان"
-                    }
-                  },
                   "few" : {
                     "stringUnit" : {
                       "state" : "translated",
@@ -2007,7 +2129,25 @@
                       "value" : "%arg خسارة"
                     }
                   },
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "خسارة واحدة"
+                    }
+                  },
                   "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg خسارة"
+                    }
+                  },
+                  "two" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "خسارتان"
+                    }
+                  },
+                  "zero" : {
                     "stringUnit" : {
                       "state" : "translated",
                       "value" : "%arg خسارة"
@@ -2021,24 +2161,6 @@
               "formatSpecifier" : "lld",
               "variations" : {
                 "plural" : {
-                  "zero" : {
-                    "stringUnit" : {
-                      "state" : "translated",
-                      "value" : "%arg فوز"
-                    }
-                  },
-                  "one" : {
-                    "stringUnit" : {
-                      "state" : "translated",
-                      "value" : "فوز واحد"
-                    }
-                  },
-                  "two" : {
-                    "stringUnit" : {
-                      "state" : "translated",
-                      "value" : "فوزان"
-                    }
-                  },
                   "few" : {
                     "stringUnit" : {
                       "state" : "translated",
@@ -2051,7 +2173,25 @@
                       "value" : "%arg فوزًا"
                     }
                   },
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "فوز واحد"
+                    }
+                  },
                   "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg فوز"
+                    }
+                  },
+                  "two" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "فوزان"
+                    }
+                  },
+                  "zero" : {
                     "stringUnit" : {
                       "state" : "translated",
                       "value" : "%arg فوز"
@@ -2073,12 +2213,6 @@
               "formatSpecifier" : "lld",
               "variations" : {
                 "plural" : {
-                  "one" : {
-                    "stringUnit" : {
-                      "state" : "translated",
-                      "value" : "%arg prohra"
-                    }
-                  },
                   "few" : {
                     "stringUnit" : {
                       "state" : "translated",
@@ -2089,6 +2223,12 @@
                     "stringUnit" : {
                       "state" : "translated",
                       "value" : "%arg prohry"
+                    }
+                  },
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg prohra"
                     }
                   },
                   "other" : {
@@ -2105,12 +2245,6 @@
               "formatSpecifier" : "lld",
               "variations" : {
                 "plural" : {
-                  "one" : {
-                    "stringUnit" : {
-                      "state" : "translated",
-                      "value" : "%arg výhra"
-                    }
-                  },
                   "few" : {
                     "stringUnit" : {
                       "state" : "translated",
@@ -2121,6 +2255,12 @@
                     "stringUnit" : {
                       "state" : "translated",
                       "value" : "%arg výhry"
+                    }
+                  },
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg výhra"
                     }
                   },
                   "other" : {
@@ -2259,13 +2399,13 @@
                       "value" : "הפסד אחד"
                     }
                   },
-                  "two" : {
+                  "other" : {
                     "stringUnit" : {
                       "state" : "translated",
                       "value" : "%arg הפסדים"
                     }
                   },
-                  "other" : {
+                  "two" : {
                     "stringUnit" : {
                       "state" : "translated",
                       "value" : "%arg הפסדים"
@@ -2285,13 +2425,13 @@
                       "value" : "ניצחון אחד"
                     }
                   },
-                  "two" : {
+                  "other" : {
                     "stringUnit" : {
                       "state" : "translated",
                       "value" : "%arg ניצחונות"
                     }
                   },
-                  "other" : {
+                  "two" : {
                     "stringUnit" : {
                       "state" : "translated",
                       "value" : "%arg ניצחונות"
@@ -3756,7 +3896,13 @@
         "ar" : {
           "variations" : {
             "plural" : {
-              "zero" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "اشترِ المجموعة لاستخدام الأوراق الـ %lld كلها."
+                }
+              },
+              "many" : {
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "اشترِ المجموعة لاستخدام الأوراق الـ %lld كلها."
@@ -3768,25 +3914,19 @@
                   "value" : "اشترِ المجموعة لاستخدام الورقة."
                 }
               },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "اشترِ المجموعة لاستخدام الأوراق الـ %lld كلها."
+                }
+              },
               "two" : {
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "اشترِ المجموعة لاستخدام الورقتين كلتيهما."
                 }
               },
-              "few" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "اشترِ المجموعة لاستخدام الأوراق الـ %lld كلها."
-                }
-              },
-              "many" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "اشترِ المجموعة لاستخدام الأوراق الـ %lld كلها."
-                }
-              },
-              "other" : {
+              "zero" : {
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "اشترِ المجموعة لاستخدام الأوراق الـ %lld كلها."
@@ -3798,12 +3938,6 @@
         "cs" : {
           "variations" : {
             "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Kupte sadu a používejte %lld kartu."
-                }
-              },
               "few" : {
                 "stringUnit" : {
                   "state" : "translated",
@@ -3814,6 +3948,12 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "Kupte sadu a používejte všech %lld karty."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Kupte sadu a používejte %lld kartu."
                 }
               },
               "other" : {
@@ -18785,24 +18925,6 @@
         "ar" : {
           "variations" : {
             "plural" : {
-              "zero" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "حتى %lld لاعب. ابدأ اللعبة عندما تكون مستعدًا."
-                }
-              },
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "لاعب واحد كحد أقصى. ابدأ اللعبة عندما تكون مستعدًا."
-                }
-              },
-              "two" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "حتى لاعبَين اثنين. ابدأ اللعبة عندما تكون مستعدًا."
-                }
-              },
               "few" : {
                 "stringUnit" : {
                   "state" : "translated",
@@ -18815,7 +18937,25 @@
                   "value" : "حتى %lld لاعبًا. ابدأ اللعبة عندما تكون مستعدًا."
                 }
               },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "لاعب واحد كحد أقصى. ابدأ اللعبة عندما تكون مستعدًا."
+                }
+              },
               "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "حتى %lld لاعب. ابدأ اللعبة عندما تكون مستعدًا."
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "حتى لاعبَين اثنين. ابدأ اللعبة عندما تكون مستعدًا."
+                }
+              },
+              "zero" : {
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "حتى %lld لاعب. ابدأ اللعبة عندما تكون مستعدًا."
@@ -18827,12 +18967,6 @@
         "cs" : {
           "variations" : {
             "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Až %lld hráč. Hru spustíte, až budete připraveni."
-                }
-              },
               "few" : {
                 "stringUnit" : {
                   "state" : "translated",
@@ -18843,6 +18977,12 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "Až %lld hráče. Hru spustíte, až budete připraveni."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Až %lld hráč. Hru spustíte, až budete připraveni."
                 }
               },
               "other" : {
@@ -18881,13 +19021,13 @@
                   "value" : "עד שחקן אחד. אתם מתחילים את המשחק כשאתם מוכנים."
                 }
               },
-              "two" : {
+              "other" : {
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "עד %lld שחקנים. אתם מתחילים את המשחק כשאתם מוכנים."
                 }
               },
-              "other" : {
+              "two" : {
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "עד %lld שחקנים. אתם מתחילים את המשחק כשאתם מוכנים."
