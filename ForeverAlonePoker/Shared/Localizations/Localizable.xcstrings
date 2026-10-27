@@ -254,7 +254,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ is thinking…"
+            "value" : "%@ está pensando…"
           }
         },
         "fr" : {
@@ -3552,7 +3552,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tabla"
+            "value" : "Mesa"
           }
         },
         "fr" : {
@@ -4986,7 +4986,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Olla picada"
+            "value" : "Bote dividido"
           }
         },
         "fr" : {
@@ -6780,7 +6780,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mostrar el nombre"
+            "value" : "Nombre visible"
           }
         },
         "fr" : {
@@ -7496,7 +7496,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Todos se retiraron. You won %@ "
+            "value" : "Todos los demás se retiraron. Ganaste %@"
           }
         },
         "fr" : {
@@ -8867,7 +8867,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Anfitrión de una mesa"
+            "value" : "Abrir una mesa"
           }
         },
         "fr" : {
@@ -13765,7 +13765,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Olla"
+            "value" : "Bote"
           }
         },
         "fr" : {
