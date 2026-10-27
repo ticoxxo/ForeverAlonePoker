@@ -32,7 +32,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "(Tu)"
+            "value" : "(tú)"
           }
         },
         "fr" : {
@@ -326,7 +326,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ abandono la mesa."
+            "value" : "%@ abandonó la mesa."
           }
         },
         "fr" : {
@@ -475,7 +475,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ enseña"
+            "value" : "%@ muestra"
           }
         },
         "fr" : {
@@ -709,7 +709,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$@, %2$lld nuevo"
+            "value" : "%1$@, nuevos: %2$lld"
           }
         },
         "fr" : {
@@ -1069,7 +1069,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cartas de %@ , bocabajo"
+            "value" : "Cartas de %@, boca abajo"
           }
         },
         "fr" : {
@@ -2545,7 +2545,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Passcode de 4 digitos"
+            "value" : "Código de 4 dígitos"
           }
         },
         "fr" : {
@@ -2688,7 +2688,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AS"
+            "value" : "As"
           }
         },
         "fr" : {
@@ -2760,7 +2760,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "La dirección del servidor usado para juego online. Déjalo vacío para el default."
+            "value" : "Dirección del servidor usado para las partidas en línea. Déjalo vacío para usar el predeterminado."
           }
         },
         "fr" : {
@@ -2832,7 +2832,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Las rostros de las 52 cartas del set o los dorsales que compraste. Puedes elegir las cartas que muestras y puedes volver al skin clásico en cualquier punto."
+            "value" : "Las 52 caras de las cartas del set, o el dorso que compraste. Tú eliges qué cartas lo muestran y puedes volver a la baraja clásica en cualquier momento."
           }
         },
         "fr" : {
@@ -3192,7 +3192,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pregunta por el passcode al host"
+            "value" : "Pide el código que aparece en la pantalla del anfitrión"
           }
         },
         "fr" : {
@@ -3264,7 +3264,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Atras"
+            "value" : "Atrás"
           }
         },
         "fr" : {
@@ -3624,7 +3624,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Restaura las cartas compradas con tu cuenta Apple "
+            "value" : "Restaura las cartas compradas con tu cuenta de Apple"
           }
         },
         "fr" : {
@@ -3702,7 +3702,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Compra %1$@ por %2$@"
+            "value" : "Comprar %1$@ por %2$@"
           }
         },
         "fr" : {
@@ -3834,7 +3834,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Compra el set para usar todas las %lld cards."
+            "value" : "Compra el set para usar las %lld cartas."
           }
         },
         "fr" : {
@@ -3978,7 +3978,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Puede mi familia usar lo que he comprado?"
+            "value" : "¿Mi familia puede usar lo que compro?"
           }
         },
         "fr" : {
@@ -4050,7 +4050,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pueden mis oponentes ver las skins de mi cartas?"
+            "value" : "¿Mi oponente puede ver el skin de mis cartas?"
           }
         },
         "fr" : {
@@ -4194,7 +4194,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dorso de cartas"
+            "value" : "Dorsos de cartas"
           }
         },
         "fr" : {
@@ -4266,7 +4266,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cara de cartas"
+            "value" : "Caras de cartas"
           }
         },
         "fr" : {
@@ -4338,7 +4338,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cara y dorsal de las cartas pertenece a la cuenta de Apple que las compró y aparecen en cada dispositivo que inicio sesión."
+            "value" : "Las caras y los dorsos de las cartas pertenecen a la cuenta de Apple que los compró y aparecen en todos los dispositivos con esa cuenta."
           }
         },
         "fr" : {
@@ -4410,7 +4410,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cara y dorcas que compras aparecerá aquí."
+            "value" : "Las caras y los dorsos que compres aparecerán aquí."
           }
         },
         "fr" : {
@@ -4914,7 +4914,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Elige si esta carta utiliza el set"
+            "value" : "Elige si esta carta usa el set"
           }
         },
         "fr" : {
@@ -5273,7 +5273,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Conectando a %@ …"
+            "value" : "Conectando con %@…"
           }
         },
         "fr" : {
@@ -5487,7 +5487,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Contactanos"
+            "value" : "Contáctanos"
           }
         },
         "fr" : {
@@ -5559,7 +5559,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Contactando el servidor…"
+            "value" : "Contactando con el servidor…"
           }
         },
         "fr" : {
@@ -5631,7 +5631,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Emoji cool con lentes"
+            "value" : "Cara con gafas de sol"
           }
         },
         "fr" : {
@@ -5919,7 +5919,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No se pudo cargar el leaderboard. Comprueba tu conexión de internet o iCloud."
+            "value" : "No se pudo cargar la clasificación. Comprueba tu conexión a internet y a iCloud."
           }
         },
         "fr" : {
@@ -5991,7 +5991,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No se puedo contactar el server. Comprueba la dirección del servidor."
+            "value" : "No se pudo contactar con el servidor. Comprueba la dirección del servidor más abajo."
           }
         },
         "fr" : {
@@ -6063,7 +6063,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No se puedo contactar el servidor. Comprueba la dirección en el perfil."
+            "value" : "No se pudo contactar con el servidor. Comprueba la dirección del servidor en tu perfil."
           }
         },
         "fr" : {
@@ -6279,7 +6279,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Emoji grosero"
+            "value" : "Cara maldiciendo"
           }
         },
         "fr" : {
@@ -6421,7 +6421,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dealer"
+            "value" : "dealer"
           }
         },
         "fr" : {
@@ -6565,7 +6565,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Usuario default"
+            "value" : "Usuario predeterminado"
           }
         },
         "fr" : {
@@ -6852,7 +6852,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Los skins cambian el juego?"
+            "value" : "¿Los skins cambian el juego?"
           }
         },
         "fr" : {
@@ -6996,7 +6996,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Doble click para cerrar preview"
+            "value" : "Toca dos veces para cerrar la vista previa"
           }
         },
         "fr" : {
@@ -7066,7 +7066,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Arte descargado puede tomar un momento en aparecer. Hasta entonces se mostrará las cartas clásicas."
+            "value" : "El arte descargado puede tardar un momento en aparecer. Mientras tanto se muestran las cartas clásicas."
           }
         },
         "fr" : {
@@ -7138,7 +7138,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Editar tu nombre, país y foto"
+            "value" : "Edita tu nombre, país y foto"
           }
         },
         "fr" : {
@@ -7208,7 +7208,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ganancia de elo deshabilitado para este juego"
+            "value" : "Ganancia de Elo desactivada en esta partida"
           }
         },
         "fr" : {
@@ -7352,7 +7352,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ingresa el passcode del host."
+            "value" : "Ingresa el código que aparece en la pantalla del anfitrión."
           }
         },
         "fr" : {
@@ -7424,7 +7424,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cada dispositivo necesita el Wi-Fi o Bluetooth y la app abierta. El dispositivo del host referencia el juego y muestra un passcode que los otros jugador deben ingresar."
+            "value" : "Cada dispositivo necesita el Wi-Fi o el Bluetooth activado y la app abierta. El dispositivo del anfitrión arbitra la partida y muestra un código que los demás jugadores deben ingresar."
           }
         },
         "fr" : {
@@ -7790,7 +7790,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Finalizado %1$@ de %2$@ en contra %3$@"
+            "value" : "Puesto %1$@ de %2$@ contra %3$@"
           }
         },
         "fr" : {
@@ -8150,7 +8150,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "4 digitos mostrados en la pantalla del host"
+            "value" : "Cuatro dígitos que aparecen en la pantalla del anfitrión"
           }
         },
         "fr" : {
@@ -8294,7 +8294,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Emoji congelado"
+            "value" : "Cara congelada"
           }
         },
         "fr" : {
@@ -8438,7 +8438,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Set entero %@"
+            "value" : "Set completo %@"
           }
         },
         "fr" : {
@@ -8580,7 +8580,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Atención: el juego comienza tan pronto como un oponente entre."
+            "value" : "Mano a mano: la partida empieza en cuanto se una tu oponente."
           }
         },
         "fr" : {
@@ -8795,7 +8795,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Host"
+            "value" : "Anfitrión"
           }
         },
         "fr" : {
@@ -8939,7 +8939,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cómo podemos ayudar?"
+            "value" : "¿Cómo podemos ayudarte?"
           }
         },
         "fr" : {
@@ -9011,7 +9011,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cómo puedo pedir un reembolso?"
+            "value" : "¿Cómo pido un reembolso?"
           }
         },
         "fr" : {
@@ -9083,7 +9083,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tengo un nuevo dispositivo. Necesito comprar los skins de nuevo?"
+            "value" : "Tengo un dispositivo nuevo. ¿Tengo que volver a comprar?"
           }
         },
         "fr" : {
@@ -9227,7 +9227,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Si alguien en tu familia tiene que aprobar tus compras, el item aparece una vez ellos lo aprueban."
+            "value" : "Si alguien de tu familia tiene que aprobar tus compras, el artículo aparecerá cuando lo apruebe."
           }
         },
         "fr" : {
@@ -9370,7 +9370,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Jack"
+            "value" : "Jota"
           }
         },
         "fr" : {
@@ -9442,7 +9442,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ingresar"
+            "value" : "Unirse"
           }
         },
         "fr" : {
@@ -9514,7 +9514,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ingresar %@"
+            "value" : "Unirse a %@"
           }
         },
         "fr" : {
@@ -9586,7 +9586,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Unirse a una tabla cercana"
+            "value" : "Unirse a una mesa cercana"
           }
         },
         "fr" : {
@@ -9658,7 +9658,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Unirse a una tabla"
+            "value" : "Unirse a una mesa"
           }
         },
         "fr" : {
@@ -9730,7 +9730,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Unete a cualquier tabla con mesa libre, sin código necesario."
+            "value" : "Únete a cualquier mesa abierta con un asiento libre, sin necesidad de código."
           }
         },
         "fr" : {
@@ -9873,7 +9873,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Riendo con lagrimas"
+            "value" : "Cara llorando de risa"
           }
         },
         "fr" : {
@@ -9945,7 +9945,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Leaderboard"
+            "value" : "Clasificación"
           }
         },
         "fr" : {
@@ -10159,7 +10159,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cargando rankings…"
+            "value" : "Cargando clasificación…"
           }
         },
         "fr" : {
@@ -10231,7 +10231,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Juego local"
+            "value" : "Partida local"
           }
         },
         "fr" : {
@@ -10375,7 +10375,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Buscar por una tabla abierta con un asiento libre. Nos detenemos después de 3 minutos."
+            "value" : "Buscando una mesa abierta con un asiento libre. Dejamos de buscar a los 3 minutos."
           }
         },
         "fr" : {
@@ -10447,7 +10447,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Buscando por tablas cercanas…"
+            "value" : "Buscando mesas cercanas…"
           }
         },
         "fr" : {
@@ -10519,7 +10519,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Buscar por tablas presentadas por dispositivos cercanos a ti"
+            "value" : "Busca mesas abiertas en dispositivos cercanos"
           }
         },
         "fr" : {
@@ -10591,7 +10591,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Perdiste con %@"
+            "value" : "Derrota contra %@"
           }
         },
         "fr" : {
@@ -10663,7 +10663,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Historial de juegos"
+            "value" : "Historial de partidas"
           }
         },
         "fr" : {
@@ -10735,7 +10735,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Juego terminado"
+            "value" : "Partida terminada"
           }
         },
         "fr" : {
@@ -10807,7 +10807,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Máximo de jugador"
+            "value" : "Máximo de jugadores"
           }
         },
         "fr" : {
@@ -11095,7 +11095,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mas"
+            "value" : "Más"
           }
         },
         "fr" : {
@@ -11239,7 +11239,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tablas cercanas"
+            "value" : "Mesas cercanas"
           }
         },
         "fr" : {
@@ -11311,7 +11311,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Necesitas ayuda con una compra?"
+            "value" : "¿Necesitas ayuda con una compra?"
           }
         },
         "fr" : {
@@ -11383,7 +11383,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nuevas cartas"
+            "value" : "Nuevas caras y dorsos de cartas"
           }
         },
         "fr" : {
@@ -11599,7 +11599,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sin app de email en este dispositivo. Escribe a %@ ."
+            "value" : "No hay ninguna app de correo configurada en este dispositivo. Escribe a %@."
           }
         },
         "fr" : {
@@ -11815,7 +11815,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sin juegos ranked aún. Se el primero!"
+            "value" : "Aún no hay partidas clasificatorias. ¡Sé el primero!"
           }
         },
         "fr" : {
@@ -11887,7 +11887,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No hay tabla con ese código."
+            "value" : "No hay ninguna mesa con ese código."
           }
         },
         "fr" : {
@@ -11959,7 +11959,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No. Compras pertenecen a tu cuenta Apple. Inicia Sesión con la misma cuenta y da click Restore en la tienda de cartas."
+            "value" : "No. Las compras pertenecen a tu cuenta de Apple. Inicia sesión con la misma cuenta y toca Restaurar en la tienda de cartas."
           }
         },
         "fr" : {
@@ -12031,7 +12031,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No. Skins son solo como las cartas se miran. Cada jugador obtiene la misma carta y las mismas reglas."
+            "value" : "No. Los skins solo cambian el aspecto de las cartas. Todos los jugadores reciben las mismas cartas y siguen las mismas reglas."
           }
         },
         "fr" : {
@@ -12103,7 +12103,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nadie tuvo una tabla abierta en los últimos 3 minutos. Trata de nuevo or crea una tabla tú mismo."
+            "value" : "Nadie tenía una mesa abierta en los últimos 3 minutos. Inténtalo de nuevo o crea una mesa y comparte su código."
           }
         },
         "fr" : {
@@ -12175,7 +12175,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No por el momento: skins de las cartas no son compartidos con Family Sharing."
+            "value" : "Por ahora no: los skins de cartas no se comparten con En familia."
           }
         },
         "fr" : {
@@ -12319,7 +12319,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ahora en tus cartas dónde sea que juegues."
+            "value" : "Ahora en tus cartas dondequiera que juegues."
           }
         },
         "fr" : {
@@ -12463,7 +12463,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Juego en linea"
+            "value" : "Partida en línea"
           }
         },
         "fr" : {
@@ -12535,7 +12535,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Juegos online en contra otros jugadores ranked cuentan hacia el ranking mundial y de tu país."
+            "value" : "Las partidas en línea contra otros jugadores con sesión iniciada cuentan para la clasificación mundial y la de tu país."
           }
         },
         "fr" : {
@@ -12607,7 +12607,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Solo si tu dispositivo ya tiene ese skin. Sino ellos mirarán las cartas clásicas."
+            "value" : "Solo si su dispositivo ya tiene ese skin. Si no, verá las cartas clásicas."
           }
         },
         "fr" : {
@@ -12679,7 +12679,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Abre Ayuda, después Pedir un Reembolso y elige la compra. Apple se encarga de la solicitud y te manda un email."
+            "value" : "Abre Ayuda, luego Solicitar un reembolso, y elige la compra. Apple gestiona la solicitud y te envía un correo al respecto."
           }
         },
         "fr" : {
@@ -12895,7 +12895,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Oponente pensando…"
+            "value" : "El oponente está pensando…"
           }
         },
         "fr" : {
@@ -13183,7 +13183,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Passcode"
+            "value" : "Código"
           }
         },
         "fr" : {
@@ -13255,7 +13255,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Passcode %@"
+            "value" : "Código %@"
           }
         },
         "fr" : {
@@ -13399,7 +13399,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Montaña de estiércol"
+            "value" : "Caca"
           }
         },
         "fr" : {
@@ -13543,7 +13543,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Jugar localmente"
+            "value" : "Jugar en local"
           }
         },
         "fr" : {
@@ -13615,7 +13615,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Jugar en Internet"
+            "value" : "Jugar en línea"
           }
         },
         "fr" : {
@@ -13837,7 +13837,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Preview"
+            "value" : "Vista previa"
           }
         },
         "fr" : {
@@ -13979,7 +13979,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Precios están en la moneda de tu App Store. Compras están ligadas a la cuenta de Apple y aparece en todos tus dispositivos. Adquirido en otro dispositivo? Click en Restaurar."
+            "value" : "Los precios están en la moneda de tu App Store. Las compras están vinculadas a tu cuenta de Apple y aparecen en todos tus dispositivos. ¿Compraste en otro dispositivo? Toca Restaurar."
           }
         },
         "fr" : {
@@ -14051,7 +14051,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Precios provienen de la App Store en la moneda de la App Store de tu país o región"
+            "value" : "Los precios provienen de la App Store, en la moneda del país o región de tu App Store."
           }
         },
         "fr" : {
@@ -14339,7 +14339,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Adquirido en %@"
+            "value" : "Comprado el %@"
           }
         },
         "fr" : {
@@ -14483,7 +14483,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Compras están deshabilitadas en este dispositivos (Screen Time o control parental). Aún puedes usar skins previamente adquiridos."
+            "value" : "Las compras están desactivadas en este dispositivo (Tiempo en pantalla o controles parentales). Aún puedes usar los skins que ya tienes."
           }
         },
         "fr" : {
@@ -14914,7 +14914,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Subir a monto"
+            "value" : "Cantidad a subir"
           }
         },
         "fr" : {
@@ -14986,7 +14986,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rank %lld"
+            "value" : "Puesto %lld"
           }
         },
         "fr" : {
@@ -15058,7 +15058,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ranked"
+            "value" : "Clasificatoria"
           }
         },
         "fr" : {
@@ -15130,7 +15130,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Jugadores ranked en el mundo y tu país"
+            "value" : "Jugadores clasificados en el mundo y en tu país"
           }
         },
         "fr" : {
@@ -15202,7 +15202,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rankings para"
+            "value" : "Clasificación de"
           }
         },
         "fr" : {
@@ -15274,7 +15274,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Calificación %@"
+            "value" : "puntuación %@"
           }
         },
         "fr" : {
@@ -15352,7 +15352,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Calificación %1$@ (%2$@)"
+            "value" : "Puntuación %1$@ (%2$@)"
           }
         },
         "fr" : {
@@ -15496,7 +15496,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Juegos recientes"
+            "value" : "Partidas recientes"
           }
         },
         "fr" : {
@@ -15784,7 +15784,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Solicita un reembolso"
+            "value" : "Solicitar un reembolso"
           }
         },
         "fr" : {
@@ -15854,7 +15854,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Solicita un reembolso por apps o contenido adquirido de Apple"
+            "value" : "Solicita un reembolso por apps o contenido que compraste a Apple"
           }
         },
         "fr" : {
@@ -16070,7 +16070,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Restaurar Compras"
+            "value" : "Restaurar compras"
           }
         },
         "fr" : {
@@ -16430,7 +16430,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Buscando por un juego…"
+            "value" : "Buscando una partida…"
           }
         },
         "fr" : {
@@ -16502,7 +16502,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Envia una reacción"
+            "value" : "Enviar una reacción"
           }
         },
         "fr" : {
@@ -16574,7 +16574,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Comparte un código de sala con amigos en dónde sea"
+            "value" : "Comparte un código de sala con amigos estén donde estén"
           }
         },
         "fr" : {
@@ -16646,7 +16646,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Comparte un código con tus oponentes"
+            "value" : "Comparte este código con tus oponentes"
           }
         },
         "fr" : {
@@ -16718,7 +16718,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mostrar emojis que los otros jugadores ven "
+            "value" : "Muestra emojis que los demás jugadores ven junto a tu asiento"
           }
         },
         "fr" : {
@@ -16790,7 +16790,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mostrar cada carta del set"
+            "value" : "Muestra todas las cartas del set"
           }
         },
         "fr" : {
@@ -16862,7 +16862,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Inicia sesión con Apple no pudo completarse. Inténtalo de nuevo."
+            "value" : "No se completó el inicio de sesión con Apple. Inténtalo de nuevo."
           }
         },
         "fr" : {
@@ -16934,7 +16934,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Inicia sesión con Apple desde tu perfil para jugar juegos ranked y aparece aquí."
+            "value" : "Inicia sesión con Apple desde tu perfil para jugar partidas clasificatorias y aparecer aquí."
           }
         },
         "fr" : {
@@ -17006,7 +17006,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sal de la sesión de juego ranked"
+            "value" : "Cerrar sesión de las partidas clasificatorias"
           }
         },
         "fr" : {
@@ -17365,7 +17365,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Empezar juego"
+            "value" : "Empezar partida"
           }
         },
         "fr" : {
@@ -17437,7 +17437,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Comienza cuando quieras. Jugadores aún conectando obtienen unos pocos segundos para sentarse."
+            "value" : "Empieza cuando quieras. Los jugadores que aún se están conectando tienen unos segundos para sentarse."
           }
         },
         "fr" : {
@@ -17653,7 +17653,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Enviar Comentarios"
+            "value" : "Enviar comentarios"
           }
         },
         "fr" : {
@@ -17797,7 +17797,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "La baraja clasica es gratis y disponible donde sea."
+            "value" : "La baraja clásica es gratis y está siempre disponible."
           }
         },
         "fr" : {
@@ -17869,7 +17869,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "La solicitud de reembolso no pudo abrir. También puedes solicitar un reembolso en reportaproblem.apple.com."
+            "value" : "No se pudo abrir la solicitud de reembolso. También puedes solicitarlo en reportaproblem.apple.com."
           }
         },
         "fr" : {
@@ -17941,7 +17941,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "El servidor contesto con error (%lld)."
+            "value" : "El servidor respondió con un error (%lld)."
           }
         },
         "fr" : {
@@ -18013,7 +18013,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "El servidor no pudo verificar el inicio sesión de Apple. Vuelve a intentar."
+            "value" : "El servidor no pudo verificar tu inicio de sesión con Apple. Inténtalo de nuevo."
           }
         },
         "fr" : {
@@ -18227,7 +18227,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Este servidor no ofrece juego ranked."
+            "value" : "Este servidor no ofrece partidas clasificatorias."
           }
         },
         "fr" : {
@@ -18299,7 +18299,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Para ver una solicitud , visita reportaproblem.apple.com."
+            "value" : "Para consultar una solicitud, visita reportaproblem.apple.com."
           }
         },
         "fr" : {
@@ -18371,7 +18371,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Intenta de nuevo"
+            "value" : "Reintentar"
           }
         },
         "fr" : {
@@ -18515,7 +18515,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Respuesta inesperado del server."
+            "value" : "Respuesta inesperada del servidor."
           }
         },
         "fr" : {
@@ -18863,7 +18863,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hasta %lld jugadores. Empieza el juego cuando estes listo."
+            "value" : "Hasta %lld jugadores. Empieza la partida cuando estés listo."
           }
         },
         "fr" : {
@@ -18951,7 +18951,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cara bocabajo"
+            "value" : "Cara al revés"
           }
         },
         "fr" : {
@@ -19165,7 +19165,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Usar por cada carta"
+            "value" : "Usar en todas las cartas"
           }
         },
         "fr" : {
@@ -19237,7 +19237,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Usar cartas clasicas"
+            "value" : "Usar la carta clásica"
           }
         },
         "fr" : {
@@ -19453,7 +19453,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Esperando por un oponente…"
+            "value" : "Esperando un oponente…"
           }
         },
         "fr" : {
@@ -19525,7 +19525,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Esperando por aprobación "
+            "value" : "Esperando aprobación"
           }
         },
         "fr" : {
@@ -19669,7 +19669,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Esperando por jugadores…"
+            "value" : "Esperando jugadores…"
           }
         },
         "fr" : {
@@ -19741,7 +19741,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Esperando por el host…"
+            "value" : "Esperando a que el anfitrión empiece…"
           }
         },
         "fr" : {
@@ -19813,7 +19813,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Qué obtengo cuándo compro un set?"
+            "value" : "¿Qué obtengo al comprar un set?"
           }
         },
         "fr" : {
@@ -19885,7 +19885,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Set entero"
+            "value" : "Set completo"
           }
         },
         "fr" : {
@@ -19957,7 +19957,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Por qué el precio está en mi moneda?"
+            "value" : "¿Por qué el precio está en mi moneda?"
           }
         },
         "fr" : {
@@ -20029,7 +20029,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Con personas en el mismo cuarto, usando Wi-Fi o Bluetooth"
+            "value" : "Con personas en la misma sala, por Wi-Fi o Bluetooth"
           }
         },
         "fr" : {
@@ -20245,7 +20245,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Escribenos"
+            "value" : "Escríbenos"
           }
         },
         "fr" : {
@@ -20317,7 +20317,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tu"
+            "value" : "Tú"
           }
         },
         "fr" : {
@@ -20461,7 +20461,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Puedes reaccionar con emoji en el próximo turno."
+            "value" : "Puedes volver a reaccionar en tu próximo turno"
           }
         },
         "fr" : {
@@ -20533,7 +20533,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Terminas %@"
+            "value" : "Quedaste en el puesto %@."
           }
         },
         "fr" : {
@@ -20605,7 +20605,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Comparte el código. El server arbitra el juego."
+            "value" : "Recibes un código de 6 caracteres para compartir. El servidor arbitra la partida."
           }
         },
         "fr" : {
@@ -20677,7 +20677,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Perdiste el juego."
+            "value" : "Perdiste la partida."
           }
         },
         "fr" : {
@@ -20749,7 +20749,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Perdiste tu asiento debido a que tardaste mucho."
+            "value" : "Estuviste ausente demasiado tiempo y perdiste tu asiento."
           }
         },
         "fr" : {
@@ -20899,7 +20899,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ganaste el juego"
+            "value" : "Ganaste la partida"
           }
         },
         "fr" : {
@@ -20971,7 +20971,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ganaste el juego!"
+            "value" : "¡Ganaste la partida!"
           }
         },
         "fr" : {
@@ -21115,7 +21115,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tu dispositivo arbitra el juego y muestra un passcode"
+            "value" : "Tu dispositivo arbitra la partida y muestra un código"
           }
         },
         "fr" : {
@@ -21187,7 +21187,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tu perfil e historial son guardados en este dispositivo. Inicia sesión en iCloud en Configuración para sincronizarlos, inicia sesión con Apple para jugar juegos en ranked."
+            "value" : "Tu perfil e historial se guardan en este dispositivo. Inicia sesión en iCloud en Configuración para sincronizarlos e inicia sesión con Apple para jugar partidas clasificatorias."
           }
         },
         "fr" : {
@@ -21259,7 +21259,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tu perfil e historial sincronizado con iCloud. Inicia sesión con Apple para jugar ranked y aparecer en el leaderboard."
+            "value" : "Tu perfil e historial se sincronizan con iCloud. Inicia sesión con Apple para jugar partidas clasificatorias y aparecer en la clasificación."
           }
         },
         "fr" : {
@@ -21331,7 +21331,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tu mesa es visible alrededor como “%@”. Comparte a tus oponentes el passcode."
+            "value" : "Tu mesa es visible cerca como “%@”. Dile el código a tus oponentes."
           }
         },
         "fr" : {
