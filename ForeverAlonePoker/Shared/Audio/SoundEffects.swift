@@ -53,7 +53,11 @@ final class SoundEffects {
         guard volume > 0, let player = player(for: effect) else { return }
         player.volume = volume
         player.currentTime = 0
-        player.play()
+        Task {
+            await AudioSession.shared.start(player)
+            // Muted while it was starting.
+            if volume == 0 { player.stop() }
+        }
     }
 
     private func player(for effect: SoundEffect) -> AVAudioPlayer? {
@@ -63,8 +67,8 @@ final class SoundEffects {
             return nil
         }
         do {
+            // Prepared off the main thread when it first plays.
             let player = try AVAudioPlayer(contentsOf: url)
-            player.prepareToPlay()
             players[effect] = player
             return player
         } catch {

@@ -116,12 +116,11 @@ final class AVMusicOutput: MusicOutput {
             let player = try AVAudioPlayer(contentsOf: url)
             player.numberOfLoops = -1
             player.volume = volume
-            player.prepareToPlay()
             self.player = player
             AudioSession.shared.whenReady { [weak self] in
                 // Paused or replaced while the session was activating.
                 guard let self, self.player === player, !self.isPaused else { return }
-                player.play()
+                self.start(player)
             }
         } catch {
             logger.error("Could not load music \(track.rawValue, privacy: .public): \(error.localizedDescription, privacy: .public)")
@@ -138,11 +137,24 @@ final class AVMusicOutput: MusicOutput {
         guard let player else { return }
         AudioSession.shared.whenReady { [weak self] in
             guard let self, self.player === player, !self.isPaused else { return }
-            player.play()
+            self.start(player)
         }
     }
 
     func setVolume(_ volume: Float) {
         player?.volume = volume
+    }
+
+    /// Starts `player` off the main thread (see `AudioSession.start`).
+    private func start(_ player: AVAudioPlayer) {
+        Task { [weak self] in
+            await AudioSession.shared.start(player)
+            // Replaced or paused while it was starting.
+            guard let self, self.player === player else {
+                player.stop()
+                return
+            }
+            if self.isPaused { player.pause() }
+        }
     }
 }
