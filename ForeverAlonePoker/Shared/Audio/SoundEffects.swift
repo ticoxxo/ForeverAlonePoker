@@ -12,6 +12,7 @@ nonisolated enum SoundEffect: String, CaseIterable {
     case winningPot
     case lostSound
     case winSound
+    case foldHand
 
     var fileExtension: String {
         switch self {
@@ -27,8 +28,14 @@ nonisolated enum SoundEffect: String, CaseIterable {
 final class SoundEffects {
     static let shared = SoundEffects()
 
+    private enum SessionState {
+        case idle, activating, ready
+    }
+
     private var players: [SoundEffect: AVAudioPlayer] = [:]
-    private var isSessionConfigured = false
+    private var sessionState = SessionState.idle
+    /// Effects requested while the session is still activating.
+    private var pending: [SoundEffect] = []
     private let logger = Logger(subsystem: "Ticoxxo.ForeverAlonePoker", category: "Audio")
 
     private init() {}
@@ -36,7 +43,28 @@ final class SoundEffects {
     /// Plays `effect` from the start, cutting off a previous play of the
     /// same effect. Missing or unreadable files are logged and ignored.
     func play(_ effect: SoundEffect) {
-        configureSessionIfNeeded()
+        switch sessionState {
+        case .ready:
+            start(effect)
+        case .activating:
+            pending.append(effect)
+        case .idle:
+            // Activating the session blocks, and `AVAudioPlayer.play()` would
+            // do it implicitly on the main thread. Activate it off the main
+            // actor once, then play whatever was requested meanwhile.
+            sessionState = .activating
+            pending.append(effect)
+            Task {
+                await Self.activateSession(logger: logger)
+                sessionState = .ready
+                let effects = pending
+                pending.removeAll()
+                effects.forEach(start)
+            }
+        }
+    }
+
+    private func start(_ effect: SoundEffect) {
         guard let player = player(for: effect) else { return }
         player.currentTime = 0
         player.play()
@@ -59,11 +87,13 @@ final class SoundEffects {
         }
     }
 
-    private func configureSessionIfNeeded() {
-        guard !isSessionConfigured else { return }
-        isSessionConfigured = true
+    /// Runs on the global executor (nonisolated async), keeping the blocking
+    /// session calls off the main thread.
+    private nonisolated static func activateSession(logger: Logger) async {
+        let session = AVAudioSession.sharedInstance()
         do {
-            try AVAudioSession.sharedInstance().setCategory(.ambient)
+            try session.setCategory(.ambient)
+            try session.setActive(true)
         } catch {
             logger.error("Could not set the audio session: \(error.localizedDescription, privacy: .public)")
         }

@@ -44,7 +44,9 @@ struct TableSoundsActionTests {
         #expect(TableSounds.effect(for: .raise(to: 40)) == .placingPokerChips)
     }
 
-    @Test("Fold and Call stay silent")
+    /// A fold is heard from the table update instead, so everyone's folds
+    /// sound alike and the player's own never plays twice.
+    @Test("the Fold and Call buttons play nothing themselves")
     func silent() {
         #expect(TableSounds.effect(for: .fold) == nil)
         #expect(TableSounds.effect(for: .call) == nil)
@@ -113,13 +115,28 @@ struct TableSoundsUpdateTests {
         #expect(TableSounds.effects(from: nil, to: room.view(for: .one)).isEmpty)
     }
 
-    @Test("winning a hand collects the pot; losing it is silent")
+    @Test("both sides hear a fold; only the winner collects the pot")
     func handWon() {
         var room = dealtRoom()
         let before = (room.view(for: .one), room.view(for: .two))
         act(.one, .fold, in: &room)
-        #expect(TableSounds.effects(from: before.1, to: room.view(for: .two)) == [.winningPot])
-        #expect(TableSounds.effects(from: before.0, to: room.view(for: .one)).isEmpty)
+        #expect(TableSounds.effects(from: before.1, to: room.view(for: .two)) == [.foldHand, .winningPot])
+        #expect(TableSounds.effects(from: before.0, to: room.view(for: .one)) == [.foldHand])
+    }
+
+    @Test("a fold that leaves the hand going is heard by everyone")
+    func foldMidHand() throws {
+        var room = MatchRoomBuilder().maxPlayers(3).build()
+        _ = room.seatThreeAndDeal()
+        let actor = try #require(room.view(for: .one).actor)
+        let connections: [Seat: ConnectionID] = [
+            .one: TestPlayers.aliceConnection, .two: TestPlayers.bobConnection, .three: TestPlayers.carolConnection,
+        ]
+        let before = Seat.all(count: 3).map { room.view(for: $0) }
+        _ = room.handle(.act(.fold), from: try #require(connections[actor]))
+        for view in before {
+            #expect(TableSounds.effects(from: view, to: room.view(for: view.seat)) == [.foldHand])
+        }
     }
 
     @Test("the match's last hand plays only the match result")

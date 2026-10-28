@@ -18,6 +18,7 @@ The app had no audio. Key moments (a new card on the board, a bet, a pot won, th
 | --- | --- | --- |
 | All in pressed | `allInChips` | `effect(for:)`, from `act(_:)` |
 | Check, Bet or Raise pressed | `placingPokerChips` | `effect(for:)`, from `act(_:)` |
+| Anyone folds, the player included | `foldHand` | `effects(from:to:)` |
 | The flop (first board cards) | `cardsBeingDealt` | `effects(from:to:)` |
 | The turn or the river | `placingNewCard` | `effects(from:to:)` |
 | First deal of a match or a rematch | `shufflingCards` | `effects(from:to:)` |
@@ -29,7 +30,8 @@ The app had no audio. Key moments (a new card on the board, a bet, a pot won, th
 - A new match is hand number 1 in play, which also covers rematches, because hand numbers restart.
 - If there is no previous view (the table just opened, or a rejoin), only a fresh deal with an empty board shuffles, so nothing that already happened is replayed.
 - On the match's last hand, the match result replaces the pot sound.
-- Fold, Call and a chopped pot are silent.
+- A fold is heard from the update, not the Fold button, so every seat hears every fold the same way and the player's own fold never plays twice.
+- Call and a chopped pot are silent.
 
 ## Consequences
 

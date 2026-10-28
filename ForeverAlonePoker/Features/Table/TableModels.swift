@@ -225,7 +225,8 @@ nonisolated enum DealTiming {
 /// Which sound effects the table plays (tdr/0025). Sounds follow what the
 /// player sees (`PlayerView`), never the rules (tdr/0003).
 nonisolated enum TableSounds {
-    /// The sound for one of the player's own action buttons.
+    /// The sound for one of the player's own action buttons. Fold plays
+    /// nothing here: folds are heard from `effects(from:to:)` for everyone.
     static func effect(for action: PlayerAction) -> SoundEffect? {
         switch action {
         case .allIn: .allInChips
@@ -247,8 +248,16 @@ nonisolated enum TableSounds {
         }
         guard let old else { return effects }
 
-        if old.handNumber == new.handNumber, new.community.count > old.community.count {
-            effects.append(old.community.isEmpty ? .cardsBeingDealt : .placingNewCard)
+        if old.handNumber == new.handNumber {
+            // Anyone's fold, the player's own included, is heard from here
+            // so it sounds the same for every seat.
+            let foldedBefore = Set(([old.me] + old.players).filter(\.hasFolded).map(\.seat))
+            if ([new.me] + new.players).contains(where: { $0.hasFolded && !foldedBefore.contains($0.seat) }) {
+                effects.append(.foldHand)
+            }
+            if new.community.count > old.community.count {
+                effects.append(old.community.isEmpty ? .cardsBeingDealt : .placingNewCard)
+            }
         }
 
         if case .finished(let winner) = new.phase {
