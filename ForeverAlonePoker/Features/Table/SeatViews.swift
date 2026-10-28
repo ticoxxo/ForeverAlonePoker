@@ -486,5 +486,10 @@ struct BoardView: View {
                 .accessibilityLabel(Text("Board"))
                 .accessibilityValue(community.isEmpty ? Text("No cards yet") : Text(community.spokenList))
         }
+        .onChange(of: community.count) { previousCount, newCount in
+            if BoardSound.playsOnDeal(previousCount: previousCount, newCount: newCount) {
+                SoundEffects.shared.play(.placingNewCard)
+            }
+        }
     }
 }

@@ -30,6 +30,30 @@ struct DealTimingTests {
     }
 }
 
+@Suite("BoardSound")
+struct BoardSoundTests {
+    @Test("the flop lands silently")
+    func flopIsSilent() {
+        #expect(!BoardSound.playsOnDeal(previousCount: 0, newCount: 3))
+    }
+
+    @Test("the turn and the river play the new-card sound")
+    func turnAndRiver() {
+        #expect(BoardSound.playsOnDeal(previousCount: 3, newCount: 4))
+        #expect(BoardSound.playsOnDeal(previousCount: 4, newCount: 5))
+    }
+
+    @Test("clearing the board for a new hand is silent")
+    func newHand() {
+        #expect(!BoardSound.playsOnDeal(previousCount: 5, newCount: 0))
+    }
+
+    @Test("joining a hand already past the flop is silent")
+    func rejoin() {
+        #expect(!BoardSound.playsOnDeal(previousCount: 0, newCount: 4))
+    }
+}
+
 @Suite("TableArrangement action dock")
 struct ActionDockTests {
     private let phoneLandscape = CGSize(width: 852, height: 393)

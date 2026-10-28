@@ -222,6 +222,15 @@ nonisolated enum DealTiming {
     }
 }
 
+/// When the board plays the new-card sound: only for a card added after the
+/// flop is already showing (the turn and the river). The flop, a cleared
+/// board and a rejoin that lands mid-hand stay silent.
+nonisolated enum BoardSound {
+    static func playsOnDeal(previousCount: Int, newCount: Int) -> Bool {
+        previousCount >= 3 && newCount > previousCount
+    }
+}
+
 /// Where the Fold / Check / Raise actions live (tdr/0019), decided from the
 /// size classes the system reports rather than the device or orientation.
 nonisolated enum TableActionPlacement: Equatable {
