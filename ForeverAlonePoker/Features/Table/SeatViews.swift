@@ -485,6 +485,5 @@ struct BoardView: View {
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(Text("Board"))
                 .accessibilityValue(community.isEmpty ? Text("No cards yet") : Text(community.spokenList))
-        }
-    }
+        }    }
 }

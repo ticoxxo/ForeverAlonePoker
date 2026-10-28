@@ -11,6 +11,10 @@ struct ForeverAlonePokerApp: App {
     private let isCloudBacked: Bool
     private let identity: IdentityStore
     private let skins: SkinStore
+    /// Music and sound effects settings, and the music itself (tdr/0026).
+    private let audio: AudioSettings
+    private let music: MusicPlayer
+    @Environment(\.scenePhase) private var scenePhase
 
     init() {
         // Fall back to an in-memory store rather than crash on a corrupt
@@ -34,6 +38,9 @@ struct ForeverAlonePokerApp: App {
             purchases: StoreKitPurchaseService(),
             accountToken: identity.profile.localID
         )
+        audio = AudioSettings(defaults: .standard)
+        music = MusicPlayer(settings: audio, output: AVMusicOutput())
+        SoundEffects.shared.settings = audio
     }
 
     var body: some Scene {
@@ -41,6 +48,13 @@ struct ForeverAlonePokerApp: App {
             ContentView()
                 .environment(identity)
                 .environment(skins)
+                .environment(audio)
+                // Music plays only while the app is in front: it pauses when
+                // the app goes inactive or to the background and resumes on
+                // return.
+                .onChange(of: scenePhase, initial: true) { _, phase in
+                    music.isAppActive = phase == .active
+                }
                 .task { await reportCloudTier() }
                 .task { await followRemoteChanges() }
                 // Transaction and storefront listeners run for the app's

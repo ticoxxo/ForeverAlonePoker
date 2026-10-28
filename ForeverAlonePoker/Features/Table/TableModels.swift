@@ -222,6 +222,58 @@ nonisolated enum DealTiming {
     }
 }
 
+/// Which sound effects the table plays (tdr/0025). Sounds follow what the
+/// player sees (`PlayerView`), never the rules (tdr/0003).
+nonisolated enum TableSounds {
+    /// The sound for one of the player's own action buttons. Fold plays
+    /// nothing here: folds are heard from `effects(from:to:)` for everyone.
+    static func effect(for action: PlayerAction) -> SoundEffect? {
+        switch action {
+        case .allIn: .allInChips
+        case .check, .bet, .raise: .placingPokerChips
+        case .fold, .call: nil
+        }
+    }
+
+    /// The sounds for the table moving from `old` to `new`. With no `old`
+    /// (the table just opened, or a rejoin) only a fresh match shuffles, so
+    /// landing mid-hand never replays what already happened.
+    static func effects(from old: PlayerView?, to new: PlayerView) -> [SoundEffect] {
+        var effects: [SoundEffect] = []
+        // Hand numbers restart at 1 for every match, rematches included.
+        let wasInFirstHand = old?.phase == .inHand && old?.handNumber == 1
+        let isFreshDeal = old != nil || new.community.isEmpty
+        if new.phase == .inHand, new.handNumber == 1, !wasInFirstHand, isFreshDeal {
+            effects.append(.shufflingCards)
+        }
+        guard let old else { return effects }
+
+        if old.handNumber == new.handNumber {
+            // Anyone's fold, the player's own included, is heard from here
+            // so it sounds the same for every seat.
+            let foldedBefore = Set(([old.me] + old.players).filter(\.hasFolded).map(\.seat))
+            if ([new.me] + new.players).contains(where: { $0.hasFolded && !foldedBefore.contains($0.seat) }) {
+                effects.append(.foldHand)
+            }
+            if new.community.count > old.community.count {
+                effects.append(old.community.isEmpty ? .cardsBeingDealt : .placingNewCard)
+            }
+        }
+
+        if case .finished(let winner) = new.phase {
+            if case .finished = old.phase {} else {
+                // The match result replaces the last hand's pot sound.
+                effects.append(winner == new.seat ? .winSound : .lostSound)
+            }
+        } else if let result = new.lastResult,
+                  old.lastResult == nil || old.handNumber != new.handNumber,
+                  HandOutcome(result: result, seat: new.seat)?.kind == .youWon {
+            effects.append(.winningPot)
+        }
+        return effects
+    }
+}
+
 /// Where the Fold / Check / Raise actions live (tdr/0019), decided from the
 /// size classes the system reports rather than the device or orientation.
 nonisolated enum TableActionPlacement: Equatable {

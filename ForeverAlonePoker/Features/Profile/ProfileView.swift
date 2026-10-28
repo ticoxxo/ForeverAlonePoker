@@ -2,10 +2,11 @@ import AuthenticationServices
 import PhotosUI
 import SwiftUI
 
-/// Edit the player: name, country and picture; opt into ranked play; browse
-/// match history.
+/// Edit the player: name, country and picture; sound; opt into ranked play;
+/// browse match history.
 struct ProfileView: View {
     @Environment(IdentityStore.self) private var identity
+    @Environment(AudioSettings.self) private var audio
     @Environment(\.colorScheme) private var colorScheme
     @State private var name = ""
     @State private var serverURL = ""
@@ -42,6 +43,8 @@ struct ProfileView: View {
             Section("Country") {
                 CountryPicker(selection: countryBinding)
             }
+
+            soundSections
 
             accountSection
 
@@ -97,6 +100,45 @@ struct ProfileView: View {
                 if let data = try? await selectedPhoto.loadTransferable(type: Data.self) {
                     identity.updateAvatar(AvatarImporter.thumbnailData(from: data))
                 }
+            }
+        }
+    }
+
+    // MARK: - Sound
+
+    /// Music and sound effects, one group each like the folders they play
+    /// from, then Reset (tdr/0026).
+    @ViewBuilder
+    private var soundSections: some View {
+        @Bindable var audio = audio
+        Section {
+            Toggle(isOn: $audio.isMusicOn) {
+                Label("Music", systemImage: "music.note")
+            }
+            VolumeSlider(title: "Music volume", value: $audio.musicVolume)
+                .disabled(!audio.isMusicOn)
+            Picker("Track", selection: $audio.selectedTrack) {
+                ForEach(MusicTrack.allCases) { track in
+                    Text(verbatim: track.title).tag(track)
+                }
+            }
+            .pickerStyle(.menu)
+            .disabled(!audio.isMusicOn)
+        } header: {
+            Text("Sound")
+        }
+
+        Section {
+            Toggle(isOn: $audio.areEffectsOn) {
+                Label("Sound effects", systemImage: "speaker.wave.2")
+            }
+            VolumeSlider(title: "Sound effects volume", value: $audio.effectsVolume)
+                .disabled(!audio.areEffectsOn)
+        }
+
+        Section {
+            Button("Reset settings") {
+                audio.resetToDefaults()
             }
         }
     }
@@ -187,6 +229,26 @@ struct ProfileView: View {
 
     private func commitServerURL() {
         identity.updateServerURL(serverURL)
+    }
+}
+
+/// A 0 to 100 % volume in tenths, quiet speaker to loud speaker.
+private struct VolumeSlider: View {
+    let title: LocalizedStringKey
+    @Binding var value: Float
+
+    var body: some View {
+        Slider(value: $value, in: 0...1, step: 0.1) {
+            Text(title)
+        } minimumValueLabel: {
+            Image(systemName: "speaker.fill")
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+        } maximumValueLabel: {
+            Image(systemName: "speaker.wave.3.fill")
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+        }
     }
 }
 

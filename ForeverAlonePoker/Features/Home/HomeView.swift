@@ -134,6 +134,9 @@ struct HomeView: View {
             .background(Color(.systemGroupedBackground))
             .navigationTitle("ForeverAlonePoker")
             .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    AudioToggleButton()
+                }
                 // The account lives in the navigation bar, where iOS apps
                 // put it, and stays one tap away from every tile.
                 ToolbarItem(placement: .topBarTrailing) {

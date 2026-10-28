@@ -19,7 +19,7 @@ Packages/SkinKit/              Pure skin model: slots, catalog, loadout, resolve
   Sources/SkinKitTestSupport   SkinCatalogBuilder, LoadoutBuilder
 ForeverAlonePoker/             app target (files auto-included)
   App/                         @main entry and routing only
-  Shared/                      Transport, Session, Persistence, Identity, DesignSystem, Skins (store, StoreKit, catalog, downloads, transaction pinning, support contact)
+  Shared/                      Transport, Session, Persistence, Identity, DesignSystem, Audio (music, effects, sound settings), Skins (store, StoreKit, catalog, downloads, transaction pinning, support contact)
   Features/<Name>/             one folder per user-facing feature
 ForeverAlonePokerTests/        Swift Testing; imports PokerCoreTestSupport
 ForeverAlonePokerUITests/      XCTest smoke tests
