@@ -48,3 +48,7 @@ The app had no audio. Key moments (a new card on the board, a bet, a pot won, th
 ## Test strategy
 
 `ForeverAlonePokerTests/Features/Table/TableMotionTests.swift` (`TableSoundsActionTests`, `TableSoundsUpdateTests`) drives a `MatchRoomBuilder` room and checks each row of the table above, plus the silent rejoin and the losing side of a hand. Playback itself is checked by hand on a device with the ring switch on and off.
+
+## Notes
+
+- 2026-10-28: The audio session moved to `AudioSession`, shared with the music, and effects now follow the player's sound settings. See tdr/0026.

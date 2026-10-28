@@ -22,50 +22,36 @@ nonisolated enum SoundEffect: String, CaseIterable {
     }
 }
 
-/// Plays the app's sound effects. Uses the ambient audio session category so
-/// effects mix with the player's music and respect the silent switch.
-/// Players are loaded once per effect and reused.
+/// Plays the app's sound effects through the shared `AudioSession`, at the
+/// player's sound effects volume (tdr/0026). Players are loaded once per
+/// effect and reused.
 final class SoundEffects {
     static let shared = SoundEffects()
 
-    private enum SessionState {
-        case idle, activating, ready
-    }
+    /// The player's sound settings. Without them effects play at full volume.
+    weak var settings: AudioSettings?
 
     private var players: [SoundEffect: AVAudioPlayer] = [:]
-    private var sessionState = SessionState.idle
-    /// Effects requested while the session is still activating.
-    private var pending: [SoundEffect] = []
-    private let logger = Logger(subsystem: "Ticoxxo.ForeverAlonePoker", category: "Audio")
+    private var logger: Logger { AudioSession.shared.logger }
 
     private init() {}
 
     /// Plays `effect` from the start, cutting off a previous play of the
-    /// same effect. Missing or unreadable files are logged and ignored.
+    /// same effect. Nothing plays while sound effects are off. Missing or
+    /// unreadable files are logged and ignored.
     func play(_ effect: SoundEffect) {
-        switch sessionState {
-        case .ready:
-            start(effect)
-        case .activating:
-            pending.append(effect)
-        case .idle:
-            // Activating the session blocks, and `AVAudioPlayer.play()` would
-            // do it implicitly on the main thread. Activate it off the main
-            // actor once, then play whatever was requested meanwhile.
-            sessionState = .activating
-            pending.append(effect)
-            Task {
-                await Self.activateSession(logger: logger)
-                sessionState = .ready
-                let effects = pending
-                pending.removeAll()
-                effects.forEach(start)
-            }
-        }
+        guard volume > 0 else { return }
+        AudioSession.shared.whenReady { [self] in start(effect) }
+    }
+
+    private var volume: Float {
+        settings?.effectiveEffectsVolume ?? 1
     }
 
     private func start(_ effect: SoundEffect) {
-        guard let player = player(for: effect) else { return }
+        // The player may have muted while the session was activating.
+        guard volume > 0, let player = player(for: effect) else { return }
+        player.volume = volume
         player.currentTime = 0
         player.play()
     }
@@ -84,18 +70,6 @@ final class SoundEffects {
         } catch {
             logger.error("Could not load sound \(effect.rawValue, privacy: .public): \(error.localizedDescription, privacy: .public)")
             return nil
-        }
-    }
-
-    /// Runs on the global executor (nonisolated async), keeping the blocking
-    /// session calls off the main thread.
-    private nonisolated static func activateSession(logger: Logger) async {
-        let session = AVAudioSession.sharedInstance()
-        do {
-            try session.setCategory(.ambient)
-            try session.setActive(true)
-        } catch {
-            logger.error("Could not set the audio session: \(error.localizedDescription, privacy: .public)")
         }
     }
 }

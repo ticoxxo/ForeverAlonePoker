@@ -164,6 +164,10 @@ struct TableView: View {
 
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
+        // Sound can be silenced mid-hand without leaving the table.
+        ToolbarItem(placement: .topBarTrailing) {
+            AudioToggleButton()
+        }
         if showsEmotes, view != nil {
             // A secondary action, so it lives in the navigation bar
             // rather than taking room from the table (HIG, toolbars).
@@ -665,6 +669,7 @@ private struct OutcomeText: View {
             .navigationTitle("Practice")
             .navigationBarTitleDisplayMode(.inline)
     }
+    .environment(PreviewAudio.settings)
 }
 
 #Preview("Landscape", traits: .landscapeLeft) {
@@ -673,5 +678,6 @@ private struct OutcomeText: View {
             .navigationTitle("Practice")
             .navigationBarTitleDisplayMode(.inline)
     }
+    .environment(PreviewAudio.settings)
 }
 #endif

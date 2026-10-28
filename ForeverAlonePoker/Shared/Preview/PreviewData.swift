@@ -181,15 +181,22 @@ enum PreviewSkins {
 }
 
 extension View {
-    /// Injects a preview identity and skin store and applies the player's
+    /// Injects a preview identity, skin store and sound settings and applies the player's
     /// card skin.
     func previewEnvironment(
         identity: IdentityStore = PreviewIdentity.store,
-        skins: SkinStore = PreviewSkins.store
+        skins: SkinStore = PreviewSkins.store,
+        audio: AudioSettings = PreviewAudio.settings
     ) -> some View {
         environment(\.cardSkin, skins.myCardSkin)
             .environment(identity)
             .environment(skins)
+            .environment(audio)
     }
+}
+
+enum PreviewAudio {
+    /// Kept apart from the app's own defaults so previews never change them.
+    static let settings = AudioSettings(defaults: UserDefaults(suiteName: "Preview.Audio") ?? .standard)
 }
 #endif
