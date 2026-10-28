@@ -2,11 +2,23 @@ import AVFoundation
 import os
 
 /// A short sound bundled with the app. The raw value is the file name in
-/// `Shared/Audio`, without the extension.
-enum SoundEffect: String, CaseIterable {
+/// `Shared/Audio/SoundEffects`, without the extension.
+nonisolated enum SoundEffect: String, CaseIterable {
     case placingNewCard
+    case allInChips
+    case placingPokerChips
+    case cardsBeingDealt
+    case shufflingCards
+    case winningPot
+    case lostSound
+    case winSound
 
-    var fileExtension: String { "mp3" }
+    var fileExtension: String {
+        switch self {
+        case .placingNewCard: "mp3"
+        default: "m4a"
+        }
+    }
 }
 
 /// Plays the app's sound effects. Uses the ambient audio session category so

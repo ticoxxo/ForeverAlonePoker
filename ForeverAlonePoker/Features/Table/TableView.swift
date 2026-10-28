@@ -87,6 +87,15 @@ struct TableView: View {
         .environment(\.dealerButtonNamespace, dealerButton)
         // The dealer button moves on at each new hand.
         .motion(Theme.Motion.layout, value: view?.button)
+        // The initial call (old equals new) counts as the table just opening,
+        // so a match dealt before the table appeared still shuffles.
+        .onChange(of: view, initial: true) { oldView, newView in
+            guard let newView else { return }
+            let previous = oldView == newView ? nil : oldView
+            for effect in TableSounds.effects(from: previous, to: newView) {
+                SoundEffects.shared.play(effect)
+            }
+        }
         .onChange(of: status) { _, newStatus in
             announce(newStatus)
         }
@@ -185,6 +194,9 @@ struct TableView: View {
     }
 
     private func act(_ action: PlayerAction) {
+        if let effect = TableSounds.effect(for: action) {
+            SoundEffects.shared.play(effect)
+        }
         Task { await client.act(action) }
     }
 

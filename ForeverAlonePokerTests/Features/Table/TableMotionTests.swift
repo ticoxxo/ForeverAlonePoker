@@ -30,27 +30,109 @@ struct DealTimingTests {
     }
 }
 
-@Suite("BoardSound")
-struct BoardSoundTests {
-    @Test("the flop lands silently")
-    func flopIsSilent() {
-        #expect(!BoardSound.playsOnDeal(previousCount: 0, newCount: 3))
+@Suite("TableSounds actions")
+struct TableSoundsActionTests {
+    @Test("All in pushes the whole stack")
+    func allIn() {
+        #expect(TableSounds.effect(for: .allIn) == .allInChips)
     }
 
-    @Test("the turn and the river play the new-card sound")
-    func turnAndRiver() {
-        #expect(BoardSound.playsOnDeal(previousCount: 3, newCount: 4))
-        #expect(BoardSound.playsOnDeal(previousCount: 4, newCount: 5))
+    @Test("Check, Bet and Raise place chips")
+    func chips() {
+        #expect(TableSounds.effect(for: .check) == .placingPokerChips)
+        #expect(TableSounds.effect(for: .bet(20)) == .placingPokerChips)
+        #expect(TableSounds.effect(for: .raise(to: 40)) == .placingPokerChips)
     }
 
-    @Test("clearing the board for a new hand is silent")
-    func newHand() {
-        #expect(!BoardSound.playsOnDeal(previousCount: 5, newCount: 0))
+    @Test("Fold and Call stay silent")
+    func silent() {
+        #expect(TableSounds.effect(for: .fold) == nil)
+        #expect(TableSounds.effect(for: .call) == nil)
+    }
+}
+
+@Suite("TableSounds table changes")
+struct TableSoundsUpdateTests {
+    private func act(_ seat: Seat, _ action: PlayerAction, in room: inout MatchRoom) {
+        let connection = seat == .one ? TestPlayers.aliceConnection : TestPlayers.bobConnection
+        _ = room.handle(.act(action), from: connection)
     }
 
-    @Test("joining a hand already past the flop is silent")
+    /// Heads-up, dealt; Alice is on the button and acts first.
+    private func dealtRoom() -> MatchRoom {
+        var room = MatchRoomBuilder().build()
+        room.seatAliceAndBobAndDeal()
+        return room
+    }
+
+    @Test("the first deal of a match shuffles")
+    func firstDeal() {
+        var room = MatchRoomBuilder().build()
+        _ = room.handle(.join(TestPlayers.alice), from: TestPlayers.aliceConnection)
+        let lobby = room.view(for: .one)
+        _ = room.handle(.join(TestPlayers.bob), from: TestPlayers.bobConnection)
+        #expect(TableSounds.effects(from: lobby, to: room.view(for: .one)) == [.shufflingCards])
+    }
+
+    @Test("a rematch shuffles")
+    func rematch() {
+        var room = dealtRoom()
+        act(.one, .allIn, in: &room)
+        act(.two, .call, in: &room)
+        let finished = room.view(for: .one)
+        _ = room.handle(.ready, from: TestPlayers.aliceConnection)
+        _ = room.handle(.ready, from: TestPlayers.bobConnection)
+        #expect(TableSounds.effects(from: finished, to: room.view(for: .one)) == [.shufflingCards])
+    }
+
+    @Test("the flop is dealt")
+    func flop() {
+        var room = dealtRoom()
+        act(.one, .call, in: &room)
+        let preflop = room.view(for: .one)
+        act(.two, .check, in: &room)
+        #expect(TableSounds.effects(from: preflop, to: room.view(for: .one)) == [.cardsBeingDealt])
+    }
+
+    @Test("the turn places a new card")
+    func turn() {
+        var room = dealtRoom()
+        act(.one, .call, in: &room)
+        act(.two, .check, in: &room)
+        act(.two, .check, in: &room)
+        let flop = room.view(for: .one)
+        act(.one, .check, in: &room)
+        #expect(TableSounds.effects(from: flop, to: room.view(for: .one)) == [.placingNewCard])
+    }
+
+    @Test("opening a table mid-hand is silent")
     func rejoin() {
-        #expect(!BoardSound.playsOnDeal(previousCount: 0, newCount: 4))
+        var room = dealtRoom()
+        act(.one, .call, in: &room)
+        act(.two, .check, in: &room)
+        #expect(TableSounds.effects(from: nil, to: room.view(for: .one)).isEmpty)
+    }
+
+    @Test("winning a hand collects the pot; losing it is silent")
+    func handWon() {
+        var room = dealtRoom()
+        let before = (room.view(for: .one), room.view(for: .two))
+        act(.one, .fold, in: &room)
+        #expect(TableSounds.effects(from: before.1, to: room.view(for: .two)) == [.winningPot])
+        #expect(TableSounds.effects(from: before.0, to: room.view(for: .one)).isEmpty)
+    }
+
+    @Test("the match's last hand plays only the match result")
+    func matchOver() {
+        // Default deck: Bob's queens beat Alice's ace-king on a dry board.
+        var room = dealtRoom()
+        act(.one, .allIn, in: &room)
+        let before = (room.view(for: .one), room.view(for: .two))
+        act(.two, .call, in: &room)
+        let alice = TableSounds.effects(from: before.0, to: room.view(for: .one))
+        let bob = TableSounds.effects(from: before.1, to: room.view(for: .two))
+        #expect(alice.last == .lostSound && !alice.contains(.winningPot))
+        #expect(bob.last == .winSound && !bob.contains(.winningPot))
     }
 }
 

@@ -222,12 +222,46 @@ nonisolated enum DealTiming {
     }
 }
 
-/// When the board plays the new-card sound: only for a card added after the
-/// flop is already showing (the turn and the river). The flop, a cleared
-/// board and a rejoin that lands mid-hand stay silent.
-nonisolated enum BoardSound {
-    static func playsOnDeal(previousCount: Int, newCount: Int) -> Bool {
-        previousCount >= 3 && newCount > previousCount
+/// Which sound effects the table plays (tdr/0025). Sounds follow what the
+/// player sees (`PlayerView`), never the rules (tdr/0003).
+nonisolated enum TableSounds {
+    /// The sound for one of the player's own action buttons.
+    static func effect(for action: PlayerAction) -> SoundEffect? {
+        switch action {
+        case .allIn: .allInChips
+        case .check, .bet, .raise: .placingPokerChips
+        case .fold, .call: nil
+        }
+    }
+
+    /// The sounds for the table moving from `old` to `new`. With no `old`
+    /// (the table just opened, or a rejoin) only a fresh match shuffles, so
+    /// landing mid-hand never replays what already happened.
+    static func effects(from old: PlayerView?, to new: PlayerView) -> [SoundEffect] {
+        var effects: [SoundEffect] = []
+        // Hand numbers restart at 1 for every match, rematches included.
+        let wasInFirstHand = old?.phase == .inHand && old?.handNumber == 1
+        let isFreshDeal = old != nil || new.community.isEmpty
+        if new.phase == .inHand, new.handNumber == 1, !wasInFirstHand, isFreshDeal {
+            effects.append(.shufflingCards)
+        }
+        guard let old else { return effects }
+
+        if old.handNumber == new.handNumber, new.community.count > old.community.count {
+            effects.append(old.community.isEmpty ? .cardsBeingDealt : .placingNewCard)
+        }
+
+        if case .finished(let winner) = new.phase {
+            if case .finished = old.phase {} else {
+                // The match result replaces the last hand's pot sound.
+                effects.append(winner == new.seat ? .winSound : .lostSound)
+            }
+        } else if let result = new.lastResult,
+                  old.lastResult == nil || old.handNumber != new.handNumber,
+                  HandOutcome(result: result, seat: new.seat)?.kind == .youWon {
+            effects.append(.winningPot)
+        }
+        return effects
     }
 }
 
