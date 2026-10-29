@@ -13,6 +13,7 @@ import SkinKit
 /// spanish_001/item.json        optional metadata (kind, names, badge, …)
 /// spanish_001/front.As.png     one file per slot, named by AssetNaming
 /// red_check/back.png
+/// premium_01_chips/chips.100.top.small.png
 /// ```
 public enum CatalogPublisher {
     /// Optional per-item metadata in `<item>/item.json`.
@@ -42,6 +43,56 @@ public enum CatalogPublisher {
             counts[item, default: 0] += 1
         }
         return counts
+    }
+
+    /// Copies chip artwork named as `AssetNaming.parseChip` expects (tdr/0027).
+    /// Premium sets go to `<skins>/<item>/<slot>.png` to be sold; the classic
+    /// set goes into `bundledAssets` (the app's `Assets.xcassets/Skins`) as one
+    /// image set per slot, because defaults ship in the binary. Returns how
+    /// many files each item received.
+    @discardableResult
+    public static func importChips(from source: URL, into skins: URL, bundledAssets: URL) throws -> [SkinID: Int] {
+        let fileManager = FileManager.default
+        var counts: [SkinID: Int] = [:]
+        guard let files = fileManager.enumerator(at: source, includingPropertiesForKeys: nil) else { return [:] }
+        for case let file as URL in files where file.pathExtension.lowercased() == "png" {
+            guard let (item, slot) = AssetNaming.parseChip(fileStem: file.deletingPathExtension().lastPathComponent) else { continue }
+            let destination: URL
+            if item == SkinCatalog.defaultChipsID {
+                let name = AssetNaming.bundledImageName(item: item, slot: slot)
+                let imageSet = bundledAssets.appending(path: "\(name).imageset", directoryHint: .isDirectory)
+                try fileManager.createDirectory(at: imageSet, withIntermediateDirectories: true)
+                try imageSetContents(fileName: "\(name).png").write(to: imageSet.appending(path: "Contents.json"), options: .atomic)
+                destination = imageSet.appending(path: "\(name).png")
+            } else {
+                let folder = skins.appending(path: item.rawValue, directoryHint: .isDirectory)
+                try fileManager.createDirectory(at: folder, withIntermediateDirectories: true)
+                destination = folder.appending(path: AssetNaming.fileName(for: slot))
+            }
+            if fileManager.fileExists(atPath: destination.path) { try fileManager.removeItem(at: destination) }
+            try fileManager.copyItem(at: file, to: destination)
+            counts[item, default: 0] += 1
+        }
+        return counts
+    }
+
+    /// The `Contents.json` Xcode writes for a single universal image.
+    private static func imageSetContents(fileName: String) -> Data {
+        Data("""
+        {
+          "images": [
+            {
+              "filename": "\(fileName)",
+              "idiom": "universal"
+            }
+          ],
+          "info": {
+            "author": "xcode",
+            "version": 1
+          }
+        }
+
+        """.utf8)
     }
 
     /// Scans a skins directory and describes every item folder. Product ids
@@ -77,9 +128,13 @@ public enum CatalogPublisher {
             let metadata = fileManager.fileExists(atPath: metadataURL.path)
                 ? try JSONDecoder().decode(ItemMetadata.self, from: Data(contentsOf: metadataURL))
                 : ItemMetadata()
-            let kind = metadata.kind ?? (assets.keys.contains(.cardBack) ? .cardBack : .cardFront)
-            let productID = metadata.productID ?? (kind == .cardFront ? ProductIDs.set(id) : ProductIDs.single(id))
-            let preview = assets[.cardFront(Card(rank: .ace, suit: .spades))] ?? assets[.cardBack] ?? assets.sorted { $0.key < $1.key }.first?.value
+            let kind = metadata.kind ?? inferredKind(of: assets.keys)
+            let soldWhole = kind == .cardFront || kind == .chips
+            let productID = metadata.productID ?? (soldWhole ? ProductIDs.set(id) : ProductIDs.single(id))
+            let preview = assets[.cardFront(Card(rank: .ace, suit: .spades))]
+                ?? assets[.cardBack]
+                ?? assets[.chip(.init(1_000), face: .top, size: .large)]
+                ?? assets.sorted { $0.key < $1.key }.first?.value
 
             items.append(SkinItem(
                 id: id,
@@ -98,6 +153,12 @@ public enum CatalogPublisher {
             assetBaseURL: assetBaseURL,
             items: items
         )
+    }
+
+    private static func inferredKind(of slots: Dictionary<CosmeticSlot, AssetRef>.Keys) -> CosmeticKind {
+        if slots.contains(.cardBack) { return .cardBack }
+        if slots.contains(where: { $0.kind == .chips }) { return .chips }
+        return .cardFront
     }
 
     /// A new Ed25519 signing key: the private half goes in `CATALOG_SIGNING_KEY`

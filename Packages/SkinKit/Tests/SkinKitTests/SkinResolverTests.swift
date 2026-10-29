@@ -86,3 +86,46 @@ struct SkinResolverTests {
         #expect(Ownership(productIDs: [ProductIDs.set("spanish_001")]).ownsAll(of: set))
     }
 }
+
+@Suite("SkinResolver for chips")
+struct ChipResolverTests {
+    private let hundred = CosmeticSlot.chip(.init(100), face: .top, size: .small)
+    private let premium = SkinCatalogBuilder.chipSet("premium_01_chips")
+    private var resolver: SkinResolver {
+        SkinResolver(catalog: SkinCatalog.builtIn.merging(SkinCatalogBuilder().with(premium).build()))
+    }
+    private var owned: Ownership { Ownership(productIDs: [ProductIDs.set("premium_01_chips")]) }
+    private var equipped: Loadout { LoadoutBuilder().equip("premium_01_chips", on: premium.slots).build() }
+
+    @Test("with nothing selected every chip is the classic default")
+    func defaults() {
+        #expect(resolver.resolve(hundred, loadout: Loadout(), ownership: .none, installed: [])?.item.id == SkinCatalog.defaultChipsID)
+    }
+
+    @Test("an owned, installed chip set is shown")
+    func ownedSet() {
+        #expect(resolver.resolve(hundred, loadout: equipped, ownership: owned, installed: .all(of: premium))?.item.id == "premium_01_chips")
+    }
+
+    @Test("an unbought, refunded or not yet downloaded chip set shows the default")
+    func fallbacks() {
+        #expect(resolver.resolve(hundred, loadout: equipped, ownership: .none, installed: .all(of: premium))?.isDefault == true)
+        #expect(resolver.resolve(hundred, loadout: equipped, ownership: owned, installed: [])?.isDefault == true)
+    }
+
+    @Test("a chip the set does not include falls back to the default for that chip only")
+    func missingChip() {
+        let partial = SkinItem(
+            id: "partial_chips",
+            kind: .chips,
+            productID: ProductIDs.set("partial_chips"),
+            assets: [hundred: SkinCatalogBuilder.asset("partial_chips", hundred)]
+        )
+        let resolver = SkinResolver(catalog: SkinCatalog.builtIn.merging(SkinCatalogBuilder().with(partial).build()))
+        let thousand = CosmeticSlot.chip(.init(1_000), face: .top, size: .small)
+        let loadout = LoadoutBuilder().equip("partial_chips", on: [hundred, thousand]).build()
+        let ownership = Ownership(productIDs: [ProductIDs.set("partial_chips")])
+        #expect(resolver.resolve(hundred, loadout: loadout, ownership: ownership, installed: .all(of: partial))?.item.id == "partial_chips")
+        #expect(resolver.resolve(thousand, loadout: loadout, ownership: ownership, installed: .all(of: partial))?.isDefault == true)
+    }
+}

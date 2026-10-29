@@ -335,3 +335,74 @@ struct SkinStoreTests {
         #expect(fixture.store.item(forProduct: "fap.skin.unknown") == nil)
     }
 }
+
+@Suite("SkinStore chips")
+@MainActor
+struct SkinStoreChipTests {
+    private static let premium = SkinCatalogBuilder.chipSet("premium_01_chips")
+    private let hundred = CosmeticSlot.chip(.init(100), face: .top, size: .small)
+
+    private func makeFixture() -> Fixture {
+        let fixture = Fixture(remote: .success(SkinCatalogBuilder().with(Self.premium).build()))
+        fixture.purchases.catalogProducts.append(FakePurchases.product(ProductIDs.set("premium_01_chips"), price: "0.99"))
+        return fixture
+    }
+
+    @Test("before anything loads every chip is the bundled classic chip")
+    func defaultsFirst() {
+        #expect(makeFixture().store.myCardSkin.source(for: hundred) == .bundled("skin-classic_chips-chips-100-top-small"))
+    }
+
+    @Test("chip sets are offered by this build")
+    func offered() async {
+        let fixture = makeFixture()
+        await fixture.store.start()
+        #expect(SkinStore.supportedKinds.contains(.chips))
+        #expect(fixture.store.items(of: .chips).map(\.id) == [SkinCatalog.defaultChipsID, "premium_01_chips"])
+    }
+
+    @Test("a bought chip set downloads and shows every chip")
+    func bought() async {
+        let fixture = makeFixture()
+        await fixture.store.start()
+
+        await fixture.store.purchase(ProductIDs.set("premium_01_chips"))
+
+        #expect(fixture.store.ownsAll(of: Self.premium))
+        #expect(fixture.store.installed.count == CosmeticSlot.allChips.count)
+        #expect(fixture.store.myCardSkin.source(for: hundred)
+            == .file(URL(filePath: "/skins/premium_01_chips/chips.100.top.small.png"), fallback: "skin-classic_chips-chips-100-top-small"))
+    }
+
+    @Test("a bought chip set whose files did not download shows the classic chips")
+    func notDownloaded() async {
+        let fixture = makeFixture()
+        await fixture.assets.fail(AssetKey(item: "premium_01_chips", slot: hundred))
+        await fixture.store.start()
+
+        await fixture.store.purchase(ProductIDs.set("premium_01_chips"))
+
+        #expect(fixture.store.myCardSkin.source(for: hundred) == .bundled("skin-classic_chips-chips-100-top-small"))
+    }
+
+    @Test("a refund reverts the chips to the classic set")
+    func refund() async {
+        let fixture = makeFixture()
+        fixture.purchases.entitlements = [ProductIDs.set("premium_01_chips")]
+        await fixture.store.start()
+        fixture.store.equipAll(Self.premium)
+        #expect(fixture.store.isShowing(Self.premium, in: hundred))
+
+        let observing = Task { await fixture.store.observeTransactions() }
+        defer { observing.cancel() }
+        fixture.purchases.entitlements = []
+        fixture.purchases.deliverUpdate(productID: ProductIDs.set("premium_01_chips"), isRevoked: true)
+
+        #expect(await eventually { fixture.store.myCardSkin.source(for: hundred) == .bundled("skin-classic_chips-chips-100-top-small") })
+    }
+
+    @Test("an opponent's chips are the classic set when we know nothing about them")
+    func opponent() {
+        #expect(makeFixture().store.opponentCardSkin(nil).source(for: hundred) == .bundled("skin-classic_chips-chips-100-top-small"))
+    }
+}

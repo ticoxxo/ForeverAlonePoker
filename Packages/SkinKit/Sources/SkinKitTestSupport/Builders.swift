@@ -52,6 +52,17 @@ public struct SkinCatalogBuilder {
         )
     }
 
+    /// A paid chip set covering every denomination, face and size.
+    public static func chipSet(_ id: SkinID, productID: String? = nil) -> SkinItem {
+        SkinItem(
+            id: id,
+            kind: .chips,
+            names: ["en": id.rawValue],
+            productID: productID ?? ProductIDs.set(id),
+            assets: Dictionary(uniqueKeysWithValues: CosmeticSlot.allChips.map { ($0, asset(id, $0)) })
+        )
+    }
+
     public static func asset(_ id: SkinID, _ slot: CosmeticSlot, sha256: String = "00", bytes: Int = 1) -> AssetRef {
         AssetRef(path: "\(id)/\(AssetNaming.fileName(for: slot))", sha256: sha256, bytes: bytes)
     }

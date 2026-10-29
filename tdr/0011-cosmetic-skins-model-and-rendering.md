@@ -74,3 +74,9 @@ Players will customise how cards look: a skin per card face (sold as a whole set
 - `ForeverAlonePokerTests/Shared/Skins/SkinStoreTests` (fakes in `Support/SkinFakes.swift`): defaults before loading, equip only owned slots, a failed download shows the default, refunds revert, unknown and known opponents, unsupported kinds hidden.
 - `IdentityStoreTests`: loadout persistence and newest-wins merge.
 - Manual: equip the Spanish ace and a red back, check them at the table and that the opponent's backs stay navy.
+
+## Notes
+
+### 2026-10-29: chips are drawn
+
+Chips are now a supported kind (tdr/0027). Slots are `chips.<value>.<face>.<size>`, there is a bundled `classic_chips` default, and `ChipView` reads `\.cardSkin` like the card views. `BundledSkin` names come from `AssetNaming.bundledImageName`.

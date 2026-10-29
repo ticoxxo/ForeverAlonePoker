@@ -13,8 +13,9 @@ nonisolated enum SkinImageSource: Hashable, Sendable {
     case remote(URL, fallback: String)
 }
 
-/// How cards look for one viewer, fully resolved (tdr/0011). A plain value
-/// put in the environment: card views read it and never see catalogs,
+/// How cards and chips look for one viewer, fully resolved (tdr/0011,
+/// tdr/0027). A plain value put in the environment: card and chip views read
+/// it and never see catalogs,
 /// ownership or StoreKit, and the game never sees it at all.
 nonisolated struct CardSkin: Equatable, Sendable {
     private var overrides: [CosmeticSlot: SkinImageSource]
@@ -32,16 +33,21 @@ nonisolated struct CardSkin: Equatable, Sendable {
 }
 
 /// Names of the default skin's image sets in `Assets.xcassets/Skins`, e.g.
-/// "skin-default-front-As" and "skin-navy_check-back".
+/// "skin-default-front-As", "skin-navy_check-back" and
+/// "skin-classic_chips-chips-100-top-small".
 nonisolated enum BundledSkin {
     static func imageName(for slot: CosmeticSlot) -> String {
-        let item = slot.kind == .cardBack ? SkinCatalog.defaultBackID : SkinCatalog.defaultFrontID
-        return "skin-\(item.rawValue)-\(slot.rawValue.replacingOccurrences(of: ".", with: "-"))"
+        let item = switch slot.kind {
+        case .cardBack: SkinCatalog.defaultBackID
+        case .chips: SkinCatalog.defaultChipsID
+        default: SkinCatalog.defaultFrontID
+        }
+        return AssetNaming.bundledImageName(item: item, slot: slot)
     }
 }
 
 extension EnvironmentValues {
-    /// The skin card views draw with. The app root sets the player's own; the
+    /// The skin card and chip views draw with. The app root sets the player's own; the
     /// table overrides it for the opponent's seat.
     @Entry var cardSkin: CardSkin = .standard
 }

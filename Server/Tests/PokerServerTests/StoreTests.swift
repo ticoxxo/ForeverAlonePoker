@@ -191,6 +191,46 @@ struct CatalogPublisherTests {
         #expect(backItem.preview == backItem.assets[.cardBack])
     }
 
+    @Test("imports premium chips into the skins directory and classic chips into the app's asset catalog")
+    func importsChips() throws {
+        let source = try temporaryDirectory()
+        let skins = try temporaryDirectory()
+        let bundled = try temporaryDirectory()
+        for name in ["premium_01_chip_blue_top", "premium_01_chip_blue_top copy", "chip_blue_flat_large", "chip_teal_top", "spades_10_spanish_001"] {
+            try Data(name.utf8).write(to: source.appending(path: "\(name).png"))
+        }
+
+        let imported = try CatalogPublisher.importChips(from: source, into: skins, bundledAssets: bundled)
+
+        #expect(imported == ["premium_01_chips": 2, "classic_chips": 1])
+        let large = skins.appending(path: "premium_01_chips/chips.100.top.large.png")
+        #expect(try Data(contentsOf: large) == Data("premium_01_chip_blue_top copy".utf8))
+        #expect(FileManager.default.fileExists(atPath: skins.appending(path: "premium_01_chips/chips.100.top.small.png").path))
+        let imageSet = bundled.appending(path: "skin-classic_chips-chips-100-flat-large.imageset")
+        #expect(try Data(contentsOf: imageSet.appending(path: "skin-classic_chips-chips-100-flat-large.png")) == Data("chip_blue_flat_large".utf8))
+        let contents = try JSONSerialization.jsonObject(with: Data(contentsOf: imageSet.appending(path: "Contents.json"))) as? [String: Any]
+        let images = try #require(contents?["images"] as? [[String: String]])
+        #expect(images == [["filename": "skin-classic_chips-chips-100-flat-large.png", "idiom": "universal"]])
+        #expect(!FileManager.default.fileExists(atPath: skins.appending(path: "classic_chips").path), "the free set is bundled, never served")
+    }
+
+    @Test("a chip set is described as one chips item sold whole, previewed by a large top chip")
+    func buildsChipManifest() throws {
+        let skins = try temporaryDirectory()
+        let folder = skins.appending(path: "premium_01_chips")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        for slot in [CosmeticSlot.chip(.init(1_000), face: .top, size: .large), .chip(.init(10), face: .flat, size: .small)] {
+            try Data(slot.rawValue.utf8).write(to: folder.appending(path: AssetNaming.fileName(for: slot)))
+        }
+
+        let catalog = try CatalogPublisher.buildManifest(skinsDirectory: skins, catalogVersion: 1, assetBaseURL: "/skins/")
+
+        let chips = try #require(catalog.item("premium_01_chips"))
+        #expect(chips.kind == .chips, "kind is inferred from the files when item.json is absent")
+        #expect(chips.productID == "fap.skin.premium_01_chips.set")
+        #expect(chips.preview == chips.assets[.chip(.init(1_000), face: .top, size: .large)])
+    }
+
     @Test("generates an Ed25519 key pair as base64")
     func keygen() throws {
         let pair = CatalogPublisher.generateKeyPair()

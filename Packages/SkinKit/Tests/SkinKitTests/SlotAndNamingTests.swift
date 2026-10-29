@@ -96,3 +96,98 @@ struct AppVersionTests {
         #expect(AppVersion("1.2.3") < AppVersion("1.3"))
     }
 }
+
+@Suite("Chip slots")
+struct ChipSlotTests {
+    @Test("a chip slot is keyed by value, face and size, and has the chips kind")
+    func key() {
+        let slot = CosmeticSlot.chip(.init(100), face: .top, size: .small)
+        #expect(slot.rawValue == "chips.100.top.small")
+        #expect(slot.kind == .chips)
+        #expect(slot.card == nil)
+    }
+
+    @Test("there is one chip slot per denomination, face and size")
+    func allChips() {
+        let expected = ChipDenomination.all.count * ChipFace.allCases.count * ChipSize.allCases.count
+        #expect(CosmeticSlot.allChips.count == expected)
+        #expect(Set(CosmeticSlot.allChips).count == expected)
+        #expect(CosmeticSlot.allChips.allSatisfy { $0.kind == .chips })
+    }
+
+    @Test("denominations are multiples of 10 from 10 to 100,000, ascending")
+    func ladder() {
+        let values = ChipDenomination.all.map(\.value)
+        #expect(values.first == 10)
+        #expect(values.last == 100_000)
+        #expect(values == values.sorted())
+        #expect(values.allSatisfy { $0 % 10 == 0 })
+    }
+
+    @Test("an amount shows the largest chip it covers, and never less than the smallest")
+    func showing() {
+        #expect(ChipDenomination.showing(0).value == 10)
+        #expect(ChipDenomination.showing(9).value == 10)
+        #expect(ChipDenomination.showing(10).value == 10)
+        #expect(ChipDenomination.showing(49).value == 10)
+        #expect(ChipDenomination.showing(50).value == 50)
+        #expect(ChipDenomination.showing(1_234).value == 1_000)
+        #expect(ChipDenomination.showing(250_000).value == 100_000)
+    }
+}
+
+@Suite("Chip asset naming")
+struct ChipAssetNamingTests {
+    @Test("default chips belong to the classic set; files without a size suffix are small")
+    func defaults() throws {
+        let small = try #require(AssetNaming.parseChip(fileStem: "chip_red_top"))
+        #expect(small.item == SkinCatalog.defaultChipsID)
+        #expect(small.slot == .chip(ChipDenomination.color("red")!, face: .top, size: .small))
+        let large = try #require(AssetNaming.parseChip(fileStem: "chip_red_flat_large"))
+        #expect(large.slot == .chip(ChipDenomination.color("red")!, face: .flat, size: .large))
+    }
+
+    @Test("premium chips belong to their numbered set; a copy is the large file")
+    func premium() throws {
+        let small = try #require(AssetNaming.parseChip(fileStem: "premium_01_chip_blue_flat"))
+        #expect(small.item == "premium_01_chips")
+        #expect(small.slot == .chip(ChipDenomination.color("blue")!, face: .flat, size: .small))
+        let large = try #require(AssetNaming.parseChip(fileStem: "premium_01_chip_blue_top copy"))
+        #expect(large.slot == .chip(ChipDenomination.color("blue")!, face: .top, size: .large))
+    }
+
+    @Test("every color maps to a different denomination")
+    func colors() {
+        let colors = ["white", "red", "blue", "lightblue", "green", "black", "purple", "yellow", "pink", "biege", "gray"]
+        let values = colors.compactMap { ChipDenomination.color($0)?.value }
+        #expect(values.count == colors.count)
+        #expect(Set(values).count == colors.count)
+        #expect(ChipDenomination.color("beige") == ChipDenomination.color("biege"))
+    }
+
+    @Test("unknown colors, faces and other files are ignored")
+    func ignored() {
+        #expect(AssetNaming.parseChip(fileStem: "chip_teal_top") == nil)
+        #expect(AssetNaming.parseChip(fileStem: "chip_red_side") == nil)
+        #expect(AssetNaming.parseChip(fileStem: "spades_10_spanish_001") == nil)
+        #expect(AssetNaming.parse(fileStem: "chip_red_top") == nil)
+    }
+
+    @Test("published chip files are named after the slot")
+    func fileName() {
+        #expect(AssetNaming.fileName(for: .chip(.init(500), face: .flat, size: .large)) == "chips.500.flat.large.png")
+    }
+
+    @Test("bundled defaults are named after their item and slot")
+    func bundledImageName() {
+        #expect(AssetNaming.bundledImageName(item: "navy_check", slot: .cardBack) == "skin-navy_check-back")
+        #expect(AssetNaming.bundledImageName(item: "default", slot: .cardFront(card("As"))) == "skin-default-front-As")
+        #expect(AssetNaming.bundledImageName(item: SkinCatalog.defaultChipsID, slot: .chip(.init(100), face: .top, size: .small))
+            == "skin-classic_chips-chips-100-top-small")
+    }
+
+    @Test("a chip set is sold whole")
+    func productID() {
+        #expect(ProductIDs.all(for: SkinCatalogBuilder.chipSet("premium_01_chips")) == ["fap.skin.premium_01_chips.set"])
+    }
+}

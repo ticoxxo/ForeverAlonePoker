@@ -2,7 +2,8 @@ import SwiftUI
 import PokerCore
 import SkinKit
 
-/// The card store (tdr/0012): card-face sets and card backs from the remote
+/// The card store (tdr/0012): card-face sets, card backs and chip sets
+/// (tdr/0027) from the remote
 /// catalog, with prices from the App Store in the player's storefront currency.
 struct SkinStoreView: View {
     @Environment(SkinStore.self) private var store
@@ -24,6 +25,14 @@ struct SkinStoreView: View {
                 ForEach(store.items(of: .cardBack)) { item in
                     CardBackRow(item: item) {
                         preview = SkinPreview(item: item, subject: .back)
+                    }
+                }
+            }
+
+            Section("Chips") {
+                ForEach(store.items(of: .chips)) { item in
+                    ChipSetRow(item: item) {
+                        preview = SkinPreview(item: item, subject: .chips)
                     }
                 }
             }
@@ -186,6 +195,64 @@ private struct CardBackRow: View {
 
 extension CardBackRow {
     fileprivate var itemName: String { item.name(for: Locale.current.language.languageCode?.identifier) }
+}
+
+/// A chip set: buy it whole, or use it once owned (tdr/0027). A long press
+/// shows every chip.
+private struct ChipSetRow: View {
+    @Environment(SkinStore.self) private var store
+    let item: SkinItem
+    let onPreview: () -> Void
+    @ScaledMetric(relativeTo: .headline) private var chipHeight: CGFloat = 40
+
+    /// The chip the table shows most; whether it is this set's tells if the
+    /// set is in use.
+    private var representative: CosmeticSlot { .chip(.init(1_000), face: .top, size: .small) }
+    private var itemName: String { item.name(for: Locale.current.language.languageCode?.identifier) }
+
+    var body: some View {
+        HStack(spacing: Theme.Spacing.medium) {
+            ChipFanView()
+                .frame(height: min(chipHeight, 64))
+                .environment(\.cardSkin, store.previewSkin(for: item))
+            VStack(alignment: .leading, spacing: 2) {
+                HStack {
+                    Text(itemName)
+                        .font(.headline)
+                    if let badge = item.badge {
+                        BadgeView(text: badge)
+                    }
+                }
+                PurchaseStateText(state: item.productID.flatMap { store.purchaseStates[$0] })
+            }
+            .accessibilityElement(children: .combine)
+            Spacer()
+            Group {
+                if store.ownsAll(of: item) {
+                    if store.isShowing(item, in: representative) {
+                        Label("In use", systemImage: "checkmark.circle.fill")
+                            .labelStyle(.iconOnly)
+                            .font(.title2)
+                            .foregroundStyle(.green)
+                            .transition(.scale.combined(with: .opacity))
+                            .accessibilityLabel(Text("In use"))
+                    } else {
+                        Button("Use") { store.equipAll(item) }
+                            .glassButtonStyle()
+                            .accessibilityLabel(Text("Use \(itemName)"))
+                    }
+                } else if let productID = item.productID {
+                    BuyButton(productID: productID, itemName: itemName)
+                }
+            }
+            .motion(Theme.Motion.reveal, value: store.isShowing(item, in: representative))
+        }
+        .padding(.vertical, Theme.Spacing.xSmall)
+        .contentShape(Rectangle())
+        // The Use / Buy buttons keep their taps; holding anywhere else previews.
+        .onLongPressGesture(perform: onPreview)
+        .accessibilityAction(named: Text("Preview"), onPreview)
+    }
 }
 
 /// Buys one product, showing its App Store price. The label morphs from the
