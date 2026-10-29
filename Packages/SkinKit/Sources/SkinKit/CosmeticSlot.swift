@@ -1,9 +1,9 @@
 import PokerCore
 
 /// One place on screen a skin can fill: the face of a specific card, the card
-/// back, and later the mat or a chip denomination. The raw value is a stable
-/// key ("front.As", "back", "mat", "chips.100") used in loadouts, manifests
-/// and on the wire.
+/// back, one chip file, and later the mat. The raw value is a stable key
+/// ("front.As", "back", "chips.100.top.small", "mat") used in loadouts,
+/// manifests and on the wire.
 public struct CosmeticSlot: RawRepresentable, Hashable, Comparable, Sendable, Codable, CustomStringConvertible {
     public let rawValue: String
 
@@ -21,6 +21,19 @@ public struct CosmeticSlot: RawRepresentable, Hashable, Comparable, Sendable, Co
     /// The 52 card faces, suit by suit.
     public static let allCardFronts: [CosmeticSlot] = Suit.allCases.flatMap { suit in
         Rank.allCases.map { cardFront(Card(rank: $0, suit: suit)) }
+    }
+
+    /// One chip file: a denomination seen from one face at one size, e.g.
+    /// "chips.100.top.small" (tdr/0027).
+    public static func chip(_ denomination: ChipDenomination, face: ChipFace, size: ChipSize) -> CosmeticSlot {
+        CosmeticSlot(rawValue: "chips.\(denomination.value).\(face.rawValue).\(size.rawValue)")
+    }
+
+    /// Every chip file of a set: each denomination, face and size.
+    public static let allChips: [CosmeticSlot] = ChipDenomination.all.flatMap { denomination in
+        ChipFace.allCases.flatMap { face in
+            ChipSize.allCases.map { chip(denomination, face: face, size: $0) }
+        }
     }
 
     public var kind: CosmeticKind {

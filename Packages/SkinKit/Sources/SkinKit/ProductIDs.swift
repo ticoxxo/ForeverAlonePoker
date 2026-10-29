@@ -5,7 +5,7 @@
 public enum ProductIDs {
     public static let prefix = "fap.skin"
 
-    /// The whole card-front set.
+    /// A whole set: card fronts or chips.
     public static func set(_ item: SkinID) -> String { "\(prefix).\(item).set" }
 
     /// An item sold as one piece (a card back, later a mat).

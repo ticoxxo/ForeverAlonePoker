@@ -2,12 +2,13 @@ import SwiftUI
 import PokerCore
 import SkinKit
 
-/// What a long press in the store enlarges (tdr/0023): a card back, or one
-/// card of a face set. Locked cards preview too; that is what the store is for.
+/// What a long press in the store enlarges (tdr/0023): a card back, one
+/// card of a face set, or every chip of a chip set (tdr/0027). Locked cards preview too; that is what the store is for.
 struct SkinPreview: Equatable {
     enum Subject: Equatable {
         case back
         case face(Card)
+        case chips
     }
 
     let item: SkinItem
@@ -47,6 +48,7 @@ private struct SkinPreviewOverlay: ViewModifier {
                     switch preview.subject {
                     case .back: CardBackView()
                     case .face(let card): CardView(card: card)
+                    case .chips: ChipSetGridView()
                     }
                 }
                 .environment(\.cardSkin, store.previewSkin(for: preview.item))
@@ -72,7 +74,7 @@ private struct SkinPreviewOverlay: ViewModifier {
     private func title(of preview: SkinPreview) -> String {
         let name = preview.item.name(for: Locale.current.language.languageCode?.identifier)
         switch preview.subject {
-        case .back: return name
+        case .back, .chips: return name
         case .face(let card): return "\(card.spokenName) · \(name)"
         }
     }

@@ -92,6 +92,15 @@ struct SkinCatalogTests {
         let back = try #require(builtIn.item(SkinCatalog.defaultBackID))
         #expect(back.slots == [.cardBack])
     }
+
+    @Test("the built-in catalog has free default chips for every chip slot")
+    func builtInChips() throws {
+        let chips = try #require(SkinCatalog.builtIn.item(SkinCatalog.defaultChipsID))
+        #expect(chips.isDefault)
+        #expect(chips.kind == .chips)
+        #expect(chips.productID == nil)
+        #expect(Set(chips.slots) == Set(CosmeticSlot.allChips))
+    }
 }
 
 @Suite("Loadout")

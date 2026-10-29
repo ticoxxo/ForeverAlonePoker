@@ -1,7 +1,244 @@
 {
   "assetBaseURL" : "/skins/",
-  "catalogVersion" : 1,
+  "catalogVersion" : 2,
   "items" : [
+    {
+      "assets" : {
+        "chips.10.flat.large" : {
+          "bytes" : 38562,
+          "path" : "premium_01_chips/chips.10.flat.large.png",
+          "sha256" : "d3607977c1e7934831fcad6f3a1cc16741e87380ce9005afe131eed89eb08509"
+        },
+        "chips.10.flat.small" : {
+          "bytes" : 10391,
+          "path" : "premium_01_chips/chips.10.flat.small.png",
+          "sha256" : "5ca45435ab30aeadca9685dd40c5a949478365944b78eba26626aa3376909dfe"
+        },
+        "chips.10.top.large" : {
+          "bytes" : 62388,
+          "path" : "premium_01_chips/chips.10.top.large.png",
+          "sha256" : "de66e2991ab93db16a1a19ee56473b8e5c2cf495e755be6bb6acb251ec21324f"
+        },
+        "chips.10.top.small" : {
+          "bytes" : 17971,
+          "path" : "premium_01_chips/chips.10.top.small.png",
+          "sha256" : "54badad40d8caf2a7b9952ab6074336f9dcba56e062d991fa5e4d2952fb73653"
+        },
+        "chips.100.flat.large" : {
+          "bytes" : 49438,
+          "path" : "premium_01_chips/chips.100.flat.large.png",
+          "sha256" : "bf77d2255d673e92ddf7e2f07e2d8401a1c38aac32b1166405a4b124bdb404c6"
+        },
+        "chips.100.flat.small" : {
+          "bytes" : 13088,
+          "path" : "premium_01_chips/chips.100.flat.small.png",
+          "sha256" : "48cb6875b23a70c2a1115b1341607e23154c4f6ed3295bb0c22eb27e5e4e9f2a"
+        },
+        "chips.100.top.large" : {
+          "bytes" : 76032,
+          "path" : "premium_01_chips/chips.100.top.large.png",
+          "sha256" : "02219d36e9df6c3564913464600ec33362b0dbd4ca007a5d3b6cadf78b8e3047"
+        },
+        "chips.100.top.small" : {
+          "bytes" : 22739,
+          "path" : "premium_01_chips/chips.100.top.small.png",
+          "sha256" : "b68d1ad432b9473f2a7db429ca13acf7c2eecb50739cfd32af2cb62e1572dcfa"
+        },
+        "chips.1000.flat.large" : {
+          "bytes" : 39821,
+          "path" : "premium_01_chips/chips.1000.flat.large.png",
+          "sha256" : "ffff37088be00843688de9e52e0cbbe1e45c556c9647c08806556793cd15c3c9"
+        },
+        "chips.1000.flat.small" : {
+          "bytes" : 10986,
+          "path" : "premium_01_chips/chips.1000.flat.small.png",
+          "sha256" : "0cbeb08fc2bec71cdf994aebbedd2435a5867764be5ffdfb038f5465a0c4053b"
+        },
+        "chips.1000.top.large" : {
+          "bytes" : 65104,
+          "path" : "premium_01_chips/chips.1000.top.large.png",
+          "sha256" : "c8ac758b82c3e2359e87217a57315b625970d079254f298a48199a70c64ff0e4"
+        },
+        "chips.1000.top.small" : {
+          "bytes" : 19809,
+          "path" : "premium_01_chips/chips.1000.top.small.png",
+          "sha256" : "391cabdedc93605ceef9cfbaa39506d4d9441dd8a32444ee5afad1fc49aad954"
+        },
+        "chips.10000.flat.large" : {
+          "bytes" : 46269,
+          "path" : "premium_01_chips/chips.10000.flat.large.png",
+          "sha256" : "33b6bebb2e34d88b4b4f3ca57a51dc7d931b8767d444fa65150ece6eccb39127"
+        },
+        "chips.10000.flat.small" : {
+          "bytes" : 11976,
+          "path" : "premium_01_chips/chips.10000.flat.small.png",
+          "sha256" : "cc3cd247b8f9e2fc36ccbd0f10b1818b965c2d7f5db888376c3d3b61a4a7b3d7"
+        },
+        "chips.10000.top.large" : {
+          "bytes" : 69507,
+          "path" : "premium_01_chips/chips.10000.top.large.png",
+          "sha256" : "a75c1adb18dea4a48e900425697f7dc2916f1170faed52888b7dbe2d596d5e0a"
+        },
+        "chips.10000.top.small" : {
+          "bytes" : 20371,
+          "path" : "premium_01_chips/chips.10000.top.small.png",
+          "sha256" : "d26b6d548e3782bf8e8836a26b4fd5006ebbae753166d1c085047239e6cd435d"
+        },
+        "chips.100000.flat.large" : {
+          "bytes" : 39891,
+          "path" : "premium_01_chips/chips.100000.flat.large.png",
+          "sha256" : "62940e01eb47eed77fe35a2e0879426d9949f08760242d8954eae9eb2943cbe8"
+        },
+        "chips.100000.flat.small" : {
+          "bytes" : 10846,
+          "path" : "premium_01_chips/chips.100000.flat.small.png",
+          "sha256" : "c21a111d8fd5ba0ecba618d5447151eb874d9a9c6c607acf74fada37937fc7d2"
+        },
+        "chips.100000.top.large" : {
+          "bytes" : 63295,
+          "path" : "premium_01_chips/chips.100000.top.large.png",
+          "sha256" : "cc0848b3c0d496d2020999dbabd1e09ccaeee8190a518b7c9f80de180cb3fe60"
+        },
+        "chips.100000.top.small" : {
+          "bytes" : 19225,
+          "path" : "premium_01_chips/chips.100000.top.small.png",
+          "sha256" : "59b49662e1e21bb3451e74d102d849023b011e9e63ed7c5d6b20c376e9b607e7"
+        },
+        "chips.250.flat.large" : {
+          "bytes" : 46983,
+          "path" : "premium_01_chips/chips.250.flat.large.png",
+          "sha256" : "4e10abbed36611aed305dea2d9e96de0c3259772980a114addc17529cc5a60d1"
+        },
+        "chips.250.flat.small" : {
+          "bytes" : 12229,
+          "path" : "premium_01_chips/chips.250.flat.small.png",
+          "sha256" : "2667101ae9906dd5894d97da1a1b10b299d2f665d2fe607d17db48aacca96b2f"
+        },
+        "chips.250.top.large" : {
+          "bytes" : 70333,
+          "path" : "premium_01_chips/chips.250.top.large.png",
+          "sha256" : "be17a61f4d76c19a516052c865538d275726c6ecd52eadbfe6c2e98f53ebb7f6"
+        },
+        "chips.250.top.small" : {
+          "bytes" : 20730,
+          "path" : "premium_01_chips/chips.250.top.small.png",
+          "sha256" : "66a95e0ebd377a0367cac54af214ae244c4e277b5279c81122c0acb9604eece9"
+        },
+        "chips.25000.flat.large" : {
+          "bytes" : 44886,
+          "path" : "premium_01_chips/chips.25000.flat.large.png",
+          "sha256" : "bb4d375b4800643774fd340aa0d5b64cb85e697cca4c667013a4e85e12a8583b"
+        },
+        "chips.25000.flat.small" : {
+          "bytes" : 11902,
+          "path" : "premium_01_chips/chips.25000.flat.small.png",
+          "sha256" : "cc8104917aa98b3aa21e91f02de96c2f457562921e10771e5920d66238126c36"
+        },
+        "chips.25000.top.large" : {
+          "bytes" : 68321,
+          "path" : "premium_01_chips/chips.25000.top.large.png",
+          "sha256" : "c6cc776c8381c10886495ed80dc72113b329db7b0f092b56964131c386898845"
+        },
+        "chips.25000.top.small" : {
+          "bytes" : 19997,
+          "path" : "premium_01_chips/chips.25000.top.small.png",
+          "sha256" : "c43f5b0242d5473893a18bbffb907e7721ca726141ce170b4e4dca3d7e010303"
+        },
+        "chips.50.flat.large" : {
+          "bytes" : 44861,
+          "path" : "premium_01_chips/chips.50.flat.large.png",
+          "sha256" : "8d3f81b31e1f3f209d8e5ac9ce65bbb64ef5b4a7adde2ccc91a5116752d8ffe5"
+        },
+        "chips.50.flat.small" : {
+          "bytes" : 11496,
+          "path" : "premium_01_chips/chips.50.flat.small.png",
+          "sha256" : "fb061b440062be88d39c95e16952af37a4aa560dc42b7f799b8565e3be0e6e45"
+        },
+        "chips.50.top.large" : {
+          "bytes" : 67613,
+          "path" : "premium_01_chips/chips.50.top.large.png",
+          "sha256" : "280486aacb8f38516634e9fa9ba561bbe62b36caf53c64c68145f085b8d9334d"
+        },
+        "chips.50.top.small" : {
+          "bytes" : 19778,
+          "path" : "premium_01_chips/chips.50.top.small.png",
+          "sha256" : "8d4a92f64ff727a4a172291b43ee3d834663df5e88ff2ee850e5c0b331e28328"
+        },
+        "chips.500.flat.large" : {
+          "bytes" : 47951,
+          "path" : "premium_01_chips/chips.500.flat.large.png",
+          "sha256" : "bc748790a359f8dcd7c8b55fc29d579956414b6748b79daeebb47c4027005cb6"
+        },
+        "chips.500.flat.small" : {
+          "bytes" : 12627,
+          "path" : "premium_01_chips/chips.500.flat.small.png",
+          "sha256" : "2d5e031015f8f3832c70eca2c7099e4df53eab1ae63d3aad5db1dd5185406bd5"
+        },
+        "chips.500.top.large" : {
+          "bytes" : 72993,
+          "path" : "premium_01_chips/chips.500.top.large.png",
+          "sha256" : "602659bcb27633b6821ddd0cf59e04723d110e15e5db0490c758a4bd2c8bfce4"
+        },
+        "chips.500.top.small" : {
+          "bytes" : 21606,
+          "path" : "premium_01_chips/chips.500.top.small.png",
+          "sha256" : "2f1626014c3d5168c1bb26086f97974d5c11fa411601a0e3fa3dd7dfdda62eb1"
+        },
+        "chips.5000.flat.large" : {
+          "bytes" : 47377,
+          "path" : "premium_01_chips/chips.5000.flat.large.png",
+          "sha256" : "19a54981820805c6bd6581c5421469e3b7034b9e2561c7e4086f023f7e871bd1"
+        },
+        "chips.5000.flat.small" : {
+          "bytes" : 12504,
+          "path" : "premium_01_chips/chips.5000.flat.small.png",
+          "sha256" : "4086f8b3293a3ca294974acdd0b4492014de30733d6c363ee12da54b5d55adf8"
+        },
+        "chips.5000.top.large" : {
+          "bytes" : 71943,
+          "path" : "premium_01_chips/chips.5000.top.large.png",
+          "sha256" : "86202c8ec19ff721e19003d08aad4a6f10a4a6ac179044312817f8668a18a42a"
+        },
+        "chips.5000.top.small" : {
+          "bytes" : 21185,
+          "path" : "premium_01_chips/chips.5000.top.small.png",
+          "sha256" : "e0dfcacb7d82f37c79c107b090062d834e7bb5101bef327be4b8329ee8e78d74"
+        },
+        "chips.50000.flat.large" : {
+          "bytes" : 47684,
+          "path" : "premium_01_chips/chips.50000.flat.large.png",
+          "sha256" : "183c3f107fb100fa3d908826eae8bd2ef5319e194cef0d65fde4cd163e76b8ed"
+        },
+        "chips.50000.flat.small" : {
+          "bytes" : 12454,
+          "path" : "premium_01_chips/chips.50000.flat.small.png",
+          "sha256" : "10642d7afb6a8a9efdbe961c23c6bf7cc22ff74fb82a8ee6c41562af432e24f7"
+        },
+        "chips.50000.top.large" : {
+          "bytes" : 71887,
+          "path" : "premium_01_chips/chips.50000.top.large.png",
+          "sha256" : "0f9a76466e52038549a87f0c3b81032e80126c4079615676c7769097a6ebfb82"
+        },
+        "chips.50000.top.small" : {
+          "bytes" : 21268,
+          "path" : "premium_01_chips/chips.50000.top.small.png",
+          "sha256" : "b0fd74b0f111d6c7ce3de785571e62d1ec74e6a6143f785313187f39267d6703"
+        }
+      },
+      "badge" : "New",
+      "id" : "premium_01_chips",
+      "kind" : "chips",
+      "names" : {
+        "en" : "Premium chips",
+        "es" : "Fichas premium"
+      },
+      "preview" : {
+        "bytes" : 65104,
+        "path" : "premium_01_chips/chips.1000.top.large.png",
+        "sha256" : "c8ac758b82c3e2359e87217a57315b625970d079254f298a48199a70c64ff0e4"
+      },
+      "productID" : "fap.skin.premium_01_chips.set"
+    },
     {
       "assets" : {
         "back" : {
@@ -322,6 +559,6 @@
       "productID" : "fap.skin.spanish_001.set"
     }
   ],
-  "publishedAt" : "2026-10-11T21:27:58Z",
+  "publishedAt" : "2026-10-29T18:03:38Z",
   "schemaVersion" : 1
 }

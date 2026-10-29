@@ -66,7 +66,7 @@ private struct UnlockCard: View {
                     .foregroundStyle(Theme.Palette.celebration)
                 Text(name)
                     .font(.headline)
-                Text("Now on your cards everywhere you play.")
+                (item?.kind == .chips ? Text("Now on your chips everywhere you play.") : Text("Now on your cards everywhere you play."))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -89,11 +89,16 @@ private struct UnlockCard: View {
         }
     }
 
-    /// Three cards of a face set, or the back, fanning out from one stack.
+    /// Three cards of a face set, the back, or three chips, fanning out
+    /// from one stack.
     @ViewBuilder
     private var preview: some View {
         let height = min(cardHeight, 160)
-        if item?.slots.contains(.cardBack) == true {
+        if item?.kind == .chips {
+            ChipFanView(isFannedOut: isFannedOut)
+                .frame(height: height * 0.6)
+                .scaleEffect(isFannedOut ? 1 : 0.6)
+        } else if item?.slots.contains(.cardBack) == true {
             CardBackView()
                 .frame(height: height)
                 .rotationEffect(.degrees(isFannedOut ? -4 : 0))

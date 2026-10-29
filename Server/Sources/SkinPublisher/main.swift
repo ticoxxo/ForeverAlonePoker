@@ -7,13 +7,17 @@ import SkinKit
 // in App Store Connect, never here.
 //
 //   swift run --package-path Server SkinPublisher import <artwork-folder> [skins-dir]
+//   swift run --package-path Server SkinPublisher import-chips <artwork-folder> [skins-dir] [--bundled DIR]
 //   swift run --package-path Server SkinPublisher manifest [skins-dir] [--version N] [--base /skins/]
 //   swift run --package-path Server SkinPublisher keygen
 //
-// skins-dir defaults to Server/SkinAssets. After `manifest`, a running server
+// skins-dir defaults to Server/SkinAssets; --bundled (the free chips) to
+// ForeverAlonePoker/Assets.xcassets/Skins. After `manifest`, a running server
 // picks the new catalog up on the next request.
 
 let defaultSkinsDirectory = "Server/SkinAssets"
+/// Where the free defaults are bundled into the app.
+let defaultBundledSkinsDirectory = "ForeverAlonePoker/Assets.xcassets/Skins"
 /// Splits `--name value` pairs from positional arguments.
 func parse(_ raw: [String]) -> (positional: [String], options: [String: String]) {
     var positional: [String] = []
@@ -47,6 +51,15 @@ case "import":
         print("\(item): \(count) file(s)")
     }
 
+case "import-chips":
+    guard let source = arguments.first else { fail("usage: SkinPublisher import-chips <artwork-folder> [skins-dir] [--bundled DIR]") }
+    let skins = URL(filePath: arguments.dropFirst().first ?? defaultSkinsDirectory, directoryHint: .isDirectory)
+    let bundled = URL(filePath: options["--bundled"] ?? defaultBundledSkinsDirectory, directoryHint: .isDirectory)
+    let counts = try CatalogPublisher.importChips(from: URL(filePath: source, directoryHint: .isDirectory), into: skins, bundledAssets: bundled)
+    for (item, count) in counts.sorted(by: { $0.key < $1.key }) {
+        print("\(item): \(count) file(s)")
+    }
+
 case "manifest":
     let base = options["--base"] ?? "/skins/"
     let explicitVersion = options["--version"].flatMap(Int.init)
@@ -64,5 +77,5 @@ case "keygen":
     print("Public key for Info.plist SkinCatalogPublicKeys: \(pair.publicKey)")
 
 default:
-    print("usage: SkinPublisher import <artwork-folder> [skins-dir] | manifest [skins-dir] [--version N] [--base URL] | keygen")
+    print("usage: SkinPublisher import <artwork-folder> [skins-dir] | import-chips <artwork-folder> [skins-dir] [--bundled DIR] | manifest [skins-dir] [--version N] [--base URL] | keygen")
 }

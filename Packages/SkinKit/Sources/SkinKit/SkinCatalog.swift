@@ -120,6 +120,7 @@ private struct Lossy<Value: Decodable>: Decodable {
 public extension SkinCatalog {
     static let defaultFrontID: SkinID = "default"
     static let defaultBackID: SkinID = "navy_check"
+    static let defaultChipsID: SkinID = "classic_chips"
 
     /// The free skins bundled in the app binary. They are always installed and
     /// are what every slot falls back to (tdr/0011).
@@ -141,6 +142,15 @@ public extension SkinCatalog {
                 kind: .cardBack,
                 names: ["en": "Navy check", "es": "Cuadros azul marino"],
                 assets: [.cardBack: AssetRef(path: AssetNaming.fileName(for: .cardBack), sha256: "", bytes: 0)],
+                isDefault: true
+            ),
+            SkinItem(
+                id: defaultChipsID,
+                kind: .chips,
+                names: ["en": "Classic chips", "es": "Fichas clásicas"],
+                assets: Dictionary(uniqueKeysWithValues: CosmeticSlot.allChips.map {
+                    ($0, AssetRef(path: AssetNaming.fileName(for: $0), sha256: "", bytes: 0))
+                }),
                 isDefault: true
             ),
         ]

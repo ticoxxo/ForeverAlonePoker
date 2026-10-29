@@ -34,9 +34,9 @@ final class SkinStore {
         let items: [SkinItem]
     }
 
-    /// Kinds this build can draw. Supporting the mat or chips means adding
+    /// Kinds this build can draw. Supporting the mat means adding
     /// their renderer and listing them here; catalogs can carry them earlier.
-    static let supportedKinds: Set<CosmeticKind> = [.cardFront, .cardBack]
+    static let supportedKinds: Set<CosmeticKind> = [.cardFront, .cardBack, .chips]
 
     private(set) var catalog: SkinCatalog = .builtIn {
         didSet { resolver = SkinResolver(catalog: catalog) }
@@ -128,7 +128,7 @@ final class SkinStore {
 
     private func cardSkin(loadout: Loadout, ownership: Ownership) -> CardSkin {
         var overrides: [CosmeticSlot: SkinImageSource] = [:]
-        for slot in CosmeticSlot.allCardFronts + [.cardBack] {
+        for slot in CosmeticSlot.allCardFronts + [.cardBack] + CosmeticSlot.allChips {
             guard let resolved = resolver.resolve(slot, loadout: loadout, ownership: ownership, installed: installed),
                   !resolved.isDefault else { continue }
             let key = AssetKey(item: resolved.item.id, slot: slot)

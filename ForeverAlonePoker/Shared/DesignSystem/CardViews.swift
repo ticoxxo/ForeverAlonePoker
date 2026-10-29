@@ -212,9 +212,38 @@ private struct DealPose: ViewModifier {
     }
 }
 
-/// A chip amount with a consistent style. The digits roll when it changes.
+/// One chip, drawn with the chip skin in the environment (`\.cardSkin`,
+/// tdr/0027). Falls back to the bundled classic chip, then to a symbol.
+struct ChipView: View {
+    let denomination: ChipDenomination
+    var face: ChipFace = .top
+    var size: ChipSize = .small
+    @Environment(\.cardSkin) private var skin
+
+    /// The artwork's proportions: a round chip from above, a wide ellipse
+    /// with its edge when lying flat.
+    private var aspectRatio: CGFloat {
+        switch face {
+        case .top: 1
+        case .flat: 129.0 / 59.0
+        }
+    }
+
+    var body: some View {
+        SkinImage(source: skin.source(for: .chip(denomination, face: face, size: size))) {
+            Image(systemName: "circle.circle.fill")
+                .resizable()
+        }
+        .aspectRatio(aspectRatio, contentMode: .fit)
+        .accessibilityHidden(true)
+    }
+}
+
+/// A chip amount with a consistent style: the chip of the largest
+/// denomination it covers, then the number. The digits roll when it changes.
 struct ChipAmountView: View {
     let amount: Chips
+    @ScaledMetric(relativeTo: .subheadline) private var chipSize: CGFloat = 18
 
     var body: some View {
         Label {
@@ -222,8 +251,9 @@ struct ChipAmountView: View {
                 .monospacedDigit()
                 .contentTransition(.numericText(value: Double(amount)))
         } icon: {
-            Image(systemName: "circle.circle.fill")
-                .accessibilityHidden(true)
+            // The top view for now; the flat one is for chip stacks later.
+            ChipView(denomination: .showing(amount), face: .top, size: .small)
+                .frame(width: chipSize, height: chipSize)
         }
         .font(.subheadline.weight(.semibold))
         .motion(Theme.Motion.count, value: amount)
@@ -241,6 +271,12 @@ struct ChipAmountView: View {
             DrawnCardBack().aspectRatio(CardMetrics.aspectRatio, contentMode: .fit).frame(height: 64)
         }
         ChipAmountView(amount: 1500)
+        HStack {
+            ForEach(ChipDenomination.all, id: \.self) { denomination in
+                ChipView(denomination: denomination, size: .large).frame(width: 28)
+            }
+        }
+        ChipView(denomination: .init(1_000), face: .flat, size: .large).frame(width: 64)
     }
     .padding()
     .background(.green)
