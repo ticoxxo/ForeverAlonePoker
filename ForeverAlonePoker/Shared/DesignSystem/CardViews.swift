@@ -239,8 +239,70 @@ struct ChipView: View {
     }
 }
 
-/// A chip amount with a consistent style: the chip of the largest
-/// denomination it covers, then the number. The digits roll when it changes.
+/// Up to three piles of chips that picture an amount roughly
+/// (`ChipStack.stacks`, tdr/0028): each pile leans up and to the left, and
+/// the piles sit in a small cluster, the last one in front.
+struct ChipStacksView: View {
+    let amount: Chips
+    /// The width of one chip.
+    let chipSize: CGFloat
+
+    /// Where each pile's bottom chip sits, in chip widths, by pile count.
+    private static let clusters: [[CGPoint]] = [
+        [CGPoint(x: 0, y: 0)],
+        [CGPoint(x: 0, y: 0), CGPoint(x: 0.8, y: 0.2)],
+        [CGPoint(x: 0, y: 0.05), CGPoint(x: 0.85, y: -0.1), CGPoint(x: 0.45, y: 0.5)],
+    ]
+
+    private struct PlacedChip: Identifiable {
+        let id: String
+        let denomination: ChipDenomination
+        let center: CGPoint
+    }
+
+    /// Every chip's center, from the back pile's bottom chip to the front
+    /// pile's top one, so later chips draw over earlier ones.
+    private var chips: [PlacedChip] {
+        let stacks = ChipStack.stacks(for: amount)
+        let anchors = Self.clusters[min(stacks.count, Self.clusters.count) - 1]
+        let rise = chipSize * 0.16
+        return zip(stacks, anchors).enumerated().flatMap { pile, element in
+            let (stack, anchor) = element
+            return (0..<stack.count).map { level in
+                PlacedChip(
+                    id: "\(pile)-\(level)",
+                    denomination: stack.denomination,
+                    center: CGPoint(
+                        x: anchor.x * chipSize - CGFloat(level) * rise * 0.6,
+                        y: anchor.y * chipSize - CGFloat(level) * rise
+                    )
+                )
+            }
+        }
+    }
+
+    var body: some View {
+        let chips = chips
+        let radius = chipSize / 2
+        let minX = (chips.map(\.center.x).min() ?? 0) - radius
+        let minY = (chips.map(\.center.y).min() ?? 0) - radius
+        let maxX = (chips.map(\.center.x).max() ?? 0) + radius
+        let maxY = (chips.map(\.center.y).max() ?? 0) + radius
+        ZStack(alignment: .topLeading) {
+            ForEach(chips) { chip in
+                ChipView(denomination: chip.denomination, face: .top, size: .small)
+                    .frame(width: chipSize, height: chipSize)
+                    .shadow(color: .black.opacity(0.35), radius: 0.5, y: 0.5)
+                    .offset(x: chip.center.x - radius - minX, y: chip.center.y - radius - minY)
+            }
+        }
+        .frame(width: maxX - minX, height: maxY - minY, alignment: .topLeading)
+        .accessibilityHidden(true)
+    }
+}
+
+/// A chip amount with a consistent style: a few piles of chips that picture
+/// it, then the number, which is the truth. The digits roll when it changes.
 struct ChipAmountView: View {
     let amount: Chips
     @ScaledMetric(relativeTo: .subheadline) private var chipSize: CGFloat = 18
@@ -251,9 +313,7 @@ struct ChipAmountView: View {
                 .monospacedDigit()
                 .contentTransition(.numericText(value: Double(amount)))
         } icon: {
-            // The top view for now; the flat one is for chip stacks later.
-            ChipView(denomination: .showing(amount), face: .top, size: .small)
-                .frame(width: chipSize, height: chipSize)
+            ChipStacksView(amount: amount, chipSize: chipSize)
         }
         .font(.subheadline.weight(.semibold))
         .motion(Theme.Motion.count, value: amount)
