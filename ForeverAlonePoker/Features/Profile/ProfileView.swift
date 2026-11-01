@@ -1,8 +1,7 @@
 import AuthenticationServices
 import SwiftUI
 
-/// Edit the player: name, picture and country; sound; opt into ranked play;
-/// browse match history.
+/// Edit the player: name, picture and country; sound; opt into ranked play.
 struct ProfileView: View {
     @Environment(IdentityStore.self) private var identity
     @Environment(AudioSettings.self) private var audio
@@ -74,22 +73,6 @@ struct ProfileView: View {
                 Text("Game server")
             } footer: {
                 Text("Address of the server used for online matches. Leave empty for the default.")
-            }
-
-            if !identity.recentMatches.isEmpty {
-                Section("Match history") {
-                    ForEach(identity.recentMatches) { match in
-                        MatchRecordRow(
-                            opponentName: match.opponentName,
-                            didWin: match.didWin,
-                            mode: match.mode,
-                            date: match.date,
-                            isRanked: match.wasRanked,
-                            place: match.place,
-                            playerCount: match.playerCount
-                        )
-                    }
-                }
             }
         }
         .navigationTitle("Profile")

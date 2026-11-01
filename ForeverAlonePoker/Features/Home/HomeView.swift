@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Landing screen (tdr/0018): who you are, large tiles for the ways to play,
-/// and what you played recently. Tiles flow in an adaptive grid, so a folded
+/// and your match history. Tiles flow in an adaptive grid, so a folded
 /// phone shows one column and an open foldable or an iPad two or three,
 /// decided by the width alone. Everything stays in one navigation stack so
 /// folding or unfolding mid-match never rebuilds the table.
@@ -98,34 +98,19 @@ struct HomeView: View {
                                     tint: .orange
                                 )
                             }
+                            NavigationLink {
+                                MatchHistoryView()
+                            } label: {
+                                HomeTile(
+                                    title: "Match history",
+                                    subtitle: "Your recent and past matches",
+                                    systemImage: "clock.arrow.circlepath",
+                                    tint: .teal
+                                )
+                            }
                         }
                     }
 
-                    if !identity.recentMatches.isEmpty {
-                        HomeSection(title: "Recent matches") {
-                            VStack(spacing: 0) {
-                                ForEach(identity.recentMatches.prefix(5)) { match in
-                                    MatchRecordRow(
-                                        opponentName: match.opponentName,
-                                        didWin: match.didWin,
-                                        mode: match.mode,
-                                        date: match.date,
-                                        isRanked: match.wasRanked,
-                                        place: match.place,
-                                        playerCount: match.playerCount
-                                    )
-                                    .padding(.vertical, Theme.Spacing.small)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    if match.id != identity.recentMatches.prefix(5).last?.id {
-                                        Divider()
-                                    }
-                                }
-                            }
-                            .padding(.horizontal, Theme.Spacing.large)
-                            .padding(.vertical, Theme.Spacing.small)
-                            .surfaceGlass(in: RoundedRectangle(cornerRadius: Theme.Radius.tile, style: .continuous))
-                        }
-                    }
                 }
                 .padding(Theme.Spacing.large)
                 // Readable on a wide window instead of stretched edge to edge.
@@ -245,8 +230,14 @@ struct PlayerCard: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 }
-                Text("^[\(wins) win](inflect: true) · ^[\(losses) loss](inflect: true)")
-                    .font(.caption)
+                Group {
+                    if wins + losses == 0 {
+                        Text("Unranked")
+                    } else {
+                        Text("^[\(wins) win](inflect: true) · ^[\(losses) loss](inflect: true)")
+                    }
+                }
+                .font(.caption)
                     .foregroundStyle(.secondary)
             }
         }

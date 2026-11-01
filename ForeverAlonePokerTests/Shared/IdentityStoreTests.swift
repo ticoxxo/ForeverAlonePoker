@@ -75,8 +75,30 @@ struct IdentityStoreTests {
         #expect(store.recentMatches.first?.mode == .practice)
         #expect(store.recentMatches.last?.didWin == true)
         #expect(store.recentMatches.first?.profile?.localID == store.profile.localID)
-        #expect(store.wins == 1)
-        #expect(store.losses == 1)
+        #expect(store.wins == 0, "unranked matches do not count")
+        #expect(store.losses == 0)
+    }
+
+    @Test("wins and losses count every ranked match, not just the recent ones")
+    func countsRankedMatches() throws {
+        let fixture = try Fixture()
+        let store = fixture.store
+        let context = fixture.container.mainContext
+        for index in 0..<60 {
+            let match = MatchRecord(mode: .online, opponentName: "Bot \(index)", didWin: index.isMultiple(of: 3), finalStack: 0, opponentFinalStack: 0, handsPlayed: 1)
+            match.wasRanked = true
+            match.profile = store.profile
+            context.insert(match)
+        }
+        try context.save()
+        store.refresh()
+        #expect(store.wins == 20)
+        #expect(store.losses == 40)
+
+        store.record(MatchSummary(didWin: true, opponentName: "Bob", myFinalStack: 3000, opponentFinalStack: 0, handsPlayed: 3), mode: .online)
+        #expect(store.wins == 20, "not ranked until the server rates it")
+        store.markLatestOnlineMatchRanked()
+        #expect(store.wins == 21)
     }
 
     @Test("a multiway finish keeps the place and the table size")

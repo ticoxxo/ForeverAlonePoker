@@ -20,7 +20,12 @@ final class IdentityStore: LoadoutPersisting {
 
     private let context: ModelContext
     private(set) var profile: PlayerProfile
+    /// The newest matches, for the match history screen.
     private(set) var recentMatches: [MatchRecord] = []
+    static let recentMatchLimit = 10
+    /// Ranked matches won and lost, over the whole history.
+    private(set) var wins = 0
+    private(set) var losses = 0
     /// Whether the store is mirrored to iCloud (set by the app once CloudKit is enabled).
     var isCloudSyncEnabled = false
 
@@ -183,15 +188,61 @@ final class IdentityStore: LoadoutPersisting {
         guard let latest = recentMatches.first(where: { $0.mode == .online }), !latest.wasRanked else { return }
         latest.wasRanked = true
         save()
+        refreshRankedRecord()
     }
-
-    var wins: Int { recentMatches.filter(\.didWin).count }
-    var losses: Int { recentMatches.count - wins }
 
     private func refreshRecentMatches() {
         var descriptor = FetchDescriptor<MatchRecord>(sortBy: [SortDescriptor(\.date, order: .reverse)])
-        descriptor.fetchLimit = 50
+        descriptor.fetchLimit = Self.recentMatchLimit
         recentMatches = (try? context.fetch(descriptor)) ?? []
+        historyCache = [:]
+        refreshRankedRecord()
+    }
+
+    /// Counts every ranked match, not just the recent ones.
+    private func refreshRankedRecord() {
+        let won = FetchDescriptor<MatchRecord>(predicate: #Predicate { $0.wasRanked && $0.didWin })
+        let lost = FetchDescriptor<MatchRecord>(predicate: #Predicate { $0.wasRanked && !$0.didWin })
+        wins = (try? context.fetchCount(won)) ?? 0
+        losses = (try? context.fetchCount(lost)) ?? 0
+    }
+
+    // MARK: - Full history
+
+    static let historyBatchSize = 25
+
+    /// Batches already read from the store, per order. Cleared whenever the
+    /// history changes, so reopening the full history never fetches twice.
+    private struct HistoryPages {
+        var matches: [MatchRecord] = []
+        var reachedEnd = false
+    }
+
+    @ObservationIgnored private var historyCache: [MatchHistoryOrder: HistoryPages] = [:]
+
+    /// Everything loaded so far in `order`.
+    func cachedHistory(_ order: MatchHistoryOrder) -> (matches: [MatchRecord], reachedEnd: Bool) {
+        let pages = historyCache[order] ?? HistoryPages()
+        return (pages.matches, pages.reachedEnd)
+    }
+
+    /// Up to `historyBatchSize` matches starting at `offset`, from the cache
+    /// when it already holds them.
+    func historyPage(_ order: MatchHistoryOrder, offset: Int) -> (matches: [MatchRecord], reachedEnd: Bool) {
+        var pages = historyCache[order] ?? HistoryPages()
+        let end = offset + Self.historyBatchSize
+        if pages.matches.count < end, !pages.reachedEnd {
+            let missing = end - pages.matches.count
+            var descriptor = FetchDescriptor<MatchRecord>(sortBy: order.sortDescriptors)
+            descriptor.fetchOffset = pages.matches.count
+            descriptor.fetchLimit = missing
+            let batch = (try? context.fetch(descriptor)) ?? []
+            pages.matches += batch
+            pages.reachedEnd = batch.count < missing
+            historyCache[order] = pages
+        }
+        let slice = pages.matches.dropFirst(offset).prefix(Self.historyBatchSize)
+        return (Array(slice), pages.reachedEnd && pages.matches.count <= end)
     }
 
     private func save() {
