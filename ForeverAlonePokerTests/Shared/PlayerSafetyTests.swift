@@ -15,9 +15,9 @@ private struct Fixture {
     }
 }
 
-private func summary(_ playerID: String, _ name: String, avatarID: String? = nil) -> PlayerSummary {
+private func summary(_ playerID: String, _ name: String, countryCode: String = "", avatarID: String? = nil) -> PlayerSummary {
     PlayerSummary(
-        seat: .two, playerID: playerID, name: name, countryCode: "", avatarID: avatarID, stack: 0, streetCommitted: 0,
+        seat: .two, playerID: playerID, name: name, countryCode: countryCode, avatarID: avatarID, stack: 0, streetCommitted: 0,
         hasFolded: false, isAllIn: false, isReady: false, isConnected: true, isRanked: false, isBusted: false, place: nil
     )
 }
@@ -60,6 +60,13 @@ struct BlockListTests {
         let bruno = summary("bruno", "Bruno", avatarID: "avatar_seal")
         #expect(bruno.shownAvatarID(hiding: []) == "avatar_seal")
         #expect(bruno.shownAvatarID(hiding: ["bruno"]) == nil)
+    }
+
+    @Test("a blocked player's country flag is hidden")
+    func shownCountry() {
+        let bruno = summary("bruno", "Bruno", countryCode: "MX")
+        #expect(bruno.shownCountryCode(hiding: []) == "MX")
+        #expect(bruno.shownCountryCode(hiding: ["bruno"]) == "")
     }
 }
 

@@ -5,6 +5,9 @@ extension EnvironmentValues {
     /// Shared by every seat so the dealer button glides from one seat to the
     /// next between hands instead of blinking (tdr/0018).
     @Entry var dealerButtonNamespace: Namespace.ID? = nil
+    /// Draw each player's country flag on their picture. Only internet
+    /// tables turn it on, and only while the player's setting allows it.
+    @Entry var showsCountryFlags = false
 }
 
 /// The opponent's seat: name, stack, bet in front, and their cards (face
@@ -51,7 +54,7 @@ struct OpponentSeatView: View {
     }
 
     private func avatarView(_ summary: PlayerSummary, size: CGFloat) -> some View {
-        PlayerAvatar(avatarID: summary.shownAvatarID(hiding: blocked), size: size, name: summary.shownName(hiding: blocked), isReconnecting: summary.isReconnecting)
+        PlayerAvatar(avatarID: summary.shownAvatarID(hiding: blocked), size: size, name: summary.shownName(hiding: blocked), countryCode: summary.shownCountryCode(hiding: blocked), isReconnecting: summary.isReconnecting)
             .playerSafetyMenu(summary)
             .emoteBubble(reaction)
     }
@@ -224,30 +227,16 @@ struct SeatHeaderView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        // At accessibility text sizes a single line would truncate the name,
-        // so the stack and tags drop under it.
-        let layout = dynamicTypeSize.isAccessibilitySize
-            ? AnyLayout(VStackLayout(spacing: Theme.Spacing.xSmall))
-            : AnyLayout(HStackLayout(spacing: Theme.Spacing.small))
-        layout {
-            HStack(spacing: Theme.Spacing.small) {
-                if isOnButton {
-                    DealerButton()
-                }
-                if isActing {
-                    Image(systemName: "hourglass")
-                        .font(.subheadline.bold())
-                        .foregroundStyle(Theme.Palette.highlight)
-                        .symbolEffect(.pulse)
-                }
-                Text(name)
-                    .font(.headline)
-                    .lineLimit(1)
-            }
-            HStack(spacing: Theme.Spacing.small) {
-                ChipAmountView(amount: stack)
-                if let tag {
-                    StatusTag(text: tag)
+        // Name and stack share one line when it fits. Otherwise (a long name,
+        // a narrow seat, accessibility text sizes) the stack and tags drop
+        // under the name: every player needs to read each stack in full.
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                plate(VStackLayout(spacing: Theme.Spacing.xSmall))
+            } else {
+                ViewThatFits(in: .horizontal) {
+                    plate(HStackLayout(spacing: Theme.Spacing.small))
+                    plate(VStackLayout(spacing: Theme.Spacing.xSmall))
                 }
             }
         }
@@ -268,6 +257,33 @@ struct SeatHeaderView: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(name))
         .accessibilityValue(accessibilityValue)
+    }
+
+    private func plate(_ layout: some Layout) -> some View {
+        layout {
+            HStack(spacing: Theme.Spacing.small) {
+                if isOnButton {
+                    DealerButton()
+                }
+                if isActing {
+                    Image(systemName: "hourglass")
+                        .font(.subheadline.bold())
+                        .foregroundStyle(Theme.Palette.highlight)
+                        .symbolEffect(.pulse)
+                }
+                Text(name)
+                    .font(.headline)
+                    .lineLimit(1)
+            }
+            HStack(spacing: Theme.Spacing.small) {
+                ChipAmountView(amount: stack)
+                    // The stack is never truncated; the name gives way first.
+                    .fixedSize()
+                if let tag {
+                    StatusTag(text: tag)
+                }
+            }
+        }
     }
 
     private var tag: LocalizedStringKey? {
@@ -332,7 +348,7 @@ struct CompactSeatView: View {
         let name = summary.shownName(hiding: blocked)
         VStack(spacing: Theme.Spacing.xSmall) {
             ZStack(alignment: .bottomTrailing) {
-                PlayerAvatar(avatarID: summary.shownAvatarID(hiding: blocked), size: min(avatarSize, 56), name: name, isReconnecting: summary.isReconnecting)
+                PlayerAvatar(avatarID: summary.shownAvatarID(hiding: blocked), size: min(avatarSize, 56), name: name, countryCode: summary.shownCountryCode(hiding: blocked), isReconnecting: summary.isReconnecting)
                     .overlay {
                         if isActing {
                             Circle().strokeBorder(Theme.Palette.highlight, lineWidth: 3)
@@ -381,12 +397,20 @@ struct CompactSeatView: View {
 }
 
 /// A player's picture. While they are reconnecting (tdr/0016) it is dimmed
-/// behind a `wifi.slash` symbol, with a spinning ring around it.
+/// behind a `wifi.slash` symbol, with a spinning ring around it. At internet
+/// tables their country flag sits on its bottom trailing edge (tdr/0031).
 struct PlayerAvatar: View {
     let avatarID: String?
     let size: CGFloat
     let name: String
+    var countryCode: String = ""
     var isReconnecting: Bool = false
+
+    @Environment(\.showsCountryFlags) private var showsCountryFlags
+
+    private var flag: String {
+        showsCountryFlags ? CountryFlag.emoji(for: countryCode) : ""
+    }
 
     var body: some View {
         AvatarView(avatarID: avatarID, size: size, name: name)
@@ -407,9 +431,18 @@ struct PlayerAvatar: View {
                     ReconnectRing(diameter: size + max(6, size * 0.16))
                 }
             }
+            .overlay(alignment: .bottomTrailing) {
+                if !flag.isEmpty {
+                    Text(flag)
+                        .font(.system(size: max(12, size * 0.34)))
+                        .offset(x: size * 0.06, y: size * 0.06)
+                        .allowsHitTesting(false)
+                }
+            }
             .animation(.easeInOut(duration: 0.25), value: isReconnecting)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(isReconnecting ? Text("\(name), reconnecting") : Text("Profile picture of \(name)"))
+            .accessibilityValue(flag.isEmpty ? Text(verbatim: "") : Text(CountryFlag.name(for: countryCode)))
     }
 }
 
