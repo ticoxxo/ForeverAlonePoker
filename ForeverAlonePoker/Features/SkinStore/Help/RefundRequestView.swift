@@ -77,7 +77,9 @@ private struct RefundRow: View {
     @ViewBuilder
     private var thumbnail: some View {
         if let item = row.item {
-            if item.kind == .chips {
+            if item.kind == .avatar {
+                AvatarView(avatarID: item.id.rawValue, size: 44)
+            } else if item.kind == .chips {
                 ChipView(denomination: .init(1_000), size: .large)
                     .environment(\.cardSkin, store.previewSkin(for: item))
             } else if item.kind == .cardBack {

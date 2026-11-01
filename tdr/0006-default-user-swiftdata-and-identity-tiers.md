@@ -47,3 +47,7 @@ The app must be playable immediately with no sign-in, and later offer an account
 ### 2026-10-08
 
 Tiers 1 and 2 are implemented; the details that differ from the plan above (server session tokens instead of Apple's identity token on every join, protocol version 2, duplicate-profile merge, record names and fields) are in tdr/0010.
+
+### 2026-10-31
+
+Players no longer upload a profile picture and clients no longer write `PublicProfile`. Pictures come from a bundled catalog and travel with the join (tdr/0030). `PlayerProfile.avatar` stays in the model, unused.

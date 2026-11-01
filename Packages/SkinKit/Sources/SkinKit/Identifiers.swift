@@ -33,6 +33,7 @@ public struct CosmeticKind: RawRepresentable, Hashable, Sendable, Codable, Custo
     public static let cardBack = CosmeticKind(rawValue: "cardBack")
     public static let mat = CosmeticKind(rawValue: "mat")
     public static let chips = CosmeticKind(rawValue: "chips")
+    public static let avatar = CosmeticKind(rawValue: "avatar")
 
     public init(from decoder: Decoder) throws {
         rawValue = try decoder.singleValueContainer().decode(String.self)

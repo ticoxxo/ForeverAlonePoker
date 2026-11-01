@@ -25,8 +25,6 @@ nonisolated protocol LeaderboardService: Sendable {
     func top(_ scope: LeaderboardScope, limit: Int) async throws -> [LeaderboardRow]
     /// A single player's row, `nil` when they have never played ranked.
     func entry(for playerID: String) async throws -> LeaderboardRow?
-    /// Profile pictures from `PublicProfile` records, keyed by player id.
-    func avatars(for playerIDs: [String]) async throws -> [String: Data]
 }
 
 /// `CKQuery` against the public database of the app's container.
@@ -62,10 +60,6 @@ nonisolated struct CloudKitLeaderboardService: LeaderboardService {
         } catch let error as CKError where error.code == .unknownItem {
             return nil
         }
-    }
-
-    func avatars(for playerIDs: [String]) async throws -> [String: Data] {
-        try await CloudKitAvatarProvider(containerID: containerID).avatars(for: playerIDs)
     }
 
     static func row(from record: CKRecord) -> LeaderboardRow? {

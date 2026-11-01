@@ -29,8 +29,15 @@ struct IdentityStoreTests {
         #expect(store.profile.countryCode == "MX")
         #expect(store.profile.appleUserID == nil)
         #expect(store.tier == .local)
-        #expect(store.identity.displayName == "Player")
-        #expect(store.identity.id == store.profile.localID.uuidString)
+        #expect(store.identity(avatarID: nil).displayName == "Player")
+        #expect(store.identity(avatarID: nil).id == store.profile.localID.uuidString)
+    }
+
+    @Test("the identity carries the chosen profile picture to opponents")
+    func identityCarriesAvatar() throws {
+        let fixture = try Fixture()
+        #expect(fixture.store.identity(avatarID: "avatar_seal").avatarID == "avatar_seal")
+        #expect(fixture.store.identity(avatarID: nil).avatarID == nil)
     }
 
     @Test("the same store reopens the same user instead of creating another")
@@ -54,8 +61,6 @@ struct IdentityStoreTests {
         #expect(store.profile.displayName == "Ana", "blank names are ignored")
         store.updateCountryCode("AR")
         #expect(store.profile.countryCode == "AR")
-        store.updateAvatar(Data([1, 2, 3]))
-        #expect(store.profile.avatar == Data([1, 2, 3]))
     }
 
     @Test("finished matches are recorded newest first and counted")
@@ -99,9 +104,9 @@ struct IdentityStoreTests {
     @Test("the identity carries the country so opponents and leaderboards can show it")
     func identityCountry() throws {
         let fixture = try Fixture(country: "MX")
-        #expect(fixture.store.identity.countryCode == "MX")
+        #expect(fixture.store.identity(avatarID: nil).countryCode == "MX")
         fixture.store.updateCountryCode("AR")
-        #expect(fixture.store.identity.countryCode == "AR")
+        #expect(fixture.store.identity(avatarID: nil).countryCode == "AR")
     }
 
     @Test("linking an Apple account makes the Apple user id the player's identity and keeps the token")
@@ -110,17 +115,15 @@ struct IdentityStoreTests {
         let store = fixture.store
         let localID = store.profile.localID.uuidString
         #expect(store.rankedSessionToken == nil)
-        #expect(store.publicProfileSnapshot == nil)
 
         store.linkAppleAccount(userID: "001234.abc", sessionToken: "session-1")
         #expect(store.tier == .ranked)
-        #expect(store.identity.id == "001234.abc")
+        #expect(store.identity(avatarID: nil).id == "001234.abc")
         #expect(store.rankedSessionToken == "session-1")
-        #expect(store.publicProfileSnapshot == PublicProfileSnapshot(playerID: "001234.abc", displayName: "Player", countryCode: "MX", avatar: nil))
 
         store.unlinkAppleAccount()
         #expect(store.tier == .local)
-        #expect(store.identity.id == localID)
+        #expect(store.identity(avatarID: nil).id == localID)
         #expect(store.rankedSessionToken == nil)
         #expect(store.recentMatches.isEmpty, "history untouched")
     }

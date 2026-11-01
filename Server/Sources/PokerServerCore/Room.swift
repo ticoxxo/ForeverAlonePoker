@@ -88,8 +88,10 @@ public actor Room {
 
         let (outbound, absence) = await authority.receive(message, from: id, verifiedRanked: rankedPlayer != nil)
         if case .join = message, let seat = await authority.room.seat(of: id) {
-            // A join without a valid token (re)claims the seat unranked.
-            rankedSeats[seat] = rankedPlayer
+            // A join without a valid token (re)claims the seat unranked. The
+            // leaderboard gets the name as seated, after the name policy (tdr/0029).
+            let seated = await authority.room.players[seat]?.identity
+            rankedSeats[seat] = rankedPlayer.flatMap { _ in seated.map(RankedPlayer.init) }
         }
         deliver(outbound)
         // Leaving a match in play holds the seat like a drop (tdr/0016).

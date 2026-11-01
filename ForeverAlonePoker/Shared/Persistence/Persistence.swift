@@ -3,7 +3,7 @@ import SwiftData
 
 /// Builds the app's single `ModelContainer`.
 enum Persistence {
-    static let schema = Schema([PlayerProfile.self, MatchRecord.self])
+    static let schema = Schema([PlayerProfile.self, MatchRecord.self, BlockedPlayer.self])
     /// The iCloud container from the app's entitlements (tdr/0006, tdr/0010).
     static let cloudContainerID = "iCloud.Ticoxxo.ForeverAlonePoker"
 

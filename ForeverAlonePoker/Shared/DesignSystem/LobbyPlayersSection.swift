@@ -6,8 +6,9 @@ import PokerCore
 /// and how many seats are left. Used by the local and online lobbies.
 struct LobbyPlayersSection: View {
     let view: PlayerView
-    let avatars: AvatarLoader
     @ScaledMetric(relativeTo: .body) private var avatarSize: CGFloat = 36
+    @Environment(BlockList.self) private var blockList: BlockList?
+    private var blocked: Set<String> { blockList?.blockedIDs ?? [] }
 
     private var seated: [PlayerSummary] {
         ([view.me] + view.players).sorted { $0.seat < $1.seat }
@@ -17,9 +18,9 @@ struct LobbyPlayersSection: View {
         Section {
             ForEach(seated, id: \.seat) { player in
                 HStack(spacing: Theme.Spacing.medium) {
-                    AvatarView(data: avatars.avatar(for: player.playerID), size: min(avatarSize, 64), name: player.name)
+                    AvatarView(avatarID: player.shownAvatarID(hiding: blocked), size: min(avatarSize, 64), name: player.shownName(hiding: blocked))
                         .accessibilityHidden(true)
-                    Text(player.name)
+                    Text(player.shownName(hiding: blocked))
                     if player.seat == view.seat {
                         Text("(you)")
                             .foregroundStyle(.secondary)
@@ -50,8 +51,5 @@ struct LobbyPlayersSection: View {
             }
         }
         .motion(Theme.Motion.layout, value: seated.map(\.seat))
-        .task(id: seated.map(\.playerID)) {
-            await avatars.load(seated.map(\.playerID))
-        }
     }
 }

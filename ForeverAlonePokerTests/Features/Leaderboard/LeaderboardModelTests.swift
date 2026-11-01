@@ -15,7 +15,6 @@ private let diego = row("diego", "Diego", "AR", 1050)
 /// Serves a fixed table, filtering by country like CloudKit would.
 private struct FakeLeaderboardService: LeaderboardService {
     var rows = [ana, bruno, carla, diego]
-    var avatars: [String: Data] = ["ana": Data([1])]
     var fails = false
 
     func top(_ scope: LeaderboardScope, limit: Int) async throws -> [LeaderboardRow] {
@@ -31,16 +30,12 @@ private struct FakeLeaderboardService: LeaderboardService {
     func entry(for playerID: String) async throws -> LeaderboardRow? {
         rows.first { $0.playerID == playerID }
     }
-
-    func avatars(for playerIDs: [String]) async throws -> [String: Data] {
-        avatars.filter { playerIDs.contains($0.key) }
-    }
 }
 
 @Suite("LeaderboardModel")
 @MainActor
 struct LeaderboardModelTests {
-    @Test("loads the world top with ranks and avatars; a player inside the top is not pinned")
+    @Test("loads the world top with ranks; a player inside the top is not pinned")
     func world() async {
         let model = LeaderboardModel(service: FakeLeaderboardService())
         await model.load(myPlayerID: "bruno")
@@ -48,7 +43,6 @@ struct LeaderboardModelTests {
         #expect(model.rows == [ana, bruno, carla, diego])
         #expect(model.rank(of: bruno) == 2)
         #expect(model.ownEntry == nil)
-        #expect(model.avatars == ["ana": Data([1])])
     }
 
     @Test("a player outside the top is pinned with no rank")

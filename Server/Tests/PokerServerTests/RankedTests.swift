@@ -346,6 +346,24 @@ struct RankedRoomTests {
         #expect(try await store.entries(for: ["ana-sub"])["ana-sub"]?.wins == 1)
     }
 
+    @Test("the leaderboard gets the name as seated, after the name policy")
+    func filteredName() async throws {
+        let store = InMemoryLeaderboardStore()
+        let ranked = await makeRanked(store: store)
+        let room = Room(code: "RANK06", deckProvider: decisiveDeck, ranked: ranked)
+        var anaMessages = await room.attach(TestPlayers.aliceConnection).makeAsyncIterator()
+        _ = await room.attach(TestPlayers.bobConnection)
+        let offensive = PlayerIdentity(id: "bruno-sub", displayName: "sh1t", countryCode: "AR")
+
+        await room.receive(.join(anaIdentity, sessionToken: try await ranked.sessions.issue(playerID: "ana-sub")), from: TestPlayers.aliceConnection)
+        await room.receive(.join(offensive, sessionToken: try await ranked.sessions.issue(playerID: "bruno-sub")), from: TestPlayers.bobConnection)
+        await room.receive(.act(.allIn), from: TestPlayers.aliceConnection)
+        await room.receive(.act(.call), from: TestPlayers.bobConnection)
+
+        _ = await nextRated(&anaMessages)
+        #expect(try await store.entries(for: ["bruno-sub"])["bruno-sub"]?.displayName == "Player 2")
+    }
+
     @Test("a three-player ranked match: the winner gains, both losers drop")
     func publishesMultiway() async throws {
         let store = InMemoryLeaderboardStore()

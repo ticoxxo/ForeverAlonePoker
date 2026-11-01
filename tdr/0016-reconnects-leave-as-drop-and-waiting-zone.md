@@ -53,3 +53,7 @@ Testing tdr/0014 on devices showed:
   - The blurred card: turn on airplane mode for a few seconds.
   - Leave and rejoin with the code within 60 s.
   - The waiting zone at a 3–6 player table with PokerBots.
+
+## Notes
+
+- 2026-10-31: `PlayerAvatar` now draws the player's catalog picture by `avatarID` (tdr/0030) instead of downloaded photo data; reconnecting still dims it the same way.

@@ -14,12 +14,21 @@ nonisolated enum SupportContact {
     enum Topic: Sendable {
         case feedback
         case support
+        /// A player reported from their seat (tdr/0029).
+        case report(playerID: String, name: String, roomCode: String?)
 
         var subject: String {
             switch self {
             case .feedback: "ForeverAlonePoker feedback"
             case .support: "ForeverAlonePoker support"
+            case .report(_, let name, _): "ForeverAlonePoker report: \(name)"
             }
+        }
+
+        /// What we need to find the player; the reporter adds what happened.
+        var details: String {
+            guard case .report(let playerID, let name, let roomCode) = self else { return "" }
+            return "\n\n--\nReported player: \(name) (\(playerID))" + (roomCode.map { "\nRoom: \($0)" } ?? "")
         }
     }
 
@@ -33,7 +42,7 @@ nonisolated enum SupportContact {
         components.path = email
         components.queryItems = [
             URLQueryItem(name: "subject", value: topic.subject),
-            URLQueryItem(name: "body", value: "\n\n--\nApp \(appVersion), \(system)"),
+            URLQueryItem(name: "body", value: "\(topic.details)\n\n--\nApp \(appVersion), \(system)"),
         ]
         return components.url!
     }

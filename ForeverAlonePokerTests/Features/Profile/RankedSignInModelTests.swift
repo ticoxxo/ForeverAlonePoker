@@ -12,19 +12,10 @@ private struct FakeAuth: RankedAuthService {
     }
 }
 
-private final class RecordingPublisher: PublicProfilePublishing, @unchecked Sendable {
-    private(set) var published: [PublicProfileSnapshot] = []
-
-    func publish(_ snapshot: PublicProfileSnapshot) async throws {
-        published.append(snapshot)
-    }
-}
-
 @MainActor
 private struct Fixture {
     let container: ModelContainer
     let identity: IdentityStore
-    let publisher = RecordingPublisher()
 
     init() throws {
         container = try Persistence.inMemoryContainer()
@@ -32,14 +23,14 @@ private struct Fixture {
     }
 
     func model(_ result: Result<RankedSession, RankedAuthError>) -> RankedSignInModel {
-        RankedSignInModel(identity: identity, auth: FakeAuth(result: result), publisher: publisher)
+        RankedSignInModel(identity: identity, auth: FakeAuth(result: result))
     }
 }
 
 @Suite("RankedSignInModel")
 @MainActor
 struct RankedSignInModelTests {
-    @Test("a successful exchange links the account and publishes the public profile")
+    @Test("a successful exchange links the account")
     func success() async throws {
         let fixture = try Fixture()
         let model = fixture.model(.success(RankedSession(token: "session-1", playerID: "001234.abc")))
@@ -47,9 +38,8 @@ struct RankedSignInModelTests {
 
         #expect(model.phase == .idle)
         #expect(fixture.identity.tier == .ranked)
-        #expect(fixture.identity.identity.id == "001234.abc")
+        #expect(fixture.identity.identity(avatarID: nil).id == "001234.abc")
         #expect(fixture.identity.rankedSessionToken == "session-1")
-        #expect(fixture.publisher.published == [PublicProfileSnapshot(playerID: "001234.abc", displayName: "Player", countryCode: "MX", avatar: nil)])
     }
 
     @Test("a rejected exchange explains itself and leaves the player unranked")
@@ -60,7 +50,6 @@ struct RankedSignInModelTests {
 
         #expect(model.phase == .failed("The server could not verify your Apple sign-in. Try again."))
         #expect(fixture.identity.tier == .local)
-        #expect(fixture.publisher.published.isEmpty)
 
         model.dismissFailure()
         #expect(model.phase == .idle)
@@ -74,14 +63,13 @@ struct RankedSignInModelTests {
         #expect(model.phase == .failed("This server does not offer ranked play."))
     }
 
-    @Test("signing out drops the ranked identity and nothing is published while unranked")
+    @Test("signing out drops the ranked identity")
     func signOut() async throws {
         let fixture = try Fixture()
         let model = fixture.model(.success(RankedSession(token: "session-1", playerID: "001234.abc")))
         await model.signIn(identityToken: "apple-jwt")
         model.signOut()
         #expect(fixture.identity.tier == .local)
-        await model.publishProfile()
-        #expect(fixture.publisher.published.count == 1)
+        #expect(fixture.identity.rankedSessionToken == nil)
     }
 }

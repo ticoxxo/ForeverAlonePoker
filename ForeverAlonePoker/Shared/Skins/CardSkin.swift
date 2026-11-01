@@ -44,6 +44,13 @@ nonisolated enum BundledSkin {
         }
         return AssetNaming.bundledImageName(item: item, slot: slot)
     }
+
+    /// The bundled image of a profile picture (tdr/0030), for the player and
+    /// opponents alike; `nil` for no picture or an id this build does not ship.
+    static func avatarImageName(for id: String?) -> String? {
+        guard let id, let item = SkinCatalog.builtIn.item(SkinID(rawValue: id)), item.kind == .avatar else { return nil }
+        return AssetNaming.bundledImageName(item: item.id, slot: .avatar)
+    }
 }
 
 extension EnvironmentValues {

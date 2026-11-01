@@ -15,7 +15,6 @@ struct OpponentSeatView: View {
     let revealedCards: [Card]
     let showsCards: Bool
     var isActing: Bool = false
-    var avatar: Data? = nil
     var reaction: MatchSessionClient.Reaction? = nil
     var cardHeight: CGFloat = 56
     /// Picture, name plate and cards in one row (`TableArrangement.seatsInline`)
@@ -23,6 +22,7 @@ struct OpponentSeatView: View {
     var isInline: Bool = false
 
     @ScaledMetric(relativeTo: .headline) private var avatarSize: CGFloat = 48
+    @Environment(\.blockedPlayerIDs) private var blocked
 
     var body: some View {
         if let summary {
@@ -51,13 +51,14 @@ struct OpponentSeatView: View {
     }
 
     private func avatarView(_ summary: PlayerSummary, size: CGFloat) -> some View {
-        PlayerAvatar(data: avatar, size: size, name: summary.name, isReconnecting: summary.isReconnecting)
+        PlayerAvatar(avatarID: summary.shownAvatarID(hiding: blocked), size: size, name: summary.shownName(hiding: blocked), isReconnecting: summary.isReconnecting)
+            .playerSafetyMenu(summary)
             .emoteBubble(reaction)
     }
 
     private func header(_ summary: PlayerSummary) -> some View {
         SeatHeaderView(
-            name: summary.name,
+            name: summary.shownName(hiding: blocked),
             stack: summary.stack,
             isOnButton: isOnButton,
             isAllIn: summary.isAllIn,
@@ -73,7 +74,7 @@ struct OpponentSeatView: View {
             revealedCards: revealedCards,
             height: cardHeight,
             spacing: 6,
-            ownerName: summary.name
+            ownerName: summary.shownName(hiding: blocked)
         )
     }
 }
@@ -317,7 +318,6 @@ struct DealerButton: View {
 /// badge with picture, name and stack, small cards, and their bet.
 struct CompactSeatView: View {
     let summary: PlayerSummary
-    let avatar: Data?
     let isOnButton: Bool
     let isActing: Bool
     let revealedCards: [Card]
@@ -326,11 +326,13 @@ struct CompactSeatView: View {
     var cardHeight: CGFloat = 30
 
     @ScaledMetric(relativeTo: .caption) private var avatarSize: CGFloat = 36
+    @Environment(\.blockedPlayerIDs) private var blocked
 
     var body: some View {
+        let name = summary.shownName(hiding: blocked)
         VStack(spacing: Theme.Spacing.xSmall) {
             ZStack(alignment: .bottomTrailing) {
-                PlayerAvatar(data: avatar, size: min(avatarSize, 56), name: summary.name, isReconnecting: summary.isReconnecting)
+                PlayerAvatar(avatarID: summary.shownAvatarID(hiding: blocked), size: min(avatarSize, 56), name: name, isReconnecting: summary.isReconnecting)
                     .overlay {
                         if isActing {
                             Circle().strokeBorder(Theme.Palette.highlight, lineWidth: 3)
@@ -340,6 +342,7 @@ struct CompactSeatView: View {
                     DealerButton(compact: true)
                 }
             }
+            .playerSafetyMenu(summary)
             .emoteBubble(reaction)
             HStack(spacing: 2) {
                 if isActing {
@@ -347,7 +350,7 @@ struct CompactSeatView: View {
                         .foregroundStyle(Theme.Palette.highlight)
                         .accessibilityLabel(Text("Thinking"))
                 }
-                Text(summary.name)
+                Text(name)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
             }
@@ -366,7 +369,7 @@ struct CompactSeatView: View {
                 revealedCards: revealedCards,
                 height: cardHeight,
                 spacing: 2,
-                ownerName: summary.name
+                ownerName: name
             )
             BetView(amount: summary.streetCommitted, font: .caption2)
         }
@@ -380,13 +383,13 @@ struct CompactSeatView: View {
 /// A player's picture. While they are reconnecting (tdr/0016) it is dimmed
 /// behind a `wifi.slash` symbol, with a spinning ring around it.
 struct PlayerAvatar: View {
-    let data: Data?
+    let avatarID: String?
     let size: CGFloat
     let name: String
     var isReconnecting: Bool = false
 
     var body: some View {
-        AvatarView(data: data, size: size, name: name)
+        AvatarView(avatarID: avatarID, size: size, name: name)
             .overlay {
                 if isReconnecting {
                     ZStack {

@@ -33,6 +33,10 @@ public struct SkinItem: Codable, Hashable, Sendable, Identifiable {
     public let isDefault: Bool
     /// Optional marketing label from the catalog ("New", "Sale"). Never a price.
     public let badge: String?
+    /// Shipped in the app binary, so always installed, but not a fallback:
+    /// the profile pictures (tdr/0030). Only the built-in catalog sets it;
+    /// it is never read from or written to JSON.
+    public let isBundled: Bool
 
     public init(
         id: SkinID,
@@ -43,7 +47,8 @@ public struct SkinItem: Codable, Hashable, Sendable, Identifiable {
         preview: AssetRef? = nil,
         minAppVersion: AppVersion? = nil,
         isDefault: Bool = false,
-        badge: String? = nil
+        badge: String? = nil,
+        isBundled: Bool = false
     ) {
         self.id = id
         self.kind = kind
@@ -54,6 +59,7 @@ public struct SkinItem: Codable, Hashable, Sendable, Identifiable {
         self.minAppVersion = minAppVersion
         self.isDefault = isDefault
         self.badge = badge
+        self.isBundled = isBundled
     }
 
     /// The slots this item can fill, in a stable order.
@@ -82,6 +88,7 @@ public struct SkinItem: Codable, Hashable, Sendable, Identifiable {
         minAppVersion = try container.decodeIfPresent(AppVersion.self, forKey: .minAppVersion)
         isDefault = try container.decodeIfPresent(Bool.self, forKey: .isDefault) ?? false
         badge = try container.decodeIfPresent(String.self, forKey: .badge)
+        isBundled = false
     }
 
     public func encode(to encoder: Encoder) throws {

@@ -10,6 +10,8 @@ struct ForeverAlonePokerApp: App {
     private let container: ModelContainer
     private let isCloudBacked: Bool
     private let identity: IdentityStore
+    /// Players this player blocked (tdr/0029).
+    private let blockList: BlockList
     private let skins: SkinStore
     /// Music and sound effects settings, and the music itself (tdr/0026).
     private let audio: AudioSettings
@@ -29,6 +31,7 @@ struct ForeverAlonePokerApp: App {
         container = store.container
         isCloudBacked = store.isCloudBacked
         identity = try! IdentityStore(context: container.mainContext)
+        blockList = BlockList(context: container.mainContext)
         // Skins (tdr/0011, tdr/0012): catalog from the game server, files
         // downloaded in the background, ownership from StoreKit.
         skins = SkinStore(
@@ -47,6 +50,7 @@ struct ForeverAlonePokerApp: App {
         WindowGroup {
             ContentView()
                 .environment(identity)
+                .environment(blockList)
                 .environment(skins)
                 .environment(audio)
                 // Music plays only while the app is in front: it pauses when
@@ -78,6 +82,7 @@ struct ForeverAlonePokerApp: App {
         guard isCloudBacked else { return }
         for await _ in NotificationCenter.default.notifications(named: .NSPersistentStoreRemoteChange) {
             identity.refresh()
+            blockList.refresh()
         }
     }
 }

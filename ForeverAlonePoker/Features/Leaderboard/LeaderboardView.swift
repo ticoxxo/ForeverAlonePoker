@@ -54,7 +54,6 @@ struct LeaderboardView: View {
                             LeaderboardRowView(
                                 row: row,
                                 rank: model.rank(of: row),
-                                avatar: model.avatars[row.playerID],
                                 isMe: row.playerID == myPlayerID
                             )
                         }
@@ -62,7 +61,7 @@ struct LeaderboardView: View {
                 }
                 if let own = model.ownEntry {
                     Section("You") {
-                        LeaderboardRowView(row: own, rank: nil, avatar: model.avatars[own.playerID], isMe: true)
+                        LeaderboardRowView(row: own, rank: nil, isMe: true)
                     }
                 }
                 if myPlayerID == nil {
@@ -87,7 +86,6 @@ struct LeaderboardView: View {
 struct LeaderboardRowView: View {
     let row: LeaderboardRow
     let rank: Int?
-    let avatar: Data?
     let isMe: Bool
 
     @ScaledMetric(relativeTo: .subheadline) private var rankWidth: CGFloat = 40
@@ -99,7 +97,7 @@ struct LeaderboardRowView: View {
                 .font(.subheadline.monospacedDigit())
                 .foregroundStyle(.secondary)
                 .frame(minWidth: rankWidth, alignment: .leading)
-            AvatarView(data: avatar, size: min(avatarSize, 64))
+            AvatarView(avatarID: nil, size: min(avatarSize, 64), name: row.displayName)
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 4) {
                     if !row.countryCode.isEmpty {

@@ -153,6 +153,36 @@ public extension SkinCatalog {
                 }),
                 isDefault: true
             ),
-        ]
+        ] + bundledAvatars
     )
+
+    /// Profile pictures shipped in the app (tdr/0030): free ones, and premium
+    /// ones sold one by one. Every opponent can draw every one of them, so
+    /// even premium pictures are bundled rather than downloaded.
+    private static let bundledAvatars: [SkinItem] = [
+        ("avatar_dwarf", "Dwarf", "Enano", false),
+        ("avatar_goblin", "Goblin", "Duende", false),
+        ("avatar_eyepatch_bear", "Eyepatch bear", "Oso con parche", false),
+        ("avatar_seal", "Seal", "Foca", false),
+        ("avatar_dino", "Dino", "Dino", false),
+        ("avatar_rabbit", "Rabbit", "Conejo", false),
+        ("avatar_pig", "Pig", "Cerdo", false),
+        ("avatar_scarred_pup", "Scarred pup", "Cachorro con cicatriz", false),
+        ("avatar_yellow_cat", "Yellow cat", "Gato amarillo", true),
+        ("avatar_zombie_cat", "Zombie cat", "Gato zombi", true),
+        ("avatar_stitched_cat", "Stitched cat", "Gato cosido", true),
+        ("avatar_cigs", "Cigarettes", "Cigarros", true),
+        ("avatar_wine", "Wine", "Vino", true),
+        ("avatar_girl", "Girl", "Chica", true),
+    ].map { id, english, spanish, isPremium in
+        let id = SkinID(rawValue: id)
+        return SkinItem(
+            id: id,
+            kind: .avatar,
+            names: ["en": english, "es": spanish],
+            productID: isPremium ? ProductIDs.single(id) : nil,
+            assets: [.avatar: AssetRef(path: AssetNaming.fileName(for: .avatar), sha256: "", bytes: 0)],
+            isBundled: true
+        )
+    }
 }

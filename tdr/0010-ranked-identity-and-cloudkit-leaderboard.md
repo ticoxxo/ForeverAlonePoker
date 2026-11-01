@@ -67,3 +67,4 @@ Constraints: clients never run rules or write competitive data (tdr/0003); Apple
 ## Notes
 
 - 2026-10-16: tables of two to six players, the host-run lobby and multiway Elo are decided in tdr/0013, which supersedes the heads-up-only parts of this record.
+- 2026-10-31: clients no longer write `PublicProfile` (decision 5 and setup step 3): uploaded pictures are gone and pictures come from a bundled catalog (tdr/0030). The record type may stay in the schema unused; nothing reads or writes it. The leaderboard gets each name after `DisplayNamePolicy` (tdr/0029).

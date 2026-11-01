@@ -58,7 +58,6 @@ struct LocalMatchView: View {
 /// Host or join a nearby table.
 struct LocalLobbyView: View {
     @Bindable var model: LocalLobbyModel
-    @State private var avatars = AvatarLoader()
 
     var body: some View {
         List {
@@ -97,7 +96,7 @@ struct LocalLobbyView: View {
                 }
                 TableSizeSection(maxPlayers: $model.maxPlayers, isEnabled: false)
                 if model.maxPlayers > TableSize.minPlayers, let view = model.client?.view {
-                    LobbyPlayersSection(view: view, avatars: avatars)
+                    LobbyPlayersSection(view: view)
                     Section {
                         if view.table.isStarting {
                             LobbyStatusRow(text: "Starting…")
@@ -132,7 +131,7 @@ struct LocalLobbyView: View {
                 }
             case .connected:
                 if let view = model.client?.view, view.phase == .lobby {
-                    LobbyPlayersSection(view: view, avatars: avatars)
+                    LobbyPlayersSection(view: view)
                     Section {
                         LobbyStatusRow(text: view.table.isStarting ? "Starting…" : "Waiting for the host to start…")
                     }

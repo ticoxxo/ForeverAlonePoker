@@ -227,6 +227,7 @@ public struct MatchRoom: Sendable {
             playerID: player.identity.id,
             name: player.identity.displayName,
             countryCode: player.identity.countryCode,
+            avatarID: player.identity.avatarID,
             stack: live?.stack ?? (hasBegun ? match.stack(for: seat) : configuration.startingStack),
             streetCommitted: live?.streetCommitted ?? 0,
             hasFolded: hand?[seat].hasFolded ?? false,
@@ -240,6 +241,9 @@ public struct MatchRoom: Sendable {
     }
 
     // MARK: - Private handlers
+
+    /// Longer picture ids are dropped: no catalog id comes close (tdr/0030).
+    static let maxAvatarIDLength = 40
 
     private mutating func join(_ identity: PlayerIdentity, from connection: ConnectionID, ranked: Bool) -> [Outbound] {
         if seat(of: connection) != nil {
@@ -267,7 +271,14 @@ public struct MatchRoom: Sendable {
         guard let seat = Seat.all(count: maxPlayers).first(where: { players[$0] == nil }) else {
             return [reject(connection, "Room is full.")]
         }
-        players[seat] = SeatedPlayer(identity: identity, connection: connection, isReady: false, isRanked: ranked)
+        // Nobody sees a name or flag the policy has not passed (tdr/0029).
+        let seated = PlayerIdentity(
+            id: identity.id,
+            displayName: DisplayNamePolicy.displayName(identity.displayName, at: seat),
+            countryCode: DisplayNamePolicy.countryCode(identity.countryCode),
+            avatarID: identity.avatarID.flatMap { $0.count <= Self.maxAvatarIDLength ? $0 : nil }
+        )
+        players[seat] = SeatedPlayer(identity: seated, connection: connection, isReady: false, isRanked: ranked)
         if host == nil { host = seat }
         turn += 1
         let out = [Outbound(to: connection, message: .welcome(seat: seat, roomCode: code))]

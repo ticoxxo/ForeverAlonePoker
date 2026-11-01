@@ -18,7 +18,6 @@ final class LeaderboardModel {
     private(set) var rows: [LeaderboardRow] = []
     /// The player's row when it is not among `rows`.
     private(set) var ownEntry: LeaderboardRow?
-    private(set) var avatars: [String: Data] = [:]
     private let service: any LeaderboardService
 
     init(service: any LeaderboardService) {
@@ -32,7 +31,6 @@ final class LeaderboardModel {
             rows = top
             ownEntry = await ownEntryOutsideTop(top, myPlayerID: myPlayerID)
             phase = .loaded
-            avatars = (try? await service.avatars(for: top.map(\.playerID) + (ownEntry.map { [$0.playerID] } ?? []))) ?? [:]
         } catch {
             rows = []
             ownEntry = nil

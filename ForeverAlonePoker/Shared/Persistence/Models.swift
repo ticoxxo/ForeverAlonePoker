@@ -12,6 +12,8 @@ final class PlayerProfile {
     var displayName: String = "Player"
     /// ISO 3166-1 alpha-2 region code, e.g. "MX". Empty when unknown.
     var countryCode: String = ""
+    /// Unused since players stopped uploading photos (tdr/0030); kept so
+    /// existing stores and the CloudKit schema need no migration.
     @Attribute(.externalStorage) var avatar: Data? = nil
     /// Sign in with Apple subject, set when the player opts into ranked play.
     var appleUserID: String? = nil
@@ -95,5 +97,21 @@ final class MatchRecord {
     var mode: MatchMode {
         get { MatchMode(rawValue: modeRawValue) ?? .local }
         set { modeRawValue = newValue.rawValue }
+    }
+}
+
+/// A player this player blocked (tdr/0029): their picture is never loaded,
+/// their name is hidden, and their emotes are muted. Kept on the player's own
+/// devices through the private iCloud database; the server never learns of it.
+@Model
+final class BlockedPlayer {
+    var playerID: String = ""
+    var displayName: String = ""
+    var blockedAt: Date = Date.distantPast
+
+    init(playerID: String, displayName: String, blockedAt: Date = Date()) {
+        self.playerID = playerID
+        self.displayName = displayName
+        self.blockedAt = blockedAt
     }
 }

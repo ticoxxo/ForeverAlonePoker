@@ -49,28 +49,19 @@ final class IdentityStore: LoadoutPersisting {
 
     /// The identity presented to opponents and authorities. Ranked players are
     /// known by their Apple user id so the server can tie them to a token.
-    var identity: PlayerIdentity {
+    /// `avatarID` is the profile picture the skin store resolved (tdr/0030).
+    func identity(avatarID: String?) -> PlayerIdentity {
         PlayerIdentity(
             id: profile.appleUserID ?? profile.localID.uuidString,
             displayName: profile.displayName,
-            countryCode: profile.countryCode
+            countryCode: profile.countryCode,
+            avatarID: avatarID
         )
     }
 
     /// Sent with online joins; `nil` plays unranked.
     var rankedSessionToken: String? {
         profile.appleUserID == nil ? nil : profile.rankedSessionToken
-    }
-
-    /// What the public leaderboard may show about this player; `nil` unless ranked.
-    var publicProfileSnapshot: PublicProfileSnapshot? {
-        guard let playerID = profile.appleUserID else { return nil }
-        return PublicProfileSnapshot(
-            playerID: playerID,
-            displayName: profile.displayName,
-            countryCode: profile.countryCode,
-            avatar: profile.avatar
-        )
     }
 
     // MARK: - Sync
@@ -97,7 +88,6 @@ final class IdentityStore: LoadoutPersisting {
                 keeper.appleUserID = appleUserID
                 keeper.rankedSessionToken = duplicate.rankedSessionToken
             }
-            if keeper.avatar == nil { keeper.avatar = duplicate.avatar }
             if duplicate.cosmeticLoadoutUpdatedAt > keeper.cosmeticLoadoutUpdatedAt {
                 keeper.cosmeticLoadout = duplicate.cosmeticLoadout
                 keeper.cosmeticLoadoutUpdatedAt = duplicate.cosmeticLoadoutUpdatedAt
@@ -120,11 +110,6 @@ final class IdentityStore: LoadoutPersisting {
     func updateCountryCode(_ code: String) {
         guard code != profile.countryCode else { return }
         profile.countryCode = code
-        save()
-    }
-
-    func updateAvatar(_ data: Data?) {
-        profile.avatar = data
         save()
     }
 

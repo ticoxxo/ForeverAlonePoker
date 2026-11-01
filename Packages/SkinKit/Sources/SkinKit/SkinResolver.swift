@@ -9,7 +9,8 @@ public struct ResolvedSkin: Hashable, Sendable {
 
 /// The single place that decides what a slot shows (tdr/0011). A selection is
 /// honoured only when its item is in the catalog, has the slot's kind, is
-/// owned, and its file is on this device; anything else shows the default.
+/// owned, and its file is on this device (or in the app); anything else
+/// shows the default.
 /// The same rule renders the opponent, with `Ownership.everything`, so an
 /// opponent's skin appears only when this device already has its files.
 public struct SkinResolver: Sendable {
@@ -39,7 +40,7 @@ public struct SkinResolver: Sendable {
            let item = catalog.item(selected),
            item.kind == slot.kind,
            ownership.owns(slot, of: item),
-           item.isDefault || installed.contains(AssetKey(item: item.id, slot: slot)) {
+           item.isDefault || item.isBundled || installed.contains(AssetKey(item: item.id, slot: slot)) {
             return ResolvedSkin(item: item, slot: slot)
         }
         guard let fallback = defaults[slot.kind], fallback.assets[slot] != nil else { return nil }

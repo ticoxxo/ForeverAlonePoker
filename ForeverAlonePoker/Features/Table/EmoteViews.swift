@@ -127,9 +127,9 @@ extension Emote {
 
 #Preview {
     HStack(spacing: 60) {
-        AvatarView(data: nil, size: 36, name: "Ticoxxo")
+        AvatarView(avatarID: nil, size: 36, name: "Ticoxxo")
             .emoteBubble(MatchSessionClient.Reaction(emote: .poop))
-        AvatarView(data: nil, size: 30, name: "Bot")
+        AvatarView(avatarID: nil, size: 30, name: "Bot")
             .emoteBubble(MatchSessionClient.Reaction(emote: .cool), size: .small)
         EmotePicker(isEnabled: true) { _ in }
     }
