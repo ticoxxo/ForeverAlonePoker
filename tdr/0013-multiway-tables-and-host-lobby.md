@@ -41,3 +41,7 @@ Every layer assumed heads-up: `Seat` was a two-case enum with `.opponent`, the h
 - `Server/Tests/PokerServerTests`: `RoomStartTests` (immediate start, grace waits for an open socket, late joiner dealt in), `CreateRoomRequestTests`, `RankedRoomTests.publishesMultiway`.
 - `ForeverAlonePokerTests`: `MatchSessionClientTests.multiwayStart`/`departureNamed`, `OnlineLobbyModelTests` (size sent and locked, host starts), `TableStatusTests`, `SeatLayoutTests`, `HandOutcomeTests.sidePots`, `AvatarLoaderTests`, `IdentityStoreTests.recordsPlace`.
 - Manual: several devices on one network hosting a 3–6 player local table; `swift run PokerBot CODE` several times against an online table.
+
+## Notes
+
+- 2026-10-31: decision 8 is superseded by tdr/0030. Pictures are no longer fetched from `PublicProfile`; each player's `avatarID` comes with their join and is drawn from the app's bundled catalog. `AvatarLoader` and its tests are gone. Names are seated after `DisplayNamePolicy` (tdr/0029).

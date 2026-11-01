@@ -7,6 +7,7 @@ import SwiftUI
 /// folding or unfolding mid-match never rebuilds the table.
 struct HomeView: View {
     @Environment(IdentityStore.self) private var identity
+    @Environment(SkinStore.self) private var skins
     @ScaledMetric(relativeTo: .body) private var tileMinimumWidth = Theme.Width.tile
 
     var body: some View {
@@ -19,7 +20,7 @@ struct HomeView: View {
                         PlayerCard(
                             name: identity.profile.displayName,
                             countryCode: identity.profile.countryCode,
-                            avatar: identity.profile.avatar,
+                            avatarID: skins.myAvatarID,
                             wins: identity.wins,
                             losses: identity.losses
                         )
@@ -28,12 +29,12 @@ struct HomeView: View {
                         .surfaceGlass(in: RoundedRectangle(cornerRadius: Theme.Radius.tile, style: .continuous), isInteractive: true)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityHint(Text("Edit your name, country and picture"))
+                    .accessibilityHint(Text("Edit your name, picture and country"))
 
                     HomeSection(title: "Play") {
                         tiles {
                             NavigationLink {
-                                LocalMatchView(identity: identity.identity, onMatchFinished: { identity.record($0, mode: .local) })
+                                LocalMatchView(identity: identity.identity(avatarID: skins.myAvatarID), onMatchFinished: { identity.record($0, mode: .local) })
                             } label: {
                                 HomeTile(
                                     title: "Play nearby",
@@ -44,7 +45,7 @@ struct HomeView: View {
                             }
                             NavigationLink {
                                 OnlineMatchView(
-                                    identity: identity.identity,
+                                    identity: identity.identity(avatarID: skins.myAvatarID),
                                     service: HTTPRoomService(baseURL: identity.serverURL),
                                     sessionToken: identity.rankedSessionToken,
                                     onMatchFinished: { identity.record($0, mode: .online) },
@@ -143,7 +144,7 @@ struct HomeView: View {
                     NavigationLink {
                         ProfileView()
                     } label: {
-                        AvatarView(data: identity.profile.avatar, size: 32, name: identity.profile.displayName)
+                        AvatarView(avatarID: skins.myAvatarID, size: 32, name: identity.profile.displayName)
                     }
                     .accessibilityLabel(Text("Profile"))
                 }
@@ -222,7 +223,7 @@ private struct HomeTile: View {
 struct PlayerCard: View {
     let name: String
     let countryCode: String
-    let avatar: Data?
+    let avatarID: String?
     let wins: Int
     let losses: Int
 
@@ -230,7 +231,7 @@ struct PlayerCard: View {
 
     var body: some View {
         HStack(spacing: Theme.Spacing.medium) {
-            AvatarView(data: avatar, size: min(avatarSize, 96))
+            AvatarView(avatarID: avatarID, size: min(avatarSize, 96), name: name)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(name)

@@ -6,7 +6,8 @@ public enum ProtocolVersion {
     /// 3: tables of two to six, `startMatch`, `TableInfo`, `playerLeft` (tdr/0013).
     /// 4: the authority deals the next hand by itself (tdr/0014); `emote`,
     ///    `PlayerView.canEmote` (tdr/0015).
-    public static let current = 4
+    /// 5: `PlayerIdentity.avatarID` and `PlayerSummary.avatarID` (tdr/0030).
+    public static let current = 5
 }
 
 /// Versioned wrapper around any message.
@@ -32,11 +33,15 @@ public struct PlayerIdentity: Codable, Sendable, Hashable {
     /// ISO 3166-1 alpha-2 region code shown next to the name and used for
     /// country leaderboards. Empty when the player has not set one.
     public let countryCode: String
+    /// The profile picture picked from the app's bundled catalog (tdr/0030);
+    /// `nil` shows initials. Viewers draw only ids they know.
+    public let avatarID: String?
 
-    public init(id: String, displayName: String, countryCode: String = "") {
+    public init(id: String, displayName: String, countryCode: String = "", avatarID: String? = nil) {
         self.id = id
         self.displayName = displayName
         self.countryCode = countryCode
+        self.avatarID = avatarID
     }
 }
 

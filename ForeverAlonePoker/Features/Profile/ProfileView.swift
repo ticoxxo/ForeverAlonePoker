@@ -1,17 +1,17 @@
 import AuthenticationServices
-import PhotosUI
 import SwiftUI
 
-/// Edit the player: name, country and picture; sound; opt into ranked play;
+/// Edit the player: name, picture and country; sound; opt into ranked play;
 /// browse match history.
 struct ProfileView: View {
     @Environment(IdentityStore.self) private var identity
     @Environment(AudioSettings.self) private var audio
+    @Environment(SkinStore.self) private var skins
     @Environment(\.colorScheme) private var colorScheme
     @State private var name = ""
     @State private var serverURL = ""
-    @State private var selectedPhoto: PhotosPickerItem?
     @State private var ranked: RankedSignInModel?
+    @State private var safety: ProfileSafetyModel?
     @ScaledMetric(relativeTo: .largeTitle) private var avatarSize: CGFloat = 96
 
     var body: some View {
@@ -19,25 +19,31 @@ struct ProfileView: View {
             Section {
                 HStack {
                     Spacer()
-                    PhotosPicker(selection: $selectedPhoto, matching: .images) {
-                        AvatarView(data: identity.profile.avatar, size: min(avatarSize, 160), name: identity.profile.displayName)
-                            .overlay(alignment: .bottomTrailing) {
-                                Image(systemName: "camera.circle.fill")
-                                    .font(.title2)
-                                    .symbolRenderingMode(.multicolor)
-                            }
-                    }
-                    .accessibilityLabel(Text("Profile picture"))
-                    .accessibilityHint(Text("Choose a photo for other players to see"))
+                    AvatarView(avatarID: skins.myAvatarID, size: min(avatarSize, 160), name: identity.profile.displayName)
                     Spacer()
                 }
                 .listRowBackground(Color.clear)
             }
 
-            Section("Display name") {
+            Section {
+                AvatarPicker()
+            } header: {
+                Text("Profile picture")
+            } footer: {
+                Text("More pictures in the Store.")
+            }
+
+            Section {
                 TextField("Name", text: $name)
                     .textInputAutocapitalization(.words)
                     .onSubmit(commitName)
+            } header: {
+                Text("Display name")
+            } footer: {
+                if let error = safety?.nameError {
+                    Label(error, systemImage: "exclamationmark.triangle")
+                        .foregroundStyle(.red)
+                }
             }
 
             Section("Country") {
@@ -47,6 +53,8 @@ struct ProfileView: View {
             soundSections
 
             accountSection
+
+            safetySection
 
             Section {
                 TextField(HTTPRoomService.defaultBaseURL.absoluteString, text: $serverURL)
@@ -83,24 +91,16 @@ struct ProfileView: View {
             if ranked == nil {
                 ranked = RankedSignInModel(
                     identity: identity,
-                    auth: HTTPRankedAuthService(baseURL: identity.serverURL),
-                    publisher: CloudKitPublicProfilePublisher()
+                    auth: HTTPRankedAuthService(baseURL: identity.serverURL)
                 )
+            }
+            if safety == nil {
+                safety = ProfileSafetyModel(identity: identity)
             }
         }
         .onDisappear {
             commitName()
             commitServerURL()
-            // Keep the public profile in step with edits made while ranked.
-            if let ranked { Task { await ranked.publishProfile() } }
-        }
-        .onChange(of: selectedPhoto) {
-            guard let selectedPhoto else { return }
-            Task {
-                if let data = try? await selectedPhoto.loadTransferable(type: Data.self) {
-                    identity.updateAvatar(AvatarImporter.thumbnailData(from: data))
-                }
-            }
         }
     }
 
@@ -178,6 +178,30 @@ struct ProfileView: View {
         }
     }
 
+    // MARK: - Safety and support (tdr/0029)
+
+    private var safetySection: some View {
+        Section {
+            NavigationLink {
+                BlockedPlayersView()
+            } label: {
+                Label("Blocked players", systemImage: "person.crop.circle.badge.xmark")
+            }
+            NavigationLink {
+                CommunityGuidelinesView()
+            } label: {
+                Label("Community guidelines", systemImage: "checkmark.shield")
+            }
+            Link(destination: SupportContact.mailURL(.support)) {
+                Label("Contact support", systemImage: "envelope")
+            }
+        } header: {
+            Text("Safety and support")
+        } footer: {
+            Text("To block or report a player, touch and hold their seat at the table.")
+        }
+    }
+
     private func handleSignIn(_ result: Result<ASAuthorization, Error>, with ranked: RankedSignInModel) {
         switch result {
         case .success(let authorization):
@@ -224,7 +248,7 @@ struct ProfileView: View {
     }
 
     private func commitName() {
-        identity.updateDisplayName(name)
+        if let accepted = safety?.commitName(name) { name = accepted }
     }
 
     private func commitServerURL() {
@@ -263,25 +287,5 @@ private struct CountryPicker: View {
             }
         }
         .pickerStyle(.navigationLink)
-    }
-}
-
-/// Shrinks a picked photo to a small square so it stays cheap to store and
-/// sync (CloudKit assets later).
-enum AvatarImporter {
-    static let maxDimension: CGFloat = 256
-
-    static func thumbnailData(from data: Data) -> Data? {
-        guard let image = UIImage(data: data) else { return nil }
-        let side = min(image.size.width, image.size.height)
-        let scale = min(1, maxDimension / side)
-        let target = CGSize(width: side * scale, height: side * scale)
-        let renderer = UIGraphicsImageRenderer(size: target, format: .init())
-        let thumbnail = renderer.image { _ in
-            let drawSize = CGSize(width: image.size.width * scale, height: image.size.height * scale)
-            let origin = CGPoint(x: (target.width - drawSize.width) / 2, y: (target.height - drawSize.height) / 2)
-            image.draw(in: CGRect(origin: origin, size: drawSize))
-        }
-        return thumbnail.jpegData(compressionQuality: 0.85)
     }
 }

@@ -2,9 +2,9 @@ import SwiftUI
 import PokerCore
 import SkinKit
 
-/// The card store (tdr/0012): card-face sets, card backs and chip sets
-/// (tdr/0027) from the remote
-/// catalog, with prices from the App Store in the player's storefront currency.
+/// The card store (tdr/0012): card-face sets, card backs, chip sets
+/// (tdr/0027) and profile pictures (tdr/0030), with prices from the App
+/// Store in the player's storefront currency.
 struct SkinStoreView: View {
     @Environment(SkinStore.self) private var store
     @State private var preview: SkinPreview?
@@ -35,6 +35,16 @@ struct SkinStoreView: View {
                         preview = SkinPreview(item: item, subject: .chips)
                     }
                 }
+            }
+
+            Section {
+                ForEach(store.items(of: .avatar)) { item in
+                    AvatarRow(item: item)
+                }
+            } header: {
+                Text("Profile pictures")
+            } footer: {
+                Text("Everyone at your table sees your picture.")
             }
 
             Section {
@@ -195,6 +205,62 @@ private struct CardBackRow: View {
 
 extension CardBackRow {
     fileprivate var itemName: String { item.name(for: Locale.current.language.languageCode?.identifier) }
+}
+
+/// A profile picture (tdr/0030): free ones are ready to use, premium ones are
+/// bought one by one. Pictures ship with the app, so there is no preview.
+private struct AvatarRow: View {
+    @Environment(SkinStore.self) private var store
+    let item: SkinItem
+    @ScaledMetric(relativeTo: .headline) private var avatarSize: CGFloat = 48
+
+    private var itemName: String { item.name(for: Locale.current.language.languageCode?.identifier) }
+    private var isShowing: Bool { store.isShowing(item, in: .avatar) }
+
+    var body: some View {
+        HStack(spacing: Theme.Spacing.medium) {
+            AvatarView(avatarID: item.id.rawValue, size: min(avatarSize, 80))
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                HStack {
+                    Text(itemName)
+                        .font(.headline)
+                    if let badge = item.badge {
+                        BadgeView(text: badge)
+                    }
+                }
+                if item.productID == nil {
+                    Text("Free")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                } else {
+                    PurchaseStateText(state: item.productID.flatMap { store.purchaseStates[$0] })
+                }
+            }
+            .accessibilityElement(children: .combine)
+            Spacer()
+            Group {
+                if store.owns(.avatar, of: item) {
+                    if isShowing {
+                        Label("In use", systemImage: "checkmark.circle.fill")
+                            .labelStyle(.iconOnly)
+                            .font(.title2)
+                            .foregroundStyle(.green)
+                            .transition(.scale.combined(with: .opacity))
+                            .accessibilityLabel(Text("In use"))
+                    } else {
+                        Button("Use") { store.equip(item, on: [.avatar]) }
+                            .glassButtonStyle()
+                            .accessibilityLabel(Text("Use \(itemName)"))
+                    }
+                } else if let productID = item.productID {
+                    BuyButton(productID: productID, itemName: itemName)
+                }
+            }
+            .motion(Theme.Motion.reveal, value: isShowing)
+        }
+        .padding(.vertical, Theme.Spacing.xSmall)
+    }
 }
 
 /// A chip set: buy it whole, or use it once owned (tdr/0027). A long press

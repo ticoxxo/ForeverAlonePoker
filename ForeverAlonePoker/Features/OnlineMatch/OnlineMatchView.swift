@@ -114,7 +114,6 @@ struct RoomCodeBadge: View {
 struct OnlineLobbyView: View {
     @Bindable var model: OnlineLobbyModel
     @State private var code = ""
-    @State private var avatars = AvatarLoader()
 
     var body: some View {
         List {
@@ -170,7 +169,7 @@ struct OnlineLobbyView: View {
                         .padding(.vertical, Theme.Spacing.small)
                     }
                     TableSizeSection(maxPlayers: .constant(view.table.maxPlayers), isEnabled: false)
-                    LobbyPlayersSection(view: view, avatars: avatars)
+                    LobbyPlayersSection(view: view)
                     Section {
                         if view.table.isStarting {
                             WaitingRow(text: "Starting…")

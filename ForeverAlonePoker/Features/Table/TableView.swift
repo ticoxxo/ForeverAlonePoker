@@ -14,7 +14,10 @@ struct TableView: View {
     var showsEmotes = true
     /// Offered when the connection is gone for good.
     var onLeave: (() -> Void)? = nil
-    @State private var avatars = AvatarLoader()
+    /// Report and Block on other players (tdr/0029); off against the computer.
+    var allowsSafetyActions = true
+    @Environment(BlockList.self) private var blockList: BlockList?
+    @Environment(\.openURL) private var openURL
     @Namespace private var dealerButton
     /// The chosen bet or raise. Held here rather than in the controls so it
     /// survives the panel and the toolbar swapping on rotation or resize.
@@ -99,6 +102,45 @@ struct TableView: View {
         .onChange(of: status) { _, newStatus in
             announce(newStatus)
         }
+        .modifier(safety)
+    }
+
+    // MARK: - Safety (tdr/0029)
+
+    private var blocked: Set<String> { blockList?.blockedIDs ?? [] }
+
+    /// Emotes from blocked players are muted.
+    private var reactions: [Seat: MatchSessionClient.Reaction] {
+        guard !blocked.isEmpty, let view else { return client.reactions }
+        return client.reactions.filter { seat, _ in
+            view.player(at: seat).map { !blocked.contains($0.playerID) } ?? true
+        }
+    }
+
+    private var safetyActions: PlayerSafetyActions? {
+        guard allowsSafetyActions, let blockList else { return nil }
+        return PlayerSafetyActions(
+            isBlocked: { blockList.isBlocked($0) },
+            report: { target in
+                openURL(SupportContact.mailURL(.report(playerID: target.playerID, name: target.name, roomCode: roomCode)))
+            },
+            toggleBlock: { target in
+                if blockList.isBlocked(target.playerID) {
+                    blockList.unblock(playerID: target.playerID)
+                } else {
+                    blockList.block(playerID: target.playerID, name: target.name)
+                }
+            }
+        )
+    }
+
+    private var safety: TableSafetyModifier {
+        TableSafetyModifier(blocked: blocked, actions: safetyActions)
+    }
+
+    private var roomCode: String? {
+        if case .seated(_, let code) = client.connection { return code }
+        return nil
     }
 
     @ViewBuilder
@@ -284,18 +326,14 @@ struct TableView: View {
                 OpponentsRing(
                     view: view,
                     players: seating.active,
-                    avatars: avatars,
-                    reactions: client.reactions,
+                    reactions: reactions,
                     cardHeight: cards.compact
                 )
                 .frame(height: arrangement.opponentsHeight(in: size))
-                .task(id: view.players.map(\.playerID)) {
-                    await avatars.load(view.players.map(\.playerID))
-                }
                 Spacer(minLength: 0)
                     .frame(maxWidth: .infinity)
                     .overlay(alignment: .trailing) {
-                        WaitingZone(players: seating.waiting, avatars: avatars, reactions: client.reactions)
+                        WaitingZone(players: seating.waiting, reactions: reactions)
                     }
             } else {
                 OpponentSeatView(
@@ -304,14 +342,10 @@ struct TableView: View {
                     revealedCards: view.opponent.map { revealedCards(for: $0.seat, in: view) } ?? [],
                     showsCards: view.street != nil && view.opponent?.hasFolded == false,
                     isActing: view.actor != nil && view.actor == view.opponent?.seat,
-                    avatar: view.opponent.flatMap { avatars.avatar(for: $0.playerID) },
-                    reaction: view.opponent.flatMap { client.reactions[$0.seat] },
+                    reaction: view.opponent.flatMap { reactions[$0.seat] },
                     cardHeight: cards.opponent,
                     isInline: arrangement.seatsInline
                 )
-                .task(id: view.opponent?.playerID) {
-                    if let id = view.opponent?.playerID { await avatars.load([id]) }
-                }
                 Spacer(minLength: 0)
             }
         } else {
@@ -325,6 +359,18 @@ struct TableView: View {
             Label(rejection, systemImage: "exclamationmark.triangle.fill")
                 .font(.callout)
                 .foregroundStyle(.yellow)
+        }
+        if allowsSafetyActions, view?.players.contains(where: { blocked.contains($0.playerID) }) == true {
+            HStack {
+                Label("A player you blocked is at this table.", systemImage: "person.crop.circle.badge.xmark")
+                    .font(.callout)
+                    .foregroundStyle(.white)
+                if let onLeave {
+                    Button("Leave", action: onLeave)
+                        .font(.callout.bold())
+                        .frame(minHeight: Theme.Target.minimum)
+                }
+            }
         }
     }
 
@@ -363,7 +409,7 @@ struct TableView: View {
             summary: view?.me,
             isOnButton: view?.isOnButton ?? false,
             holeCards: view?.holeCards ?? [],
-            reaction: view.flatMap { client.reactions[$0.seat] },
+            reaction: view.flatMap { reactions[$0.seat] },
             cardHeight: isInline ? cards.board * 1.15 : cards.mine,
             isInline: isInline
         )
@@ -398,7 +444,6 @@ private struct OpponentsRing: View {
     let view: PlayerView
     /// The players still in the hand (`TableSeating.active`), clockwise.
     let players: [PlayerSummary]
-    let avatars: AvatarLoader
     let reactions: [Seat: MatchSessionClient.Reaction]
     let cardHeight: CGFloat
 
@@ -407,7 +452,6 @@ private struct OpponentsRing: View {
                 ForEach(players, id: \.seat) { player in
                     CompactSeatView(
                         summary: player,
-                        avatar: avatars.avatar(for: player.playerID),
                         isOnButton: view.button == player.seat && view.street != nil,
                         isActing: view.actor == player.seat,
                         revealedCards: revealedCards(for: player.seat, in: view),
@@ -428,26 +472,28 @@ private struct OpponentsRing: View {
 /// pictures only, still able to emote.
 private struct WaitingZone: View {
     let players: [PlayerSummary]
-    let avatars: AvatarLoader
     let reactions: [Seat: MatchSessionClient.Reaction]
 
     @ScaledMetric(relativeTo: .caption) private var avatarSize: CGFloat = 30
+    @Environment(\.blockedPlayerIDs) private var blocked
 
     var body: some View {
         ZStack {
             if !players.isEmpty {
                 VStack(spacing: Theme.Spacing.medium) {
                     ForEach(players, id: \.seat) { player in
+                        let name = player.shownName(hiding: blocked)
                         PlayerAvatar(
-                            data: avatars.avatar(for: player.playerID),
+                            avatarID: player.shownAvatarID(hiding: blocked),
                             size: min(avatarSize, 44),
-                            name: player.name,
+                            name: name,
                             isReconnecting: player.isReconnecting
                         )
                         .opacity(player.isBusted ? 0.5 : 0.85)
                         .emoteBubble(reactions[player.seat], size: .small)
                         .accessibilityElement(children: .ignore)
-                        .accessibilityLabel(player.isBusted ? Text("\(player.name), out") : Text("\(player.name), folded"))
+                        .accessibilityLabel(player.isBusted ? Text("\(name), out") : Text("\(name), folded"))
+                        .playerSafetyMenu(player)
                         .transition(.move(edge: .trailing).combined(with: .opacity))
                     }
                 }

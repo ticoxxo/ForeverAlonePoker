@@ -77,645 +77,6 @@
         }
       }
     },
-    "Music" : {
-      "comment" : "Switch for the background music.",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "الموسيقى"
-          }
-        },
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hudba"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Musik"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Música"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Musique"
-          }
-        },
-        "he" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "מוזיקה"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Musica"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ミュージック"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Muziek"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Música"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "音樂"
-          }
-        }
-      }
-    },
-    "Music volume" : {
-      "comment" : "Slider for the background music volume.",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "مستوى صوت الموسيقى"
-          }
-        },
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hlasitost hudby"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Musiklautstärke"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Volumen de la música"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Volume de la musique"
-          }
-        },
-        "he" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "עוצמת המוזיקה"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Volume della musica"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ミュージックの音量"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Muziekvolume"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Volume da música"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "音樂音量"
-          }
-        }
-      }
-    },
-    "Mute sound" : {
-      "comment" : "Toolbar button silencing music and sound effects.",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "كتم الصوت"
-          }
-        },
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ztlumit zvuk"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ton aus"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Silenciar sonido"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Couper le son"
-          }
-        },
-        "he" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "השתקת הצליל"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Disattiva audio"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "サウンドを消す"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Geluid uit"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Silenciar som"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "靜音"
-          }
-        }
-      }
-    },
-    "Reset settings" : {
-      "comment" : "Button restoring the default sound settings.",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "إعادة تعيين الإعدادات"
-          }
-        },
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Obnovit nastavení"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Einstellungen zurücksetzen"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Restablecer ajustes"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Réinitialiser les réglages"
-          }
-        },
-        "he" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "איפוס הגדרות"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ripristina impostazioni"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "設定をリセット"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Instellingen herstellen"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Redefinir ajustes"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "重設設定"
-          }
-        }
-      }
-    },
-    "Sound" : {
-      "comment" : "Header of the sound settings in Profile.",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "الصوت"
-          }
-        },
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zvuk"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ton"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sonido"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Son"
-          }
-        },
-        "he" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "צליל"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Suono"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "サウンド"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Geluid"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Som"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "聲音"
-          }
-        }
-      }
-    },
-    "Sound effects" : {
-      "comment" : "Switch for the table's sound effects.",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "المؤثرات الصوتية"
-          }
-        },
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zvukové efekty"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Soundeffekte"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Efectos de sonido"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Effets sonores"
-          }
-        },
-        "he" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "אפקטים קוליים"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Effetti sonori"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "効果音"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Geluidseffecten"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Efeitos sonoros"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "音效"
-          }
-        }
-      }
-    },
-    "Sound effects volume" : {
-      "comment" : "Slider for the sound effects volume.",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "مستوى صوت المؤثرات"
-          }
-        },
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hlasitost efektů"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lautstärke der Soundeffekte"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Volumen de los efectos"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Volume des effets sonores"
-          }
-        },
-        "he" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "עוצמת האפקטים"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Volume degli effetti"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "効果音の音量"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Volume van effecten"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Volume dos efeitos"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "音效音量"
-          }
-        }
-      }
-    },
-    "Track" : {
-      "comment" : "Picker for the background music track.",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "المقطوعة"
-          }
-        },
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Skladba"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Titel"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pista"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Morceau"
-          }
-        },
-        "he" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "רצועה"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Brano"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "曲"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nummer"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Faixa"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "曲目"
-          }
-        }
-      }
-    },
-    "Turn sound on" : {
-      "comment" : "Toolbar button turning music and sound effects back on.",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "تشغيل الصوت"
-          }
-        },
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zapnout zvuk"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ton an"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Activar sonido"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Activer le son"
-          }
-        },
-        "he" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "הפעלת הצליל"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Attiva audio"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "サウンドをオンにする"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Geluid aan"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ativar som"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "開啟聲音"
-          }
-        }
-      }
-    },
     "—" : {
       "localizations" : {
         "ar" : {
@@ -3371,6 +2732,10 @@
         }
       }
     },
+    "A player you blocked is at this table." : {
+      "comment" : "A message that appears when a player you've blocked is at the table.",
+      "isCommentAutoGenerated" : true
+    },
     "Account" : {
       "comment" : "A section for the user's account settings.",
       "isCommentAutoGenerated" : true,
@@ -4306,6 +3671,22 @@
         }
       }
     },
+    "Block" : {
+      "comment" : "A button that blocks a player.",
+      "isCommentAutoGenerated" : true
+    },
+    "Block a player from their seat at the table. You won't see their name, picture or reactions." : {
+      "comment" : "A description of the purpose of the \"Block a player from their seat at the table\" text.",
+      "isCommentAutoGenerated" : true
+    },
+    "Blocked player" : {
+      "comment" : "The name to display when a player is blocked.",
+      "isCommentAutoGenerated" : true
+    },
+    "Blocked players" : {
+      "comment" : "The title of a screen that lists players that the user has blocked.",
+      "isCommentAutoGenerated" : true
+    },
     "Board" : {
       "comment" : "A label describing the cards on the table.",
       "isCommentAutoGenerated" : true,
@@ -5020,78 +4401,6 @@
         }
       }
     },
-    "Chips" : {
-      "comment" : "A section header for the chip sets in the skin store.",
-      "isCommentAutoGenerated" : true,
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "الفيشات"
-          }
-        },
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Žetony"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Chips"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fichas"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Jetons"
-          }
-        },
-        "he" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "צ׳יפים"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fiches"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "チップ"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fiches"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fichas"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "籌碼"
-          }
-        }
-      }
-    },
     "Card faces" : {
       "comment" : "A section header for the card faces in the store.",
       "isCommentAutoGenerated" : true,
@@ -5668,74 +4977,74 @@
         }
       }
     },
-    "Choose a photo for other players to see" : {
-      "comment" : "A hint for the user to choose a profile picture.",
+    "Chips" : {
+      "comment" : "A section header for the chip sets in the skin store.",
       "isCommentAutoGenerated" : true,
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "اختر صورة يراها اللاعبون الآخرون"
+            "value" : "الفيشات"
           }
         },
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vyberte fotku, kterou uvidí ostatní hráči"
+            "value" : "Žetony"
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Wähle ein Foto, das andere Spieler sehen"
+            "value" : "Chips"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Elige una foto para que otros jugadores la vean"
+            "value" : "Fichas"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Choisissez une photo visible par les autres joueurs"
+            "value" : "Jetons"
           }
         },
         "he" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "בחרו תמונה שהשחקנים האחרים יראו"
+            "value" : "צ׳יפים"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Scegli una foto che vedranno gli altri giocatori"
+            "value" : "Fiches"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "他のプレイヤーに表示する写真を選んでください"
+            "value" : "チップ"
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kies een foto die andere spelers zien"
+            "value" : "Fiches"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Escolha uma foto para os outros jogadores verem"
+            "value" : "Fichas"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "選擇其他玩家會看到的照片"
+            "value" : "籌碼"
           }
         }
       }
@@ -6027,6 +5336,10 @@
         }
       }
     },
+    "Community guidelines" : {
+      "comment" : "The title of a screen that displays the app's community guidelines.",
+      "isCommentAutoGenerated" : true
+    },
     "Connected. Taking your seat…" : {
       "comment" : "Text displayed in a lobby when a user is connected to a table.",
       "isCommentAutoGenerated" : true,
@@ -6312,6 +5625,10 @@
           }
         }
       }
+    },
+    "Contact support" : {
+      "comment" : "A link that opens the user's email client to a support email.",
+      "isCommentAutoGenerated" : true
     },
     "Contact Us" : {
       "comment" : "Button title for the \"Contact Us\" link in the help view.",
@@ -7964,77 +7281,8 @@
         }
       }
     },
-    "Edit your name, country and picture" : {
-      "comment" : "A hint for the user to edit their profile.",
-      "isCommentAutoGenerated" : true,
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "عدّل اسمك ودولتك وصورتك"
-          }
-        },
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Upravte jméno, zemi a fotku"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bearbeite Namen, Land und Bild"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Edita tu nombre, país y foto"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Modifiez votre nom, votre pays et votre photo"
-          }
-        },
-        "he" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "עריכת השם, המדינה והתמונה"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Modifica nome, paese e foto"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "名前、国、写真を編集"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Wijzig je naam, land en foto"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Edite seu nome, país e foto"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "編輯你的名稱、國家或地區與照片"
-          }
-        }
-      }
+    "Edit your name, picture and country" : {
+
     },
     "Elo gain disabled for this game" : {
       "localizations" : {
@@ -8105,6 +7353,10 @@
           }
         }
       }
+    },
+    "Enter a name." : {
+      "comment" : "Error message when a user tries to set an empty name.",
+      "isCommentAutoGenerated" : true
     },
     "Enter the 6-character code." : {
       "comment" : "Error message when the room code is invalid.",
@@ -8321,6 +7573,9 @@
           }
         }
       }
+    },
+    "Everyone at your table sees your picture." : {
+
     },
     "Everyone else folded. You won %@" : {
       "comment" : "A message that appears when a user wins a tournament. The argument is the amount of chips won.",
@@ -8975,6 +8230,10 @@
           }
         }
       }
+    },
+    "ForeverAlonePoker is for everyone. Your name is seen by the players you meet, so names and behavior at the table must follow these rules:" : {
+      "comment" : "A description of the guidelines for ForeverAlonePoker.",
+      "isCommentAutoGenerated" : true
     },
     "Four digits shown on the host's screen" : {
       "comment" : "A hint for the user to enter the passcode shown on the host's screen.",
@@ -9908,6 +9167,10 @@
           }
         }
       }
+    },
+    "I agree" : {
+      "comment" : "The text of a button that the user must tap to agree to the app's community guidelines.",
+      "isCommentAutoGenerated" : true
     },
     "I have a new device. Do I buy again?" : {
       "comment" : "Question about purchasing a card set on a new device.",
@@ -11993,6 +11256,223 @@
         }
       }
     },
+    "More pictures in the Store." : {
+      "comment" : "A description of the Store.",
+      "isCommentAutoGenerated" : true
+    },
+    "Music" : {
+      "comment" : "Switch for the background music.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الموسيقى"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hudba"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Musik"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Música"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Musique"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "מוזיקה"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Musica"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ミュージック"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Muziek"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Música"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "音樂"
+          }
+        }
+      }
+    },
+    "Music volume" : {
+      "comment" : "Slider for the background music volume.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مستوى صوت الموسيقى"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hlasitost hudby"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Musiklautstärke"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Volumen de la música"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Volume de la musique"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "עוצמת המוזיקה"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Volume della musica"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ミュージックの音量"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Muziekvolume"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Volume da música"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "音樂音量"
+          }
+        }
+      }
+    },
+    "Mute sound" : {
+      "comment" : "Toolbar button silencing music and sound effects.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "كتم الصوت"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ztlumit zvuk"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ton aus"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Silenciar sonido"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couper le son"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "השתקת הצליל"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disattiva audio"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サウンドを消す"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geluid uit"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Silenciar som"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "靜音"
+          }
+        }
+      }
+    },
     "Name" : {
       "comment" : "A label for the user's display name.",
       "isCommentAutoGenerated" : true,
@@ -12353,6 +11833,10 @@
         }
       }
     },
+    "No blocked players" : {
+      "comment" : "A label displayed when a player has no blocked players.",
+      "isCommentAutoGenerated" : true
+    },
     "No cards yet" : {
       "comment" : "A description of the cards on the board when there are no cards.",
       "isCommentAutoGenerated" : true,
@@ -12424,6 +11908,10 @@
           }
         }
       }
+    },
+    "No hate, harassment, threats or slurs." : {
+      "comment" : "A rule prohibiting hate, harassment, threats, or slurs.",
+      "isCommentAutoGenerated" : true
     },
     "No mail app is set up on this device. Write to %@." : {
       "comment" : "A message in a \"Write to us\" alert that explains that the user can't send an email because no mail app is set up on their device, but that they can still write to Apple Support.",
@@ -12569,6 +12057,9 @@
         }
       }
     },
+    "No picture" : {
+
+    },
     "No purchases yet" : {
       "comment" : "A label displayed when the user has no purchases.",
       "isCommentAutoGenerated" : true,
@@ -12712,6 +12203,13 @@
           }
         }
       }
+    },
+    "No sexual or violent names." : {
+
+    },
+    "No spam, links or impersonation." : {
+      "comment" : "A rule prohibiting spam, links, and impersonation.",
+      "isCommentAutoGenerated" : true
     },
     "No table with that code." : {
       "comment" : "Error message when trying to join a room with an invalid code.",
@@ -13288,6 +12786,10 @@
           }
         }
       }
+    },
+    "Now your profile picture, seen by everyone you play." : {
+      "comment" : "A description of the unlocked text for an avatar.",
+      "isCommentAutoGenerated" : true
     },
     "OK" : {
       "comment" : "The label of a button that dismisses a sheet.",
@@ -15237,6 +14739,10 @@
         }
       }
     },
+    "Profile pictures" : {
+      "comment" : "A heading for the profile pictures section of the skin store.",
+      "isCommentAutoGenerated" : true
+    },
     "Purchased on %@" : {
       "comment" : "A subheading displaying the purchase date of a purchase in the refund request view. The argument is the purchase date of the purchase.",
       "isCommentAutoGenerated" : true,
@@ -15667,6 +15173,10 @@
           }
         }
       }
+    },
+    "Questions or problems: %@" : {
+      "comment" : "A call-to-action link to email support.",
+      "isCommentAutoGenerated" : true
     },
     "Raise to" : {
       "comment" : "A label for the bet or raise amount.",
@@ -16682,6 +16192,14 @@
         }
       }
     },
+    "Report" : {
+      "comment" : "A button to report a player.",
+      "isCommentAutoGenerated" : true
+    },
+    "Report…" : {
+      "comment" : "A button that reports a player.",
+      "isCommentAutoGenerated" : true
+    },
     "Request a Refund" : {
       "comment" : "A button that opens a sheet for requesting a refund.",
       "isCommentAutoGenerated" : true,
@@ -16820,6 +16338,77 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "為你向 Apple 購買的 App 或內容申請退款"
+          }
+        }
+      }
+    },
+    "Reset settings" : {
+      "comment" : "Button restoring the default sound settings.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إعادة تعيين الإعدادات"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Obnovit nastavení"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einstellungen zurücksetzen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restablecer ajustes"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réinitialiser les réglages"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "איפוס הגדרות"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ripristina impostazioni"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "設定をリセット"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Instellingen herstellen"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Redefinir ajustes"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重設設定"
           }
         }
       }
@@ -17183,6 +16772,9 @@
           }
         }
       }
+    },
+    "Safety and support" : {
+
     },
     "Scope" : {
       "comment" : "A label for the leaderboard scope picker.",
@@ -18120,6 +17712,219 @@
         }
       }
     },
+    "Sound" : {
+      "comment" : "Header of the sound settings in Profile.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الصوت"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zvuk"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ton"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sonido"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Son"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "צליל"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suono"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サウンド"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geluid"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Som"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "聲音"
+          }
+        }
+      }
+    },
+    "Sound effects" : {
+      "comment" : "Switch for the table's sound effects.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "المؤثرات الصوتية"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zvukové efekty"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Soundeffekte"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Efectos de sonido"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effets sonores"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "אפקטים קוליים"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effetti sonori"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "効果音"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geluidseffecten"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Efeitos sonoros"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "音效"
+          }
+        }
+      }
+    },
+    "Sound effects volume" : {
+      "comment" : "Slider for the sound effects volume.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مستوى صوت المؤثرات"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hlasitost efektů"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lautstärke der Soundeffekte"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Volumen de los efectos"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Volume des effets sonores"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "עוצמת האפקטים"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Volume degli effetti"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "効果音の音量"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Volume van effecten"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Volume dos efeitos"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "音效音量"
+          }
+        }
+      }
+    },
     "spades" : {
       "comment" : "Card suit read by VoiceOver",
       "localizations" : {
@@ -18695,6 +18500,10 @@
         }
       }
     },
+    "That name isn't allowed. Choose another one." : {
+      "comment" : "Error message when a name is blocked.",
+      "isCommentAutoGenerated" : true
+    },
     "The classic deck is free and always available." : {
       "comment" : "A description of the free classic deck.",
       "isCommentAutoGenerated" : true,
@@ -18983,6 +18792,10 @@
         }
       }
     },
+    "There is zero tolerance for objectionable content or abusive players. Names are filtered automatically. You can block or report any player from their seat; we review reports within 24 hours and act on them." : {
+      "comment" : "The text describing the rules of the game.",
+      "isCommentAutoGenerated" : true
+    },
     "thinking" : {
       "comment" : "Text describing a player's state when they are actively playing the game.",
       "isCommentAutoGenerated" : true,
@@ -19197,6 +19010,9 @@
         }
       }
     },
+    "To block or report a player, touch and hold their seat at the table." : {
+
+    },
     "To check on a request, visit reportaproblem.apple.com." : {
       "comment" : "A description of the Apple support page for requesting",
       "isCommentAutoGenerated" : true,
@@ -19265,6 +19081,77 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "若要查看申請進度，請前往 reportaproblem.apple.com。"
+          }
+        }
+      }
+    },
+    "Track" : {
+      "comment" : "Picker for the background music track.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "المقطوعة"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skladba"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Titel"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pista"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Morceau"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "רצועה"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brano"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "曲"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nummer"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Faixa"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "曲目"
           }
         }
       }
@@ -19341,6 +19228,77 @@
         }
       }
     },
+    "Turn sound on" : {
+      "comment" : "Toolbar button turning music and sound effects back on.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تشغيل الصوت"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zapnout zvuk"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ton an"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Activar sonido"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Activer le son"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "הפעלת הצליל"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Attiva audio"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サウンドをオンにする"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geluid aan"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ativar som"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開啟聲音"
+          }
+        }
+      }
+    },
     "Unavailable" : {
       "comment" : "A description of a card-face set, including the price.",
       "isCommentAutoGenerated" : true,
@@ -19412,6 +19370,10 @@
           }
         }
       }
+    },
+    "Unblock" : {
+      "comment" : "A button that unblocks a player from the blocked players list.",
+      "isCommentAutoGenerated" : true
     },
     "Unexpected reply from the server." : {
       "comment" : "Error message when the server sends an unexpected response.",
@@ -20065,6 +20027,14 @@
         }
       }
     },
+    "Use at least %lld characters." : {
+      "comment" : "The minimum length of a display name.",
+      "isCommentAutoGenerated" : true
+    },
+    "Use at most %lld characters." : {
+      "comment" : "The text for the \"Use at most \\(DisplayNamePolicy.maxLength) characters.\" line in the \"Your profile\" screen.",
+      "isCommentAutoGenerated" : true
+    },
     "Use for every card" : {
       "localizations" : {
         "ar" : {
@@ -20134,6 +20104,10 @@
           }
         }
       }
+    },
+    "Use letters or numbers." : {
+      "comment" : "Error message when a name contains invalid characters.",
+      "isCommentAutoGenerated" : true
     },
     "Use the classic card" : {
       "comment" : "A button that lets the user choose to use the classic card instead of the current card.",

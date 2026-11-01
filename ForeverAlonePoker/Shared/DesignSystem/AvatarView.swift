@@ -1,16 +1,17 @@
 import SwiftUI
 
-/// A round profile picture. Without a picture it shows the player's initials
+/// A round profile picture from the bundled catalog (tdr/0030). Without one,
+/// or with an id this build does not know, it shows the player's initials
 /// when a name is given, otherwise a generic silhouette.
 struct AvatarView: View {
-    let data: Data?
+    let avatarID: String?
     let size: CGFloat
     var name: String? = nil
 
     var body: some View {
         Group {
-            if let data, let image = UIImage(data: data) {
-                Image(uiImage: image)
+            if let imageName = BundledSkin.avatarImageName(for: avatarID) {
+                Image(imageName)
                     .resizable()
                     .scaledToFill()
             } else if let name, !Self.initials(of: name).isEmpty {

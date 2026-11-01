@@ -61,6 +61,34 @@ struct MatchRoomSeatingTests {
     }
 }
 
+@Suite("MatchRoom: name moderation")
+struct MatchRoomNameModerationTests {
+    @Test("a name the policy rejects is seated as Player N")
+    func rejectedName() {
+        var room = MatchRoomBuilder().build()
+        _ = room.handle(.join(TestPlayers.alice), from: TestPlayers.aliceConnection)
+        let out = room.handle(.join(TestPlayers.offensive), from: TestPlayers.bobConnection)
+        #expect(out.latestView(for: TestPlayers.aliceConnection)?.opponent?.name == "Player 2")
+    }
+
+    @Test("an accepted name is seated in its normalized form")
+    func normalizedName() {
+        var room = MatchRoomBuilder().build()
+        _ = room.handle(.join(TestPlayers.alice), from: TestPlayers.aliceConnection)
+        let out = room.handle(.join(TestPlayers.paddedBob), from: TestPlayers.bobConnection)
+        #expect(out.latestView(for: TestPlayers.aliceConnection)?.opponent?.name == "Bob")
+    }
+
+    @Test("a country code that is not two letters is dropped")
+    func countryCode() {
+        var room = MatchRoomBuilder().build()
+        _ = room.handle(.join(TestPlayers.alice), from: TestPlayers.aliceConnection)
+        let bob = PlayerIdentity(id: "bob-id", displayName: "Bob", countryCode: "<script>")
+        let out = room.handle(.join(bob), from: TestPlayers.bobConnection)
+        #expect(out.latestView(for: TestPlayers.aliceConnection)?.opponent?.countryCode == "")
+    }
+}
+
 @Suite("MatchRoom: redaction")
 struct MatchRoomRedactionTests {
     @Test("each player sees only their own hole cards")
@@ -335,9 +363,9 @@ struct ProtocolTests {
         #expect(try JSONDecoder().decode(ServerEnvelope.self, from: data).message == .rated(update))
     }
 
-    @Test("the protocol version was bumped for auto-dealing and emotes")
+    @Test("the protocol version was bumped for profile pictures")
     func version() {
-        #expect(ProtocolVersion.current == 4)
+        #expect(ProtocolVersion.current == 5)
     }
 
     @Test("emotes round-trip as their emoji, and anything else fails to decode")

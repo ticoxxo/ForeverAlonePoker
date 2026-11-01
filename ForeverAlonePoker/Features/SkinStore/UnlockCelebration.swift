@@ -66,7 +66,7 @@ private struct UnlockCard: View {
                     .foregroundStyle(Theme.Palette.celebration)
                 Text(name)
                     .font(.headline)
-                (item?.kind == .chips ? Text("Now on your chips everywhere you play.") : Text("Now on your cards everywhere you play."))
+                unlockedText
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -89,12 +89,23 @@ private struct UnlockCard: View {
         }
     }
 
-    /// Three cards of a face set, the back, or three chips, fanning out
-    /// from one stack.
+    private var unlockedText: Text {
+        switch item?.kind {
+        case .chips?: Text("Now on your chips everywhere you play.")
+        case .avatar?: Text("Now your profile picture, seen by everyone you play.")
+        default: Text("Now on your cards everywhere you play.")
+        }
+    }
+
+    /// Three cards of a face set, the back, three chips fanning out from one
+    /// stack, or the profile picture.
     @ViewBuilder
     private var preview: some View {
         let height = min(cardHeight, 160)
-        if item?.kind == .chips {
+        if let item, item.kind == .avatar {
+            AvatarView(avatarID: item.id.rawValue, size: height * 0.8)
+                .scaleEffect(isFannedOut ? 1 : 0.6)
+        } else if item?.kind == .chips {
             ChipFanView(isFannedOut: isFannedOut)
                 .frame(height: height * 0.6)
                 .scaleEffect(isFannedOut ? 1 : 0.6)

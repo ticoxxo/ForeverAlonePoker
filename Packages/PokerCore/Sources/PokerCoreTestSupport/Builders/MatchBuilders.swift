@@ -65,6 +65,12 @@ public enum TestPlayers {
     public static let bob = PlayerIdentity(id: "bob-id", displayName: "Bob")
     public static let carol = PlayerIdentity(id: "carol-id", displayName: "Carol")
     public static let dave = PlayerIdentity(id: "dave-id", displayName: "Dave")
+    /// Bob's id with a name `DisplayNamePolicy` rejects (tdr/0029).
+    public static let offensive = PlayerIdentity(id: "bob-id", displayName: "sh1t")
+    /// Bob's id with a name that needs normalizing.
+    public static let paddedBob = PlayerIdentity(id: "bob-id", displayName: "  Bob\u{200B} ")
+    /// Bob with a profile picture from the catalog (tdr/0030).
+    public static let bobWithAvatar = PlayerIdentity(id: "bob-id", displayName: "Bob", avatarID: "avatar_seal")
 
     public static let aliceConnection = ConnectionID("conn-alice")
     public static let bobConnection = ConnectionID("conn-bob")

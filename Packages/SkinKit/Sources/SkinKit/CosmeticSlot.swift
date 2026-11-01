@@ -1,7 +1,7 @@
 import PokerCore
 
 /// One place on screen a skin can fill: the face of a specific card, the card
-/// back, one chip file, and later the mat. The raw value is a stable key
+/// back, one chip file, the profile picture, and later the mat. The raw value is a stable key
 /// ("front.As", "back", "chips.100.top.small", "mat") used in loadouts,
 /// manifests and on the wire.
 public struct CosmeticSlot: RawRepresentable, Hashable, Comparable, Sendable, Codable, CustomStringConvertible {
@@ -17,6 +17,8 @@ public struct CosmeticSlot: RawRepresentable, Hashable, Comparable, Sendable, Co
 
     public static let cardBack = CosmeticSlot(rawValue: "back")
     public static let mat = CosmeticSlot(rawValue: "mat")
+    /// The player's profile picture, seen by opponents (tdr/0030).
+    public static let avatar = CosmeticSlot(rawValue: "avatar")
 
     /// The 52 card faces, suit by suit.
     public static let allCardFronts: [CosmeticSlot] = Suit.allCases.flatMap { suit in

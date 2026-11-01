@@ -2,8 +2,8 @@ import Foundation
 import Observation
 
 /// Drives the Sign in with Apple exchange (tdr/0010): Apple's identity token
-/// goes to the server, the returned session is stored on the profile, and the
-/// public profile is published so the leaderboard can show the player.
+/// goes to the server and the returned session is stored on the profile.
+/// Nothing is published: the server writes the leaderboard (tdr/0029).
 @Observable
 final class RankedSignInModel {
     enum Phase: Equatable {
@@ -15,12 +15,10 @@ final class RankedSignInModel {
     private(set) var phase: Phase = .idle
     private let identity: IdentityStore
     private let auth: any RankedAuthService
-    private let publisher: any PublicProfilePublishing
 
-    init(identity: IdentityStore, auth: any RankedAuthService, publisher: any PublicProfilePublishing) {
+    init(identity: IdentityStore, auth: any RankedAuthService) {
         self.identity = identity
         self.auth = auth
-        self.publisher = publisher
     }
 
     func signIn(identityToken: String) async {
@@ -29,7 +27,6 @@ final class RankedSignInModel {
             let session = try await auth.exchange(identityToken: identityToken)
             identity.linkAppleAccount(userID: session.playerID, sessionToken: session.token)
             phase = .idle
-            await publishProfile()
         } catch {
             phase = .failed(Self.describe(error))
         }
@@ -47,12 +44,6 @@ final class RankedSignInModel {
 
     func dismissFailure() {
         if case .failed = phase { phase = .idle }
-    }
-
-    /// Best effort: a stale public profile is not worth blocking the UI.
-    func publishProfile() async {
-        guard let snapshot = identity.publicProfileSnapshot else { return }
-        try? await publisher.publish(snapshot)
     }
 
     private static func describe(_ error: Error) -> String {

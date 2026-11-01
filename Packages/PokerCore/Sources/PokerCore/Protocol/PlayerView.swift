@@ -1,10 +1,12 @@
 /// What one player is allowed to know about another.
 public struct PlayerSummary: Codable, Sendable, Hashable {
     public let seat: Seat
-    /// Stable player id (tdr/0006); used to look up their public profile picture.
+    /// Stable player id (tdr/0006); what blocking and reporting refer to.
     public let playerID: String
     public let name: String
     public let countryCode: String
+    /// Their profile picture from the bundled catalog (tdr/0030).
+    public let avatarID: String?
     public let stack: Chips
     public let streetCommitted: Chips
     public let hasFolded: Bool
@@ -23,6 +25,7 @@ public struct PlayerSummary: Codable, Sendable, Hashable {
         playerID: String = "",
         name: String,
         countryCode: String = "",
+        avatarID: String? = nil,
         stack: Chips,
         streetCommitted: Chips,
         hasFolded: Bool,
@@ -37,6 +40,7 @@ public struct PlayerSummary: Codable, Sendable, Hashable {
         self.playerID = playerID
         self.name = name
         self.countryCode = countryCode
+        self.avatarID = avatarID
         self.stack = stack
         self.streetCommitted = streetCommitted
         self.hasFolded = hasFolded

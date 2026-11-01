@@ -36,7 +36,7 @@ final class SkinStore {
 
     /// Kinds this build can draw. Supporting the mat means adding
     /// their renderer and listing them here; catalogs can carry them earlier.
-    static let supportedKinds: Set<CosmeticKind> = [.cardFront, .cardBack, .chips]
+    static let supportedKinds: Set<CosmeticKind> = [.cardFront, .cardBack, .chips, .avatar]
 
     private(set) var catalog: SkinCatalog = .builtIn {
         didSet { resolver = SkinResolver(catalog: catalog) }
@@ -98,6 +98,13 @@ final class SkinStore {
     func opponentCardSkin(_ wire: [String: String]?) -> CardSkin {
         guard let wire else { return .standard }
         return cardSkin(loadout: Loadout(wire: wire), ownership: .everything)
+    }
+
+    /// The player's profile picture, sent to opponents with every join
+    /// (tdr/0030); `nil` shows initials. Pictures are bundled, so only
+    /// ownership decides.
+    var myAvatarID: String? {
+        resolver.resolve(.avatar, loadout: loadout, ownership: ownership, installed: installed)?.item.id.rawValue
     }
 
     /// Every slot of `item`, for store previews: installed files where present,
@@ -172,6 +179,13 @@ final class SkinStore {
         equip(item, on: item.slots)
     }
 
+    /// Back to initials.
+    func clearAvatar() {
+        var updated = loadout
+        updated.reset([.avatar])
+        loadoutStore.updateLoadout(updated)
+    }
+
     // MARK: - Lifecycle
 
     /// Call once at launch: shows the cached catalog immediately, then
@@ -239,7 +253,8 @@ final class SkinStore {
     func syncAssets() async {
         installed = await assets.installed(matching: catalog)
         var missing: [(AssetKey, URL, String)] = []
-        for item in catalog.items where !item.isDefault {
+        // Bundled items (the profile pictures) are never downloaded.
+        for item in catalog.items where !item.isDefault && !item.isBundled {
             for slot in ownership.ownedSlots(of: item) {
                 let key = AssetKey(item: item.id, slot: slot)
                 guard !installed.contains(key),

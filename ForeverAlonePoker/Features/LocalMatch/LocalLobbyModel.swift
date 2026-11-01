@@ -101,7 +101,8 @@ final class LocalLobbyModel {
         let discovery = NearbyDiscovery()
         self.discovery = discovery
         observe(discovery)
-        discovery.startListening(name: identity.displayName, passcode: passcode, maxGuests: maxPlayers - 1)
+        // Nearby strangers see this name before entering a passcode (tdr/0029).
+        discovery.startListening(name: DisplayNamePolicy.displayName(identity.displayName, at: .one), passcode: passcode, maxGuests: maxPlayers - 1)
     }
 
     /// Closes the table before it starts, back to choosing its size.

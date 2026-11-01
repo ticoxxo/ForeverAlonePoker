@@ -406,3 +406,71 @@ struct SkinStoreChipTests {
         #expect(makeFixture().store.opponentCardSkin(nil).source(for: hundred) == .bundled("skin-classic_chips-chips-100-top-small"))
     }
 }
+
+@Suite("SkinStore profile pictures")
+@MainActor
+struct SkinStoreAvatarTests {
+    private static let seal: SkinID = "avatar_seal"
+    private static let yellowCat: SkinID = "avatar_yellow_cat"
+
+    private func item(_ id: SkinID) throws -> SkinItem {
+        try #require(SkinCatalog.builtIn.item(id))
+    }
+
+    @Test("profile pictures are offered by this build, free ones first-class")
+    func offered() async {
+        let fixture = Fixture()
+        await fixture.store.start()
+        #expect(SkinStore.supportedKinds.contains(.avatar))
+        #expect(fixture.store.items(of: .avatar).count == 14)
+    }
+
+    @Test("nothing picked shows initials")
+    func none() {
+        #expect(Fixture().store.myAvatarID == nil)
+    }
+
+    @Test("a free picture is shown at once, with nothing to download")
+    func free() async throws {
+        let fixture = Fixture()
+        await fixture.store.start()
+        fixture.store.equip(try item(Self.seal), on: [.avatar])
+        #expect(fixture.store.myAvatarID == "avatar_seal")
+        #expect(fixture.store.installed.isEmpty)
+    }
+
+    @Test("a premium picture can't be picked before it is bought")
+    func unbought() async throws {
+        let fixture = Fixture()
+        await fixture.store.start()
+        fixture.store.equip(try item(Self.yellowCat), on: [.avatar])
+        #expect(fixture.store.myAvatarID == nil)
+    }
+
+    @Test("a bought premium picture is shown without a download")
+    func bought() async throws {
+        let fixture = Fixture()
+        fixture.purchases.entitlements = [ProductIDs.single(Self.yellowCat)]
+        await fixture.store.start()
+        fixture.store.equip(try item(Self.yellowCat), on: [.avatar])
+        #expect(fixture.store.myAvatarID == "avatar_yellow_cat")
+        #expect(fixture.store.installed.isEmpty)
+    }
+
+    @Test("clearing the picture goes back to initials")
+    func clear() async throws {
+        let fixture = Fixture()
+        await fixture.store.start()
+        fixture.store.equip(try item(Self.seal), on: [.avatar])
+        fixture.store.clearAvatar()
+        #expect(fixture.store.myAvatarID == nil)
+    }
+
+    @Test("any bundled picture can be drawn for an opponent; unknown ids can't")
+    func imageNames() {
+        #expect(BundledSkin.avatarImageName(for: "avatar_yellow_cat") == "skin-avatar_yellow_cat-avatar")
+        #expect(BundledSkin.avatarImageName(for: "spanish_001") == nil)
+        #expect(BundledSkin.avatarImageName(for: "avatar_from_the_future") == nil)
+        #expect(BundledSkin.avatarImageName(for: nil) == nil)
+    }
+}
