@@ -8,6 +8,7 @@ struct ProfileView: View {
     @Environment(AudioSettings.self) private var audio
     @Environment(SkinStore.self) private var skins
     @Environment(\.colorScheme) private var colorScheme
+    @AppStorage(CountryFlag.showsAtOnlineTablesKey) private var showsCountryFlags = true
     @State private var name = ""
     @State private var serverURL = ""
     @State private var ranked: RankedSignInModel?
@@ -46,8 +47,15 @@ struct ProfileView: View {
                 }
             }
 
-            Section("Country") {
+            Section {
                 CountryPicker(selection: countryBinding)
+                Toggle(isOn: $showsCountryFlags) {
+                    Label("Show flags online", systemImage: "flag")
+                }
+            } header: {
+                Text("Country")
+            } footer: {
+                Text("Online tables show each player's country flag on their picture.")
             }
 
             soundSections

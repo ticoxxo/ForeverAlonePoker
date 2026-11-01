@@ -2,6 +2,10 @@ import Foundation
 
 /// Helpers for ISO 3166-1 alpha-2 region codes.
 nonisolated enum CountryFlag {
+    /// `@AppStorage` key: whether online tables draw each player's flag on
+    /// their picture. Per device, on by default.
+    static let showsAtOnlineTablesKey = "table.showsCountryFlags"
+
     /// The flag emoji for a region code ("MX" → 🇲🇽), or an empty string for
     /// anything that is not two ASCII letters.
     static func emoji(for code: String) -> String {

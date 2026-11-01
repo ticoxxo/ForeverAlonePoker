@@ -67,4 +67,9 @@ extension PlayerSummary {
     func shownAvatarID(hiding blocked: Set<String>) -> String? {
         blocked.contains(playerID) ? nil : avatarID
     }
+
+    /// The country whose flag to draw; a blocked player shows none.
+    func shownCountryCode(hiding blocked: Set<String>) -> String {
+        blocked.contains(playerID) ? "" : countryCode
+    }
 }

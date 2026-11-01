@@ -487,6 +487,7 @@ private struct WaitingZone: View {
                             avatarID: player.shownAvatarID(hiding: blocked),
                             size: min(avatarSize, 44),
                             name: name,
+                            countryCode: player.shownCountryCode(hiding: blocked),
                             isReconnecting: player.isReconnecting
                         )
                         .opacity(player.isBusted ? 0.5 : 0.85)

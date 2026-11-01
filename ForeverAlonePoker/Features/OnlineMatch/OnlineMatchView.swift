@@ -5,6 +5,7 @@ import PokerCore
 struct OnlineMatchView: View {
     @State private var model: OnlineLobbyModel
     @Environment(\.dismiss) private var dismiss
+    @AppStorage(CountryFlag.showsAtOnlineTablesKey) private var showsCountryFlags = true
     private let onMatchFinished: (MatchSummary) -> Void
     private let onRated: (RatingUpdate) -> Void
 
@@ -41,6 +42,7 @@ struct OnlineMatchView: View {
                         dismiss()
                     }
                 }
+                    .environment(\.showsCountryFlags, showsCountryFlags)
                     .onAppear {
                         client.onMatchFinished = onMatchFinished
                         client.onRated = onRated
