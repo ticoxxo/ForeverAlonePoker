@@ -46,3 +46,4 @@ tdr/0003 chose a server-authoritative Hummingbird backend over WebSockets with n
 ## Notes
 
 - 2026-10-16: tables of two to six players, the host-run lobby and multiway Elo are decided in tdr/0013, which supersedes the heads-up-only parts of this record.
+- 2026-11-03: the server address is now a debug-only setting and release builds use the Fly.io server; see tdr/0032.

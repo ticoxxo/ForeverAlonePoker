@@ -64,6 +64,7 @@ swift run --package-path Server SkinPublisher import-chips <artwork-dir>  # prem
 swift run --package-path Server SkinPublisher manifest              # rehash and bump Server/SkinAssets/manifest.json
 swift run --package-path Server SkinPublisher keygen                # catalog signing key pair (private half is a server secret)
 # Docker image (build context = repo root): docker build -f Server/Dockerfile -t pokerserver .
+fly deploy                                          # from the repo root: Fly.io app forever-alone-poker (fly.toml, tdr/0032)
 
 # Build the app
 xcodebuild -scheme ForeverAlonePoker -destination 'platform=iOS Simulator,name=iPhone 17,OS=27.0' build

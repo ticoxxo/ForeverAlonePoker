@@ -1,0 +1,29 @@
+# Fly.io deployment of Server/ (tdr/0032). Lives at the repo root because the
+# Docker build needs Packages/ next to Server/. Deploy with `fly deploy`.
+# Secrets (SESSION_SECRET, CLOUDKIT_KEY_ID, CLOUDKIT_PRIVATE_KEY,
+# CATALOG_SIGNING_KEY) go through `fly secrets set`, never this file.
+
+app = "forever-alone-poker"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Server/Dockerfile"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  # Rooms live in memory: stopping a machine drops every table and socket.
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    method = "GET"
+    path = "/health"
+    interval = "15s"
+    timeout = "5s"
+    grace_period = "20s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
