@@ -3,7 +3,7 @@
 #   docker build -f Server/Dockerfile -t pokerserver .
 #   docker run -p 8080:8080 pokerserver
 
-FROM swift:6.0-noble AS build
+FROM swift:6.2-noble AS build
 WORKDIR /workspace
 COPY Packages ./Packages
 COPY Server ./Server

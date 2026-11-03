@@ -35,3 +35,8 @@ The server runs on Fly.io from `Server/Dockerfile`, configured by `fly.toml` at 
 ## Test strategy
 
 Unit tests run in debug, so the override behaviour they cover is unchanged. Release behaviour is verified by building the Release configuration (the field and override code compile out) and by playing online from a TestFlight build against the Fly app.
+
+## Notes
+
+- 2026-11-03: the first deploy failed because Docker resolved the newest Hummingbird and NIO, which need Swift 6.2, against the `swift:6.0` image. The build image is now `swift:6.2-noble`, and `Server/Package.resolved` is committed (the only `Package.resolved` let through `.gitignore`) so Fly builds the dependency versions tested locally. Update it with `swift package --package-path Server update` and commit the result.
+- 2026-11-03: the app pins catalog key `2026-11` in `Info.plist` `SkinCatalogPublicKeys`; the server signs with `CATALOG_KEY_ID=2026-11`. Debug builds now refuse unsigned catalogs too, so a local server needs `CATALOG_SIGNING_KEY` to serve the store.

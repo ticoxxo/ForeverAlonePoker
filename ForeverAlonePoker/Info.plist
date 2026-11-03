@@ -8,11 +8,10 @@
 		<string>_fapoker._udp</string>
 	</array>
 	<key>SkinCatalogPublicKeys</key>
-	<!-- Key id to base64 Ed25519 public key of the skin catalog publisher
-	     (tdr/0012; `swift run --package-path Server SkinPublisher keygen`).
-	     Release builds refuse catalogs not signed by one of these; debug builds
-	     with none pinned accept an unsigned development server. -->
-	<dict/>
+	<dict>
+		<key>2026-11</key>
+		<string>LAcOFgQrjHV0womTqNFESBreFsaTCDRT83LNz8DlPbM=</string>
+	</dict>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
