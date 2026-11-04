@@ -63,6 +63,8 @@ struct ProfileView: View {
 
             accountSection
 
+            rankedSection
+
             safetySection
 
             #if DEBUG
@@ -145,11 +147,32 @@ struct ProfileView: View {
 
     // MARK: - Account
 
-    @ViewBuilder
+    private var accountStatus: AccountStatus {
+        AccountStatus(isCloudSyncEnabled: identity.isCloudSyncEnabled, tier: identity.tier)
+    }
+
+    /// iOS owns the iCloud account, so this only reports it (tdr/0033).
     private var accountSection: some View {
         Section {
-            LabeledContent("Account", value: tierLabel)
-            if identity.tier == .ranked {
+            LabeledContent("iCloud") {
+                // Not a Label: inside LabeledContent it makes the row far too tall on iOS 27.
+                HStack(spacing: Theme.Spacing.small) {
+                    Image(systemName: accountStatus.cloudSymbol)
+                    Text(accountStatus.cloudLabel)
+                }
+            }
+        } header: {
+            Text("Account")
+        } footer: {
+            Text(accountStatus.cloudFooter)
+        }
+    }
+
+    @ViewBuilder
+    private var rankedSection: some View {
+        Section {
+            if accountStatus.isRanked {
+                LabeledContent("Ranked", value: String(localized: "Signed in"))
                 Button("Sign out of ranked play", role: .destructive) {
                     ranked?.signOut()
                 }
@@ -173,8 +196,10 @@ struct ProfileView: View {
                     }
                 }
             }
+        } header: {
+            Text("Ranked play")
         } footer: {
-            Text(tierFooter)
+            Text(accountStatus.rankedFooter)
         }
     }
 
@@ -216,25 +241,6 @@ struct ProfileView: View {
         case .failure(let error):
             if let authError = error as? ASAuthorizationError, authError.code == .canceled { return }
             ranked.reportSignInFailure()
-        }
-    }
-
-    private var tierLabel: String {
-        switch identity.tier {
-        case .local: String(localized: "Default user")
-        case .iCloud: String(localized: "iCloud")
-        case .ranked: String(localized: "Ranked")
-        }
-    }
-
-    private var tierFooter: String {
-        switch identity.tier {
-        case .local:
-            String(localized: "Your profile and history are stored on this device. Sign into iCloud in Settings to sync them, and sign in with Apple to play ranked matches.")
-        case .iCloud:
-            String(localized: "Your profile and history sync through iCloud. Sign in with Apple to play ranked matches and appear on the leaderboard.")
-        case .ranked:
-            String(localized: "Online matches against other signed-in players count toward the world and country leaderboards.")
         }
     }
 

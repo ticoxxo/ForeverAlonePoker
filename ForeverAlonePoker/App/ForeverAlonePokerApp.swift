@@ -71,10 +71,14 @@ struct ForeverAlonePokerApp: App {
     }
 
     /// Tier 1 (tdr/0006): the store syncs only when the device has an iCloud
-    /// account for our container.
+    /// account for our container. Followed for the app's lifetime because the
+    /// account can change in Settings while the app runs (tdr/0033).
     private func reportCloudTier() async {
         guard isCloudBacked else { return }
         identity.isCloudSyncEnabled = await CloudAccount.isAvailable()
+        for await _ in CloudAccount.changes {
+            identity.isCloudSyncEnabled = await CloudAccount.isAvailable()
+        }
     }
 
     /// CloudKit imports bypass `IdentityStore`; re-read after each one.
