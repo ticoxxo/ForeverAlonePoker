@@ -64,6 +64,14 @@ Constraints: clients never run rules or write competitive data (tdr/0003); Apple
 3. Give the key to the server without putting it in the repo or the image: the env var `CLOUDKIT_PRIVATE_KEY` (PEM contents) from the host's secret manager, or a Docker secret mounted at `/run/secrets/cloudkit.pem` with `CLOUDKIT_PRIVATE_KEY_PATH=/run/secrets/cloudkit.pem`.
 4. `.gitignore` ignores `cloudkit.pem`, `*.pem` and `*.p8` as a safety net.
 
+### 2026-11-04. The server key needs a role to create leaderboard rows
+
+1. Compromised `cloudkit.pem` already replaced (the 2026-10-11 notes). Keep the replacement outside the repo.
+2. A server-to-server key acts as the iCloud user who created it, so the setup in step 3 of the 2026-10-08 notes refuses its writes: `ACCESS_DENIED`, "CREATE operation not permitted". Players must still have no Create or Write on `LeaderboardEntry`, so do not grant them to `_icloud`.
+3. CloudKit Console, Development, Schema, Security Roles: custom role `LeaderboardWriter` with Create, Read and Write on `LeaderboardEntry`. Deploy the schema to Production.
+4. Each environment has its own server-to-server key entry and Key ID, and role assignments do not carry over. Find the key's user with a signed `GET /database/1/<container>/<environment>/public/users/current`, then in Records, Public Database, fetch that `Users` record by name and add the role. Repeat per environment.
+5. Verified in Production on 2026-11-04 with a signed create, read and delete of a test `LeaderboardEntry`. The role has been assigned in Production only.
+
 ## Notes
 
 - 2026-10-16: tables of two to six players, the host-run lobby and multiway Elo are decided in tdr/0013, which supersedes the heads-up-only parts of this record.
