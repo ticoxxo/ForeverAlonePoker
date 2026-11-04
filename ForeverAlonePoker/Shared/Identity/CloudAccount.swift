@@ -8,4 +8,9 @@ enum CloudAccount {
         let status = try? await CKContainer(identifier: containerID).accountStatus()
         return status == .available
     }
+
+    /// Fires when the player signs in or out of iCloud in Settings.
+    static var changes: NotificationCenter.Notifications {
+        NotificationCenter.default.notifications(named: .CKAccountChanged)
+    }
 }

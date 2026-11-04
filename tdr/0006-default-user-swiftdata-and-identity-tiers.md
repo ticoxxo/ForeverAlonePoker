@@ -51,3 +51,7 @@ Tiers 1 and 2 are implemented; the details that differ from the plan above (serv
 ### 2026-10-31
 
 Players no longer upload a profile picture and clients no longer write `PublicProfile`. Pictures come from a bundled catalog and travel with the join (tdr/0030). `PlayerProfile.avatar` stays in the model, unused.
+
+### 2026-11-04
+
+Profile no longer shows a single tier label. It reports iCloud and ranked play separately (tdr/0033); `IdentityStore.Tier` is unchanged.
