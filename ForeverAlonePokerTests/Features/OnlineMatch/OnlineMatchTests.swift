@@ -145,6 +145,15 @@ private struct FakeRoomService: RoomService {
     func makeTransport(roomCode: String) -> any MatchTransport { transport }
 }
 
+private struct UnreachableRoomService: RoomService {
+    let transport: InMemoryTransport
+
+    func createRoom(maxPlayers: Int) async throws -> String { throw URLError(.cannotConnectToHost) }
+    func checkRoom(_ code: String) async throws { throw URLError(.cannotConnectToHost) }
+    func openRooms() async throws -> [OpenRoom] { throw URLError(.cannotConnectToHost) }
+    func makeTransport(roomCode: String) -> any MatchTransport { transport }
+}
+
 @Suite("OnlineLobbyModel")
 @MainActor
 struct OnlineLobbyModelTests {
@@ -215,6 +224,19 @@ struct OnlineLobbyModelTests {
         #expect(model.client == nil)
         model.reset()
         #expect(model.phase == .idle)
+    }
+
+    @Test("an unreachable server does not mention an address release builds cannot edit")
+    func joinUnreachable() async {
+        let table = HostedTable(room: MatchRoomBuilder().code("ABC234").build())
+        let model = OnlineLobbyModel(
+            identity: TestPlayers.alice,
+            service: UnreachableRoomService(transport: await table.connect()),
+            searchTimeout: .seconds(180),
+            searchInterval: .milliseconds(10)
+        )
+        await model.join(code: "ABC234")
+        #expect(model.phase == .failed("Could not reach the server. Check your connection and try again."))
     }
 
     @Test("joining a known code normalises it and connects")

@@ -12,6 +12,12 @@ private struct FakeAuth: RankedAuthService {
     }
 }
 
+private struct UnreachableAuth: RankedAuthService {
+    func exchange(identityToken: String) async throws -> RankedSession {
+        throw URLError(.cannotConnectToHost)
+    }
+}
+
 @MainActor
 private struct Fixture {
     let container: ModelContainer
@@ -61,6 +67,14 @@ struct RankedSignInModelTests {
         let model = fixture.model(.failure(.unavailable))
         await model.signIn(identityToken: "apple-jwt")
         #expect(model.phase == .failed("This server does not offer ranked play."))
+    }
+
+    @Test("an unreachable server does not mention an address release builds cannot edit")
+    func unreachable() async throws {
+        let fixture = try Fixture()
+        let model = RankedSignInModel(identity: fixture.identity, auth: UnreachableAuth())
+        await model.signIn(identityToken: "apple-jwt")
+        #expect(model.phase == .failed("Could not reach the server. Check your connection and try again."))
     }
 
     @Test("signing out drops the ranked identity")
