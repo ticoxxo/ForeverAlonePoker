@@ -1,0 +1,6 @@
+# Only Packages/ and Server/ go into the server image (Server/Dockerfile).
+*
+!Packages
+!Server
+**/.build
+**/.swiftpm

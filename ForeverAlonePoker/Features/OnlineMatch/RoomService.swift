@@ -39,10 +39,15 @@ nonisolated struct HTTPRoomService: RoomService {
         self.session = session
     }
 
-    /// Default development server. IPv4 loopback on purpose: `localhost`
-    /// resolves to `::1` first on the simulator while the server listens on
-    /// IPv4, costing a refused connection before the fallback.
+    /// Default server: the local development server in debug builds, Fly.io
+    /// in release (tdr/0032). IPv4 loopback on purpose: `localhost` resolves
+    /// to `::1` first on the simulator while the server listens on IPv4,
+    /// costing a refused connection before the fallback.
+    #if DEBUG
     static let defaultBaseURL = URL(string: "http://127.0.0.1:8080")!
+    #else
+    static let defaultBaseURL = URL(string: "https://forever-alone-poker.fly.dev")!
+    #endif
 
     func createRoom(maxPlayers: Int) async throws -> String {
         var request = URLRequest(url: baseURL.appending(path: "rooms"))

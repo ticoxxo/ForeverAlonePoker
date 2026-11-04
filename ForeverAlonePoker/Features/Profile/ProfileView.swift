@@ -9,7 +9,9 @@ struct ProfileView: View {
     @Environment(\.colorScheme) private var colorScheme
     @AppStorage(CountryFlag.showsAtOnlineTablesKey) private var showsCountryFlags = true
     @State private var name = ""
+    #if DEBUG
     @State private var serverURL = ""
+    #endif
     @State private var ranked: RankedSignInModel?
     @State private var safety: ProfileSafetyModel?
     @ScaledMetric(relativeTo: .largeTitle) private var avatarSize: CGFloat = 96
@@ -63,6 +65,8 @@ struct ProfileView: View {
 
             safetySection
 
+            #if DEBUG
+            // Developer only: release builds always use the production server (tdr/0032).
             Section {
                 TextField(HTTPRoomService.defaultBaseURL.absoluteString, text: $serverURL)
                     .keyboardType(.URL)
@@ -74,11 +78,14 @@ struct ProfileView: View {
             } footer: {
                 Text("Address of the server used for online matches. Leave empty for the default.")
             }
+            #endif
         }
         .navigationTitle("Profile")
         .onAppear {
             name = identity.profile.displayName
+            #if DEBUG
             serverURL = identity.profile.serverURLOverride
+            #endif
             if ranked == nil {
                 ranked = RankedSignInModel(
                     identity: identity,
@@ -91,7 +98,9 @@ struct ProfileView: View {
         }
         .onDisappear {
             commitName()
+            #if DEBUG
             commitServerURL()
+            #endif
         }
     }
 
@@ -242,9 +251,11 @@ struct ProfileView: View {
         if let accepted = safety?.commitName(name) { name = accepted }
     }
 
+    #if DEBUG
     private func commitServerURL() {
         identity.updateServerURL(serverURL)
     }
+    #endif
 }
 
 /// A 0 to 100 % volume in tenths, quiet speaker to loud speaker.

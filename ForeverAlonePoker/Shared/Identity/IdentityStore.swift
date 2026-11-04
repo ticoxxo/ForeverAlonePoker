@@ -127,9 +127,14 @@ final class IdentityStore: LoadoutPersisting {
         save()
     }
 
-    /// The game server to use for online play.
+    /// The game server to use for online play. Only debug builds honour the
+    /// override: it syncs through CloudKit, so an address typed on a
+    /// development device must never redirect a release install (tdr/0032).
     var serverURL: URL {
-        URL(string: profile.serverURLOverride) ?? HTTPRoomService.defaultBaseURL
+        #if DEBUG
+        if let override = URL(string: profile.serverURLOverride) { return override }
+        #endif
+        return HTTPRoomService.defaultBaseURL
     }
 
     // MARK: - Skins (tdr/0011)

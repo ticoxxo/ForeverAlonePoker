@@ -8,6 +8,8 @@ DerivedData/
 .build/
 .swiftpm/
 Package.resolved
+# The server pins its dependencies so Fly builds match local ones (tdr/0032).
+!Server/Package.resolved
 
 # macOS
 .DS_Store
