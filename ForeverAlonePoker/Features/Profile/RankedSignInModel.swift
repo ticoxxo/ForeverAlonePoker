@@ -52,7 +52,7 @@ final class RankedSignInModel {
         case RankedAuthError.rejected: String(localized: "The server could not verify your Apple sign-in. Try again.")
         case RankedAuthError.server(let status): String(localized: "The server answered with an error (\(status)).")
         case RankedAuthError.badResponse: String(localized: "Unexpected reply from the server.")
-        default: String(localized: "Could not reach the server. Check the server address below.")
+        default: String(localized: "Could not reach the server. Check your connection and try again.")
         }
     }
 }

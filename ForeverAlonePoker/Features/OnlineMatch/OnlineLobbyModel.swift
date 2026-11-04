@@ -178,7 +178,7 @@ final class OnlineLobbyModel {
         case RoomServiceError.invalidCode: String(localized: "Enter the 6-character code.")
         case RoomServiceError.server(let status): String(localized: "The server answered with an error (\(status)).")
         case RoomServiceError.badResponse: String(localized: "Unexpected reply from the server.")
-        default: String(localized: "Could not reach the server. Check the server address in your profile.")
+        default: String(localized: "Could not reach the server. Check your connection and try again.")
         }
     }
 }

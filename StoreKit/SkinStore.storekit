@@ -61,6 +61,96 @@
       "productID": "fap.skin.premium_01_chips.set",
       "referenceName": "Premium Chips 01",
       "type": "NonConsumable"
+    },
+    {
+      "displayPrice": "0.99",
+      "familyShareable": false,
+      "internalID": "6740000005",
+      "localizations": [
+        {
+          "description": "The Yellow cat profile picture.",
+          "displayName": "Yellow cat picture",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "fap.skin.avatar_yellow_cat",
+      "referenceName": "Yellow cat picture",
+      "type": "NonConsumable"
+    },
+    {
+      "displayPrice": "0.99",
+      "familyShareable": false,
+      "internalID": "6740000006",
+      "localizations": [
+        {
+          "description": "The Zombie cat profile picture.",
+          "displayName": "Zombie cat picture",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "fap.skin.avatar_zombie_cat",
+      "referenceName": "Zombie cat picture",
+      "type": "NonConsumable"
+    },
+    {
+      "displayPrice": "0.99",
+      "familyShareable": false,
+      "internalID": "6740000007",
+      "localizations": [
+        {
+          "description": "The Stitched cat profile picture.",
+          "displayName": "Stitched cat picture",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "fap.skin.avatar_stitched_cat",
+      "referenceName": "Stitched cat picture",
+      "type": "NonConsumable"
+    },
+    {
+      "displayPrice": "0.99",
+      "familyShareable": false,
+      "internalID": "6740000008",
+      "localizations": [
+        {
+          "description": "The Cigarettes profile picture.",
+          "displayName": "Cigarettes picture",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "fap.skin.avatar_cigs",
+      "referenceName": "Cigarettes picture",
+      "type": "NonConsumable"
+    },
+    {
+      "displayPrice": "0.99",
+      "familyShareable": false,
+      "internalID": "6740000009",
+      "localizations": [
+        {
+          "description": "The Wine profile picture.",
+          "displayName": "Wine picture",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "fap.skin.avatar_wine",
+      "referenceName": "Wine picture",
+      "type": "NonConsumable"
+    },
+    {
+      "displayPrice": "0.99",
+      "familyShareable": false,
+      "internalID": "6740000010",
+      "localizations": [
+        {
+          "description": "The Girl profile picture.",
+          "displayName": "Girl picture",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "fap.skin.avatar_girl",
+      "referenceName": "Girl picture",
+      "type": "NonConsumable"
     }
   ],
   "settings": {
