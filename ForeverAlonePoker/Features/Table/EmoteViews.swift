@@ -5,7 +5,7 @@ import PokerCore
 /// their seat for a few seconds (tdr/0015). Attach it with `emoteBubble(_:)`
 /// so it sits above and to the right of the picture, its tail pointing at it.
 struct EmoteBubble: View {
-    enum Size {
+    nonisolated enum Size {
         case regular
         /// For the waiting zone (tdr/0016).
         case small
@@ -44,7 +44,7 @@ struct EmoteBubble: View {
 
 /// A rounded bubble whose tail, at the bottom-left, points down at the
 /// picture it belongs to.
-private struct SpeechBubble: Shape {
+nonisolated private struct SpeechBubble: Shape {
     let tail: CGFloat
 
     func path(in rect: CGRect) -> Path {
