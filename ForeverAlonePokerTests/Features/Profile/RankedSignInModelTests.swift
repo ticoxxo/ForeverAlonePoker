@@ -6,14 +6,23 @@ import PokerCore
 
 private struct FakeAuth: RankedAuthService {
     var result: Result<RankedSession, RankedAuthError>
+    var deletion: Result<Void, RankedAuthError> = .success(())
 
     func exchange(identityToken: String) async throws -> RankedSession {
         try result.get()
+    }
+
+    func deleteAccount(identityToken: String, authorizationCode: String?) async throws {
+        try deletion.get()
     }
 }
 
 private struct UnreachableAuth: RankedAuthService {
     func exchange(identityToken: String) async throws -> RankedSession {
+        throw URLError(.cannotConnectToHost)
+    }
+
+    func deleteAccount(identityToken: String, authorizationCode: String?) async throws {
         throw URLError(.cannotConnectToHost)
     }
 }
@@ -30,6 +39,14 @@ private struct Fixture {
 
     func model(_ result: Result<RankedSession, RankedAuthError>) -> RankedSignInModel {
         RankedSignInModel(identity: identity, auth: FakeAuth(result: result))
+    }
+
+    /// A model whose player is already signed in, deleting with `deletion`.
+    func signedIn(deleting deletion: Result<Void, RankedAuthError>) async -> RankedSignInModel {
+        let auth = FakeAuth(result: .success(RankedSession(token: "session-1", playerID: "001234.abc")), deletion: deletion)
+        let model = RankedSignInModel(identity: identity, auth: auth)
+        await model.signIn(identityToken: "apple-jwt")
+        return model
     }
 }
 
@@ -85,5 +102,36 @@ struct RankedSignInModelTests {
         model.signOut()
         #expect(fixture.identity.tier == .local)
         #expect(fixture.identity.rankedSessionToken == nil)
+    }
+
+    @Test("deleting the account on the server drops the ranked identity")
+    func deleteAccount() async throws {
+        let fixture = try Fixture()
+        let model = await fixture.signedIn(deleting: .success(()))
+        await model.deleteAccount(identityToken: "fresh-jwt", authorizationCode: "code")
+
+        #expect(model.phase == .idle)
+        #expect(fixture.identity.tier == .local)
+        #expect(fixture.identity.rankedSessionToken == nil)
+    }
+
+    @Test("a server without ranked play keeps no account, so deletion still completes")
+    func deleteWithoutRankedServer() async throws {
+        let fixture = try Fixture()
+        let model = await fixture.signedIn(deleting: .failure(.unavailable))
+        await model.deleteAccount(identityToken: "fresh-jwt", authorizationCode: "code")
+
+        #expect(model.phase == .idle)
+        #expect(fixture.identity.tier == .local)
+    }
+
+    @Test("a failed deletion explains itself and keeps the player signed in")
+    func deleteRejected() async throws {
+        let fixture = try Fixture()
+        let model = await fixture.signedIn(deleting: .failure(.rejected))
+        await model.deleteAccount(identityToken: "fresh-jwt", authorizationCode: "code")
+
+        #expect(model.phase == .failed("The server could not verify your Apple sign-in. Try again."))
+        #expect(fixture.identity.tier == .ranked)
     }
 }

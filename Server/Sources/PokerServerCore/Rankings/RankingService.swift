@@ -66,6 +66,12 @@ public actor RankingService {
         try await store.save([winnerEntry] + loserEntries)
         return (winnerUpdate, loserUpdates)
     }
+
+    /// Deletes the player's leaderboard row: their ranked account is gone
+    /// (tdr/0034). A later ranked match would start them again at 1200.
+    public func forget(playerID: String) async throws {
+        try await store.delete(playerIDs: [playerID])
+    }
 }
 
 /// Everything ranked play needs. `nil` on a server without the secrets, in
@@ -74,11 +80,20 @@ public struct RankedServices: Sendable {
     public let verifier: any IdentityVerifier
     public let sessions: SessionTokenService
     public let rankings: RankingService
+    /// Revokes Sign in with Apple tokens when a player deletes their account
+    /// (tdr/0034); `nil` without the Sign in with Apple key.
+    public let revoker: (any AppleTokenRevoker)?
 
-    public init(verifier: any IdentityVerifier, sessions: SessionTokenService, rankings: RankingService) {
+    public init(
+        verifier: any IdentityVerifier,
+        sessions: SessionTokenService,
+        rankings: RankingService,
+        revoker: (any AppleTokenRevoker)? = nil
+    ) {
         self.verifier = verifier
         self.sessions = sessions
         self.rankings = rankings
+        self.revoker = revoker
     }
 
     public enum EnvironmentKey {
@@ -89,6 +104,10 @@ public struct RankedServices: Sendable {
         public static let keyID = "CLOUDKIT_KEY_ID"
         public static let privateKey = "CLOUDKIT_PRIVATE_KEY"
         public static let privateKeyPath = "CLOUDKIT_PRIVATE_KEY_PATH"
+        public static let teamID = "APPLE_TEAM_ID"
+        public static let signInKeyID = "APPLE_SIGNIN_KEY_ID"
+        public static let signInPrivateKey = "APPLE_SIGNIN_PRIVATE_KEY"
+        public static let signInPrivateKeyPath = "APPLE_SIGNIN_PRIVATE_KEY_PATH"
     }
 
     public static let defaultBundleID = "Ticoxxo.ForeverAlonePoker"
@@ -119,17 +138,33 @@ public struct RankedServices: Sendable {
             usesCloudKit = false
         }
 
+        var revoker: (any AppleTokenRevoker)?
+        if let teamID = env[EnvironmentKey.teamID], !teamID.isEmpty,
+           let keyID = env[EnvironmentKey.signInKeyID], !keyID.isEmpty,
+           let pem = try pem(from: env, inline: EnvironmentKey.signInPrivateKey, path: EnvironmentKey.signInPrivateKeyPath) {
+            revoker = try await AppleSignInTokenRevoker(
+                credentials: SignInWithAppleCredentials(teamID: teamID, keyID: keyID, clientID: bundleID, privateKeyPEM: pem),
+                http: AsyncHTTPClientExecutor()
+            )
+        }
+
         let services = RankedServices(
             verifier: AppleIdentityVerifier.live(audience: bundleID),
             sessions: await SessionTokenService(secret: secret),
-            rankings: RankingService(store: store)
+            rankings: RankingService(store: store),
+            revoker: revoker
         )
         return (services, usesCloudKit)
     }
 
     private static func privateKeyPEM(from env: [String: String]) throws -> String? {
-        if let pem = env[EnvironmentKey.privateKey], !pem.isEmpty { return pem }
-        if let path = env[EnvironmentKey.privateKeyPath], !path.isEmpty {
+        try pem(from: env, inline: EnvironmentKey.privateKey, path: EnvironmentKey.privateKeyPath)
+    }
+
+    /// A PEM given inline or as a file path.
+    private static func pem(from env: [String: String], inline: String, path pathKey: String) throws -> String? {
+        if let pem = env[inline], !pem.isEmpty { return pem }
+        if let path = env[pathKey], !path.isEmpty {
             return try String(contentsOfFile: path, encoding: .utf8)
         }
         return nil

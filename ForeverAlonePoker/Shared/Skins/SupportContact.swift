@@ -4,6 +4,8 @@ import Foundation
 /// carries only the app and OS versions; anything else is what they type.
 nonisolated enum SupportContact {
     static let email = "jalmeidatorres18@gmail.com"
+    /// Served by the game server (tdr/0035); the same URL goes in App Store Connect.
+    static let privacyPolicy = URL(string: "https://forever-alone-poker.fly.dev/privacy")!
 
     /// Apple's own page on requesting refunds. We link to it instead of
     /// describing Apple's refund policy (HIG, Apple In-App Purchase).

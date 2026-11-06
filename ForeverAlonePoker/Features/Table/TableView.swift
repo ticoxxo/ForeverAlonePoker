@@ -18,6 +18,9 @@ struct TableView: View {
     var allowsSafetyActions = true
     @Environment(BlockList.self) private var blockList: BlockList?
     @Environment(\.openURL) private var openURL
+    /// A report Mail could not open (no mail account on the device); the
+    /// alert gives the address instead so reporting always works (tdr/0029).
+    @State private var unsentReport: SafetyTarget?
     @Namespace private var dealerButton
     /// The chosen bet or raise. Held here rather than in the controls so it
     /// survives the panel and the toolbar swapping on rotation or resize.
@@ -103,6 +106,19 @@ struct TableView: View {
             announce(newStatus)
         }
         .modifier(safety)
+        .alert(
+            "Report by email",
+            isPresented: Binding(get: { unsentReport != nil }, set: { if !$0 { unsentReport = nil } }),
+            presenting: unsentReport
+        ) { target in
+            Button("Copy report details") {
+                UIPasteboard.general.string = SupportContact.email
+                    + SupportContact.Topic.report(playerID: target.playerID, name: target.name, roomCode: roomCode).details
+            }
+            Button("OK", role: .cancel) {}
+        } message: { target in
+            Text("No mail app is set up on this device. Write to \(SupportContact.email) with the player's name, \(target.name), and what happened.")
+        }
     }
 
     // MARK: - Safety (tdr/0029)
@@ -122,7 +138,9 @@ struct TableView: View {
         return PlayerSafetyActions(
             isBlocked: { blockList.isBlocked($0) },
             report: { target in
-                openURL(SupportContact.mailURL(.report(playerID: target.playerID, name: target.name, roomCode: roomCode)))
+                openURL(SupportContact.mailURL(.report(playerID: target.playerID, name: target.name, roomCode: roomCode))) { accepted in
+                    if !accepted { unsentReport = target }
+                }
             },
             toggleBlock: { target in
                 if blockList.isBlocked(target.playerID) {
