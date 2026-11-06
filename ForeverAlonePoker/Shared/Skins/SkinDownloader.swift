@@ -72,7 +72,10 @@ nonisolated final class BackgroundSkinDownloader: NSObject, AssetDownloading, UR
             return finishedEventsHandler
         }
         guard let handler else { return }
-        DispatchQueue.main.async(execute: handler)
+        // UIKit's completion handler isn't Sendable, but it must be called
+        // on the main thread, which is exactly where this hop sends it.
+        nonisolated(unsafe) let mainHandler = handler
+        DispatchQueue.main.async { mainHandler() }
     }
 
     private func take(_ identifier: Int) -> CheckedContinuation<URL, any Error>? {
