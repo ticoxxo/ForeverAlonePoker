@@ -63,18 +63,22 @@ private struct FakeApple {
 }
 
 /// Accepts tokens of the form `apple:<subject>`.
-private struct FakeVerifier: IdentityVerifier {
+struct FakeVerifier: IdentityVerifier {
     func verify(identityToken: String) async throws -> String {
         guard identityToken.hasPrefix("apple:") else { throw IdentityError.invalidToken("fake") }
         return String(identityToken.dropFirst("apple:".count))
     }
 }
 
-private func makeRanked(store: InMemoryLeaderboardStore = InMemoryLeaderboardStore()) async -> RankedServices {
+func makeRanked(
+    store: InMemoryLeaderboardStore = InMemoryLeaderboardStore(),
+    revoker: (any AppleTokenRevoker)? = nil
+) async -> RankedServices {
     RankedServices(
         verifier: FakeVerifier(),
         sessions: await SessionTokenService(secret: "test-secret"),
-        rankings: RankingService(store: store)
+        rankings: RankingService(store: store),
+        revoker: revoker
     )
 }
 

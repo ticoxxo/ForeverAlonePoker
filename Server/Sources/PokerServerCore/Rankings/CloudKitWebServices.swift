@@ -103,6 +103,8 @@ public protocol LeaderboardStore: Sendable {
     /// Existing rows keyed by player id; players without a row are absent.
     func entries(for playerIDs: [String]) async throws -> [String: LeaderboardEntry]
     func save(_ entries: [LeaderboardEntry]) async throws
+    /// Removes the players' rows; players without a row are ignored (tdr/0034).
+    func delete(playerIDs: [String]) async throws
 }
 
 /// Development and test store; the server uses it when no CloudKit key is set.
@@ -117,6 +119,10 @@ public actor InMemoryLeaderboardStore: LeaderboardStore {
 
     public func save(_ entries: [LeaderboardEntry]) {
         for entry in entries { rows[entry.playerID] = entry }
+    }
+
+    public func delete(playerIDs: [String]) {
+        for playerID in playerIDs { rows[playerID] = nil }
     }
 
     public var all: [LeaderboardEntry] { Array(rows.values) }
@@ -158,6 +164,18 @@ public enum CloudKitRecords {
 
     struct ModifyBody: Codable {
         var operations: [ModifyOperation]
+    }
+
+    struct DeleteOperation: Codable {
+        struct Reference: Codable {
+            var recordName: String
+        }
+        var operationType: String
+        var record: Reference
+    }
+
+    struct DeleteBody: Codable {
+        var operations: [DeleteOperation]
     }
 
     struct LookupBody: Codable {
@@ -208,6 +226,14 @@ public enum CloudKitRecords {
         return try JSONEncoder().encode(ModifyBody(operations: operations))
     }
 
+    /// `forceDelete` removes the record whatever its change tag (tdr/0034).
+    public static func deleteBody(playerIDs: [String]) throws -> Data {
+        let operations = playerIDs.map {
+            DeleteOperation(operationType: "forceDelete", record: .init(recordName: LeaderboardEntry.recordName(for: $0)))
+        }
+        return try JSONEncoder().encode(DeleteBody(operations: operations))
+    }
+
     /// Rows found by a lookup, keyed by player id. Missing records are
     /// skipped; any other per-record or top-level error is thrown.
     public static func parseLookup(_ data: Data) throws -> [String: LeaderboardEntry] {
@@ -236,6 +262,17 @@ public enum CloudKitRecords {
         let response = try decode(data)
         for item in response.records ?? [] {
             if let code = item.serverErrorCode {
+                throw CloudKitError.server(code: code, reason: item.reason ?? "")
+            }
+        }
+    }
+
+    /// Throws if a delete failed for any reason but the record being absent
+    /// already, which is the state the caller wanted.
+    public static func checkDelete(_ data: Data) throws {
+        let response = try decode(data)
+        for item in response.records ?? [] {
+            if let code = item.serverErrorCode, code != "NOT_FOUND" {
                 throw CloudKitError.server(code: code, reason: item.reason ?? "")
             }
         }
@@ -303,6 +340,12 @@ public struct CloudKitLeaderboardStore: LeaderboardStore {
         guard !entries.isEmpty else { return }
         let data = try await post("modify", body: try CloudKitRecords.modifyBody(entries))
         try CloudKitRecords.checkModify(data)
+    }
+
+    public func delete(playerIDs: [String]) async throws {
+        guard !playerIDs.isEmpty else { return }
+        let data = try await post("modify", body: try CloudKitRecords.deleteBody(playerIDs: playerIDs))
+        try CloudKitRecords.checkDelete(data)
     }
 
     public func path(_ operation: String) -> String {

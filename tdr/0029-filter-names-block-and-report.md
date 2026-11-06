@@ -78,3 +78,7 @@ Constraints:
   - the guidelines cover on first launch;
   - the seat menu, Block and the banner at a real table;
   - Report opens Mail.
+
+## Notes
+
+- **2026-11-05:** Report at the table now checks whether Mail opened. When the device has no mail account, an alert gives the support address and copies the report details, so reporting works on every device (App Review tests on devices without Mail).

@@ -19,6 +19,7 @@ struct CommunityGuidelinesText: View {
             Text("There is zero tolerance for objectionable content or abusive players. Names are filtered automatically. You can block or report any player from their seat; we review reports within 24 hours and act on them.")
             Text("Questions or problems: \(SupportContact.email)")
                 .textSelection(.enabled)
+            Link("Privacy policy", destination: SupportContact.privacyPolicy)
         }
         .font(.body)
     }

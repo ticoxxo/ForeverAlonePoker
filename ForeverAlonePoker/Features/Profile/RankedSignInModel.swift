@@ -37,6 +37,24 @@ final class RankedSignInModel {
         phase = .idle
     }
 
+    /// Deletes the ranked account (tdr/0034, App Review Guideline 5.1.1(v)):
+    /// the server drops the leaderboard row and revokes the Apple tokens, then
+    /// the profile forgets the account. A server without ranked play stores
+    /// nothing, so its "unavailable" counts as done.
+    func deleteAccount(identityToken: String, authorizationCode: String?) async {
+        phase = .working
+        do {
+            try await auth.deleteAccount(identityToken: identityToken, authorizationCode: authorizationCode)
+        } catch RankedAuthError.unavailable {
+            // Nothing was ever stored on this server.
+        } catch {
+            phase = .failed(Self.describe(error))
+            return
+        }
+        identity.unlinkAppleAccount()
+        phase = .idle
+    }
+
     /// The sign-in sheet failed before we got a token (not a user cancel).
     func reportSignInFailure() {
         phase = .failed(String(localized: "Sign in with Apple did not complete. Try again."))

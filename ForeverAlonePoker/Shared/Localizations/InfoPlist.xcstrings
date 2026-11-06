@@ -1,0 +1,162 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "CFBundleName" : {
+      "comment" : "Bundle name",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ForeverAlonePoker"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ForeverAlonePoker"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ForeverAlonePoker"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "ForeverAlonePoker"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ForeverAlonePoker"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ForeverAlonePoker"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ForeverAlonePoker"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ForeverAlonePoker"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ForeverAlonePoker"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ForeverAlonePoker"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ForeverAlonePoker"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ForeverAlonePoker"
+          }
+        }
+      }
+    },
+    "NSLocalNetworkUsageDescription" : {
+      "comment" : "Privacy - Local Network Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يستخدم ForeverAlonePoker الشبكة المحلية للعثور على لاعب قريب واللعب ضده."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ForeverAlonePoker používá místní síť k vyhledání hráče v okolí a ke hře proti němu."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ForeverAlonePoker verwendet das lokale Netzwerk, um einen Spieler in der Nähe zu finden und gegen ihn zu spielen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "ForeverAlonePoker uses the local network to find and play against a nearby player."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ForeverAlonePoker usa la red local para encontrar a alguien cercano y jugar contra esa persona."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ForeverAlonePoker utilise le réseau local pour trouver un joueur à proximité et jouer contre lui."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ForeverAlonePoker משתמשת ברשת המקומית כדי למצוא שחקן בקרבת מקום ולשחק נגדו."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ForeverAlonePoker usa la rete locale per trovare un giocatore nelle vicinanze e sfidarlo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ForeverAlonePokerは、近くのプレイヤーを見つけて対戦するためにローカルネットワークを使用します。"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ForeverAlonePoker gebruikt het lokale netwerk om een speler in de buurt te vinden en tegen die speler te spelen."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "O ForeverAlonePoker usa a rede local para encontrar um jogador próximo e jogar contra ele."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ForeverAlonePoker 會使用區域網路尋找附近的玩家並與其對戰。"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.3"
+}

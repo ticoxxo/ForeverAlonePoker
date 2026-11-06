@@ -14,6 +14,7 @@ struct ProfileView: View {
     #endif
     @State private var ranked: RankedSignInModel?
     @State private var safety: ProfileSafetyModel?
+    @State private var showsAccountDeletion = false
     @ScaledMetric(relativeTo: .largeTitle) private var avatarSize: CGFloat = 96
 
     var body: some View {
@@ -173,8 +174,11 @@ struct ProfileView: View {
         Section {
             if accountStatus.isRanked {
                 LabeledContent("Ranked", value: String(localized: "Signed in"))
-                Button("Sign out of ranked play", role: .destructive) {
+                Button("Sign out of ranked play") {
                     ranked?.signOut()
+                }
+                Button("Delete ranked account", role: .destructive) {
+                    showsAccountDeletion = true
                 }
             } else if let ranked {
                 switch ranked.phase {
@@ -201,6 +205,11 @@ struct ProfileView: View {
         } footer: {
             Text(accountStatus.rankedFooter)
         }
+        .sheet(isPresented: $showsAccountDeletion) {
+            if let ranked {
+                DeleteRankedAccountView(ranked: ranked)
+            }
+        }
     }
 
     // MARK: - Safety and support (tdr/0029)
@@ -219,6 +228,9 @@ struct ProfileView: View {
             }
             Link(destination: SupportContact.mailURL(.support)) {
                 Label("Contact support", systemImage: "envelope")
+            }
+            Link(destination: SupportContact.privacyPolicy) {
+                Label("Privacy policy", systemImage: "hand.raised")
             }
         } header: {
             Text("Safety and support")

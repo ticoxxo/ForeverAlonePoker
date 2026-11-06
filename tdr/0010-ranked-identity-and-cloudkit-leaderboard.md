@@ -77,3 +77,8 @@ Constraints: clients never run rules or write competitive data (tdr/0003); Apple
 - 2026-10-16: tables of two to six players, the host-run lobby and multiway Elo are decided in tdr/0013, which supersedes the heads-up-only parts of this record.
 - 2026-10-31: clients no longer write `PublicProfile` (decision 5 and setup step 3): uploaded pictures are gone and pictures come from a bundled catalog (tdr/0030). The record type may stay in the schema unused; nothing reads or writes it. The leaderboard gets each name after `DisplayNamePolicy` (tdr/0029).
 - 2026-11-04: the `SignInWithAppleButton` now lives in its own "Ranked play" section of Profile, apart from the iCloud status, and `isCloudSyncEnabled` follows `.CKAccountChanged` (tdr/0033).
+
+## Notes
+
+- **2026-11-05:** Players can delete the ranked account from Profile; the server removes the leaderboard row and revokes the Apple tokens with `APPLE_TEAM_ID`, `APPLE_SIGNIN_KEY_ID` and `APPLE_SIGNIN_PRIVATE_KEY[_PATH]` (tdr/0034).
+- **2026-11-05:** `LeaderboardWriter` is now assigned in Development too, on the `Users` record `_539b5ae22037d5c5aeb4425f4a7074af` (the user behind the Development server-to-server key `6a8ec559…f959`). Both environments can take server writes; a server running with `CLOUDKIT_ENVIRONMENT=development` (local or a dev Fly app) no longer gets `ACCESS_DENIED`.

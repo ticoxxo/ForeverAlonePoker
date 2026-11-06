@@ -65,6 +65,19 @@ public struct AppleSignInRequest: Codable, Sendable, Equatable {
     }
 }
 
+/// Body of `POST /account/delete` (tdr/0034): a fresh Sign in with Apple, so
+/// only the account's owner can delete it, and the authorization code that
+/// lets the server revoke the app's Apple tokens.
+public struct AccountDeletionRequest: Codable, Sendable, Equatable {
+    public let identityToken: String
+    public let authorizationCode: String?
+
+    public init(identityToken: String, authorizationCode: String?) {
+        self.identityToken = identityToken
+        self.authorizationCode = authorizationCode
+    }
+}
+
 /// Reply of `POST /auth/apple`: the session token to send on ranked joins and
 /// the player id the app must use as its `PlayerIdentity.id`.
 public struct SessionIssued: ResponseCodable, Sendable, Equatable {
@@ -134,6 +147,44 @@ public func buildApplication(
             throw HTTPError(.unauthorized, message: "Apple could not verify this sign-in.")
         }
         return SessionIssued(token: try await ranked.sessions.issue(playerID: playerID), playerID: playerID)
+    }
+
+    // Account deletion (tdr/0034, App Review Guideline 5.1.1(v)). The
+    // leaderboard row is the only data the server keeps about a player; the
+    // Apple tokens are revoked after it is gone, and a failed revocation is
+    // logged rather than leaving the row in place.
+    router.post("account/delete") { request, context -> Response in
+        guard let ranked = registry.ranked else {
+            throw HTTPError(.serviceUnavailable, message: "Ranked play is not enabled on this server.")
+        }
+        let body = try await request.decode(as: AccountDeletionRequest.self, context: context)
+        let playerID: String
+        do {
+            playerID = try await ranked.verifier.verify(identityToken: body.identityToken)
+        } catch {
+            context.logger.info("Rejected Apple identity token for deletion: \(error)")
+            throw HTTPError(.unauthorized, message: "Apple could not verify this sign-in.")
+        }
+        try await ranked.rankings.forget(playerID: playerID)
+        if let revoker = ranked.revoker, let code = body.authorizationCode {
+            do {
+                try await revoker.revoke(authorizationCode: code)
+            } catch {
+                context.logger.error("Deleted a ranked account but could not revoke its Apple tokens: \(error)")
+            }
+        } else {
+            context.logger.warning("Deleted a ranked account without revoking Apple tokens (no Sign in with Apple key or no code).")
+        }
+        return Response(status: .noContent)
+    }
+
+    // The privacy policy the App Store listing and the app link to (tdr/0035).
+    router.get("privacy") { _, _ -> Response in
+        Response(
+            status: .ok,
+            headers: [.contentType: "text/html; charset=utf-8", .cacheControl: "max-age=3600"],
+            body: .init(byteBuffer: ByteBuffer(string: PrivacyPolicy.html))
+        )
     }
 
     // Skin catalog (tdr/0012): the manifest as signed bytes. Clients revalidate

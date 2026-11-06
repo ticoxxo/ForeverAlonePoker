@@ -20,6 +20,10 @@ nonisolated enum RankedAuthError: Error, Equatable {
 /// Exchanges Apple's short-lived identity token for the server's session token.
 nonisolated protocol RankedAuthService: Sendable {
     func exchange(identityToken: String) async throws -> RankedSession
+    /// Deletes the ranked account on the server (tdr/0034). Takes a fresh
+    /// Sign in with Apple so only the owner can delete, and its authorization
+    /// code so the server can revoke the app's Apple tokens.
+    func deleteAccount(identityToken: String, authorizationCode: String?) async throws
 }
 
 /// `POST /auth/apple` on the game server (tdr/0010).
@@ -33,16 +37,26 @@ nonisolated struct HTTPRankedAuthService: RankedAuthService {
     }
 
     func exchange(identityToken: String) async throws -> RankedSession {
-        var request = URLRequest(url: baseURL.appending(path: "auth/apple"))
+        let data = try await post("auth/apple", Body(identityToken: identityToken))
+        guard let issued = try? JSONDecoder().decode(Reply.self, from: data) else { throw RankedAuthError.badResponse }
+        return RankedSession(token: issued.token, playerID: issued.playerID)
+    }
+
+    /// `POST /account/delete` (tdr/0034).
+    func deleteAccount(identityToken: String, authorizationCode: String?) async throws {
+        _ = try await post("account/delete", DeletionBody(identityToken: identityToken, authorizationCode: authorizationCode))
+    }
+
+    private func post(_ path: String, _ body: some Encodable) async throws -> Data {
+        var request = URLRequest(url: baseURL.appending(path: path))
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try JSONEncoder().encode(Body(identityToken: identityToken))
+        request.httpBody = try JSONEncoder().encode(body)
         let (data, response) = try await session.data(for: request)
         guard let http = response as? HTTPURLResponse else { throw RankedAuthError.badResponse }
         switch http.statusCode {
         case 200..<300:
-            guard let issued = try? JSONDecoder().decode(Reply.self, from: data) else { throw RankedAuthError.badResponse }
-            return RankedSession(token: issued.token, playerID: issued.playerID)
+            return data
         case 401:
             throw RankedAuthError.rejected
         case 503:
@@ -54,6 +68,11 @@ nonisolated struct HTTPRankedAuthService: RankedAuthService {
 
     private struct Body: Encodable {
         let identityToken: String
+    }
+
+    private struct DeletionBody: Encodable {
+        let identityToken: String
+        let authorizationCode: String?
     }
 
     private struct Reply: Decodable {
