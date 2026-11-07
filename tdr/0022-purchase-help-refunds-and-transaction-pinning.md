@@ -1,6 +1,6 @@
 # 0022. Offer purchase help and system refunds, and pin transactions to a bundled root
 
-- **Status:** Accepted; the pinning root choice in decision 4 is superseded by 0024
+- **Status:** Accepted; the pinning root choice in decision 4 is superseded by 0024; how the refund sheet is presented (decision 2) is superseded by 0036
 - **Date:** 2026-10-26
 - **Feature / area:** `ForeverAlonePoker/Features/SkinStore/Help`, `ForeverAlonePoker/Shared/Skins` (`PurchaseService`, `TransactionCertificateValidator`, `SupportContact`, `SkinStore`), `ForeverAlonePoker.xcodeproj/xcshareddata/xcschemes/ForeverAlonePoker.xcscheme`
 

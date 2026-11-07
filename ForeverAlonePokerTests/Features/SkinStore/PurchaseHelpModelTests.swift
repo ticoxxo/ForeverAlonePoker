@@ -74,10 +74,25 @@ struct PurchaseHelpModelTests {
         await fixture.model.load()
         let row = fixture.model.rows[0]
 
-        await fixture.model.requestRefund(row)
+        fixture.model.requestRefund(row)
 
         #expect(!fixture.model.canRequestRefund(row))
-        #expect(fixture.purchases.refundRequests.isEmpty)
+        #expect(fixture.model.presentedRefund == nil)
+    }
+
+    @Test("requesting a refund presents Apple's sheet for that purchase")
+    func presentsSheet() async {
+        let fixture = Fixture()
+        await fixture.store.start()
+        fixture.purchases.history = [Fixture.record(7, ProductIDs.single("red_check"), daysAgo: 1)]
+        await fixture.model.load()
+        let row = fixture.model.rows[0]
+
+        fixture.model.requestRefund(row)
+
+        #expect(fixture.model.presentedRefund == 7)
+        #expect(fixture.model.refundStates[7] == .requesting)
+        #expect(!fixture.model.canRequestRefund(row))
     }
 
     @Test("a submitted refund request marks the purchase as requested")
@@ -87,10 +102,11 @@ struct PurchaseHelpModelTests {
         fixture.purchases.history = [Fixture.record(4, ProductIDs.single("red_check"), daysAgo: 1)]
         await fixture.model.load()
         let row = fixture.model.rows[0]
+        fixture.model.requestRefund(row)
 
-        await fixture.model.requestRefund(row)
+        fixture.model.refundSheetClosed(with: .success(.submitted))
 
-        #expect(fixture.purchases.refundRequests == [4])
+        #expect(fixture.model.presentedRefund == nil)
         #expect(fixture.model.refundStates[4] == .submitted)
         #expect(!fixture.model.canRequestRefund(row))
     }
@@ -100,14 +116,29 @@ struct PurchaseHelpModelTests {
         let fixture = Fixture()
         await fixture.store.start()
         fixture.purchases.history = [Fixture.record(5, ProductIDs.single("red_check"), daysAgo: 1)]
-        fixture.purchases.refundResult = .success(.cancelled)
         await fixture.model.load()
         let row = fixture.model.rows[0]
+        fixture.model.requestRefund(row)
 
-        await fixture.model.requestRefund(row)
+        fixture.model.refundSheetClosed(with: .success(.cancelled))
 
+        #expect(fixture.model.presentedRefund == nil)
         #expect(fixture.model.refundStates[5] == nil)
         #expect(fixture.model.canRequestRefund(row))
+    }
+
+    @Test("the result still lands when the sheet's binding was cleared first")
+    func bindingClearedFirst() async {
+        let fixture = Fixture()
+        await fixture.store.start()
+        fixture.purchases.history = [Fixture.record(8, ProductIDs.single("red_check"), daysAgo: 1)]
+        await fixture.model.load()
+        fixture.model.requestRefund(fixture.model.rows[0])
+
+        fixture.model.presentedRefund = nil
+        fixture.model.refundSheetClosed(with: .success(.submitted))
+
+        #expect(fixture.model.refundStates[8] == .submitted)
     }
 
     @Test("a refund the App Store will not open shows a message and can be retried")
@@ -115,16 +146,17 @@ struct PurchaseHelpModelTests {
         let fixture = Fixture()
         await fixture.store.start()
         fixture.purchases.history = [Fixture.record(6, ProductIDs.single("red_check"), daysAgo: 1)]
-        fixture.purchases.refundResult = .failure(.refundUnavailable)
         await fixture.model.load()
         let row = fixture.model.rows[0]
+        fixture.model.requestRefund(row)
 
-        await fixture.model.requestRefund(row)
+        fixture.model.refundSheetClosed(with: .failure(.refundUnavailable))
 
         guard case .failed = fixture.model.refundStates[6] else {
             Issue.record("expected a failure, got \(String(describing: fixture.model.refundStates[6]))")
             return
         }
+        #expect(fixture.model.presentedRefund == nil)
         #expect(fixture.model.canRequestRefund(row))
     }
 

@@ -1,5 +1,7 @@
 import Foundation
 import SkinKit
+import StoreKit
+import Testing
 @testable import ForeverAlonePoker
 
 /// Keeps the loadout in memory instead of on a SwiftData profile.
@@ -64,8 +66,6 @@ final class FakePurchases: PurchaseService, @unchecked Sendable {
     private(set) var syncCount = 0
     var canMakePayments = true
     var history: [PurchaseRecord] = []
-    var refundResult: Result<RefundOutcome, PurchaseError> = .success(.submitted)
-    private(set) var refundRequests: [UInt64] = []
     let updates: AsyncStream<EntitlementUpdate>
     let storefrontChanges: AsyncStream<String>
     private let updatesContinuation: AsyncStream<EntitlementUpdate>.Continuation
@@ -84,7 +84,7 @@ final class FakePurchases: PurchaseService, @unchecked Sendable {
         catalogProducts.filter { ids.contains($0.id) }
     }
 
-    func purchase(_ productID: String, accountToken: UUID) async throws -> PurchaseOutcome {
+    func purchase(_ productID: String, accountToken: UUID, sheet: PurchaseSheet) async throws -> PurchaseOutcome {
         purchasedTokens.append(accountToken)
         switch nextOutcome {
         case .purchase:
@@ -99,11 +99,6 @@ final class FakePurchases: PurchaseService, @unchecked Sendable {
     func currentEntitlements() async -> Set<String> { entitlements }
     func sync() async throws { syncCount += 1 }
     func purchaseHistory() async -> [PurchaseRecord] { history }
-
-    func requestRefund(for transactionID: UInt64) async throws -> RefundOutcome {
-        refundRequests.append(transactionID)
-        return try refundResult.get()
-    }
 
     /// Simulates a transaction arriving outside a purchase (refund, Ask to Buy).
     func deliverUpdate(productID: String, isRevoked: Bool = false) {
@@ -124,5 +119,13 @@ final class FakePurchases: PurchaseService, @unchecked Sendable {
             price: price,
             priceFormatStyle: .currency(code: "USD")
         )
+    }
+}
+
+extension PurchaseSheet {
+    /// For `FakePurchases`, which never shows a sheet: presenting one fails the test.
+    static let unused = PurchaseSheet { _, _ in
+        Issue.record("FakePurchases should not present the App Store sheet")
+        throw PurchaseError.unknownProduct
     }
 }

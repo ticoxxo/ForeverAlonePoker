@@ -1,6 +1,5 @@
 import Foundation
 import StoreKit
-import UIKit
 
 /// An App Store product as the store UI needs it. Prices and currency come
 /// from the player's App Store storefront, never from our catalog or the
@@ -49,12 +48,26 @@ nonisolated struct PurchaseRecord: Identifiable, Equatable, Sendable {
 nonisolated enum RefundOutcome: Equatable, Sendable {
     case submitted
     case cancelled
+
+    init(_ status: Transaction.RefundRequestStatus) {
+        switch status {
+        case .success: self = .submitted
+        case .userCancelled: self = .cancelled
+        @unknown default: self = .cancelled
+        }
+    }
+}
+
+/// Shows the App Store purchase sheet. The store UI builds it from SwiftUI's
+/// `PurchaseAction`, which presents the sheet in the window the Buy button is
+/// in, so no code walks the app's scenes (tdr/0036).
+nonisolated struct PurchaseSheet: Sendable {
+    let present: @MainActor @Sendable (Product, Set<Product.PurchaseOption>) async throws -> Product.PurchaseResult
 }
 
 nonisolated enum PurchaseError: Error, Equatable {
     case unknownProduct
     case failedVerification
-    case noActiveScene
     /// The App Store would not open a refund request for this transaction.
     case refundUnavailable
 }
@@ -66,8 +79,9 @@ nonisolated enum PurchaseError: Error, Equatable {
 /// Review 3.1.1 forbids Apple Pay for digital goods.
 nonisolated protocol PurchaseService: Sendable {
     func products(for ids: [String]) async throws -> [StoreProduct]
-    /// `accountToken` ties the transaction to this player for server-side checks.
-    func purchase(_ productID: String, accountToken: UUID) async throws -> PurchaseOutcome
+    /// `accountToken` ties the transaction to this player for server-side
+    /// checks; `sheet` confirms the purchase in the buyer's window.
+    func purchase(_ productID: String, accountToken: UUID, sheet: PurchaseSheet) async throws -> PurchaseOutcome
     /// Product ids of verified, unrevoked non-consumables: the only source of
     /// truth for ownership. Refunds disappear from here automatically.
     func currentEntitlements() async -> Set<String>
@@ -78,10 +92,9 @@ nonisolated protocol PurchaseService: Sendable {
     var storefrontChanges: AsyncStream<String> { get }
     /// `false` when purchases are turned off (Screen Time, parental controls).
     var canMakePayments: Bool { get }
-    /// The latest verified transaction per product, newest first.
+    /// The latest verified transaction per product, newest first. Refunds are
+    /// requested with SwiftUI's `refundRequestSheet` (tdr/0036).
     func purchaseHistory() async -> [PurchaseRecord]
-    /// Presents the system refund sheet for one transaction.
-    func requestRefund(for transactionID: UInt64) async throws -> RefundOutcome
 }
 
 /// StoreKit 2 implementation. Transactions are JWS signed by the App Store
@@ -110,12 +123,12 @@ nonisolated final class StoreKitPurchaseService: PurchaseService {
         return found.map(StoreProduct.init)
     }
 
-    func purchase(_ productID: String, accountToken: UUID) async throws -> PurchaseOutcome {
+    func purchase(_ productID: String, accountToken: UUID, sheet: PurchaseSheet) async throws -> PurchaseOutcome {
         var product = await cache.product(productID)
         if product == nil { product = try await Product.products(for: [productID]).first }
         guard let product else { throw PurchaseError.unknownProduct }
 
-        let result = try await Self.purchase(product, options: [.appAccountToken(accountToken)])
+        let result = try await sheet.present(product, [.appAccountToken(accountToken)])
         switch result {
         case .success(let verification):
             guard let transaction = trusted(verification) else {
@@ -192,45 +205,11 @@ nonisolated final class StoreKitPurchaseService: PurchaseService {
             .map { PurchaseRecord(id: $0.id, productID: $0.productID, purchaseDate: $0.purchaseDate, isRevoked: $0.revocationDate != nil) }
     }
 
-    func requestRefund(for transactionID: UInt64) async throws -> RefundOutcome {
-        try await Self.refund(transactionID)
-    }
-
     /// Verified by StoreKit and chained to the pinned root, or `nil`.
     private func trusted(_ result: VerificationResult<Transaction>) -> Transaction? {
         guard case .verified(let transaction) = result,
               validator.validate(jws: result.jwsRepresentation, environment: transaction.environment) else { return nil }
         return transaction
-    }
-
-    /// The App Store sheet is presented over the active window scene.
-    @MainActor
-    private static func purchase(_ product: Product, options: Set<Product.PurchaseOption>) async throws -> Product.PurchaseResult {
-        try await product.purchase(confirmIn: activeScene(), options: options)
-    }
-
-    /// The system refund sheet, over the active window scene (tdr/0022).
-    @MainActor
-    private static func refund(_ transactionID: UInt64) async throws -> RefundOutcome {
-        let scene = try activeScene()
-        do {
-            switch try await Transaction.beginRefundRequest(for: transactionID, in: scene) {
-            case .success: return .submitted
-            case .userCancelled: return .cancelled
-            @unknown default: return .cancelled
-            }
-        } catch is Transaction.RefundRequestError {
-            throw PurchaseError.refundUnavailable
-        }
-    }
-
-    @MainActor
-    private static func activeScene() throws -> UIWindowScene {
-        guard let scene = UIApplication.shared.connectedScenes
-            .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene else {
-            throw PurchaseError.noActiveScene
-        }
-        return scene
     }
 }
 
