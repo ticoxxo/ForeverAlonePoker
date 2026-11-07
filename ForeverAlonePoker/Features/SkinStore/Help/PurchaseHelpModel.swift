@@ -31,6 +31,10 @@ final class PurchaseHelpModel {
     /// The transaction whose system refund sheet is up, if any. The sheet's
     /// binding clears it on dismissal.
     var presentedRefund: UInt64?
+    /// The transaction the open refund request is for. Kept apart from
+    /// `presentedRefund` because the binding may clear that before the
+    /// sheet's dismiss handler reports the result.
+    private var refundInFlight: UInt64?
     private(set) var isLoading = false
     private(set) var hasLoaded = false
 
@@ -66,12 +70,15 @@ final class PurchaseHelpModel {
     func requestRefund(_ row: Row) {
         guard canRequestRefund(row) else { return }
         refundStates[row.id] = .requesting
+        refundInFlight = row.id
         presentedRefund = row.id
     }
 
-    /// Apple's refund sheet for `transactionID` was dismissed with `result`.
-    func refundSheetClosed(for transactionID: UInt64, with result: Result<RefundOutcome, PurchaseError>) {
-        if presentedRefund == transactionID { presentedRefund = nil }
+    /// Apple's refund sheet was dismissed with `result`.
+    func refundSheetClosed(with result: Result<RefundOutcome, PurchaseError>) {
+        presentedRefund = nil
+        guard let transactionID = refundInFlight else { return }
+        refundInFlight = nil
         switch result {
         case .success(.submitted): refundStates[transactionID] = .submitted
         case .success(.cancelled): refundStates[transactionID] = nil

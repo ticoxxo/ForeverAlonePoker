@@ -5,8 +5,9 @@ import SkinKit
 
 /// "Request a Refund" (tdr/0022): recent purchases with their art, name and
 /// purchase date. Tapping one opens Apple's refund sheet directly; Apple's
-/// sheet and its confirmation are never imitated or wrapped. Each row presents
-/// the sheet itself, so it appears in the window the player is using (tdr/0036).
+/// sheet and its confirmation are never imitated or wrapped. The list presents
+/// the sheet, so it appears in the window the player is using (tdr/0036); rows
+/// do not, because a lazy list can unload a row while its sheet is up.
 struct RefundRequestView: View {
     let model: PurchaseHelpModel
 
@@ -36,8 +37,18 @@ struct RefundRequestView: View {
             }
         }
         .navigationTitle("Request a Refund")
+        .refundRequestSheet(for: model.presentedRefund ?? 0, isPresented: isPresentingRefund) { result in
+            model.refundSheetClosed(with: result.map(RefundOutcome.init).mapError { _ in .refundUnavailable })
+        }
         .task { await model.load() }
         .refreshable { await model.load() }
+    }
+
+    private var isPresentingRefund: Binding<Bool> {
+        Binding(
+            get: { model.presentedRefund != nil },
+            set: { if !$0 { model.presentedRefund = nil } }
+        )
     }
 }
 
@@ -74,21 +85,6 @@ private struct RefundRow: View {
         }
         .disabled(!model.canRequestRefund(row))
         .accessibilityHint(model.canRequestRefund(row) ? Text("Opens the App Store refund request") : Text(""))
-        .refundRequestSheet(for: row.id, isPresented: isPresentingRefund) { result in
-            model.refundSheetClosed(
-                for: row.id,
-                with: result.map(RefundOutcome.init).mapError { _ in .refundUnavailable }
-            )
-        }
-    }
-
-    private var isPresentingRefund: Binding<Bool> {
-        Binding(
-            get: { model.presentedRefund == row.id },
-            set: { isPresented in
-                if !isPresented, model.presentedRefund == row.id { model.presentedRefund = nil }
-            }
-        )
     }
 
     @ViewBuilder

@@ -24,12 +24,16 @@ StoreKit's documentation recommends the SwiftUI APIs for SwiftUI apps, multi-sce
 2. **Refunds.**
    - `PurchaseService.requestRefund(for:)` and `SkinStore.requestRefund(for:)` are removed.
    - `PurchaseHelpModel.requestRefund(_:)` is now synchronous. It marks the row `.requesting` and sets `presentedRefund` to the row's transaction id.
-   - Each `RefundRow` attaches `.refundRequestSheet(for: row.id, isPresented:)`, which is bound to `presentedRefund == row.id`. Its `onDismiss` calls `refundSheetClosed(for:with:)`. `RefundOutcome(Transaction.RefundRequestStatus)` keeps the old mapping, and a `RefundRequestError` still becomes `PurchaseError.refundUnavailable`.
+   - `RefundRequestView` attaches one `.refundRequestSheet` to the list, never to a row, because a lazy list can unload a row while its sheet is up. The sheet is bound to `presentedRefund != nil`.
+   - Its `onDismiss` calls `refundSheetClosed(with:)`. The model keeps the transaction in a private `refundInFlight`, so the result still lands when the binding has already cleared `presentedRefund`.
+   - `RefundOutcome(Transaction.RefundRequestStatus)` keeps the old mapping, and a `RefundRequestError` still becomes `PurchaseError.refundUnavailable`.
+   - `SkinStoreView` pushes Help with `navigationDestination(isPresented:)`, from both the toolbar button and the footer button. With view-destination `NavigationLink`s in the toolbar and a list footer, presenting the refund sheet threw away the screens they had pushed: Apple's sheet appeared over the Card store instead of over Request a Refund.
 3. **No scene walking.** `activeScene()`, `PurchaseError.noActiveScene` and the `UIKit` import are removed from `PurchaseService.swift`. Nothing in the store reads `UIApplication.shared`.
 
 ## Consequences
 
 - Both sheets appear in the window the player tapped in: on iPad with two windows, in Stage Manager, and on the foldable as it changes size.
+- The refund sheet itself is Apple's. When the iPhone Duo is unfolded (window 951×669 pt) it was laid out taller than the window, cut off at the top and the bottom. We cannot restyle it (tdr/0022), so if it persists over the right screen, report it to Apple through Feedback Assistant.
 - Every purchase now starts from a view, because the sheet comes from that view's environment. Code without a view, such as an App Intent, would need its own `PurchaseSheet`.
 - `PurchaseService` conformers (`StoreKitPurchaseService`, `FakePurchases`, the preview `ScriptedPurchases`) take the new parameter and no longer implement `requestRefund`.
 - tdr/0012 (purchase on "the active scene") and tdr/0022 decision 2 (refund "on the foreground `UIWindowScene`") describe the old presentation. Everything else in them still holds.
@@ -44,7 +48,8 @@ StoreKit's documentation recommends the SwiftUI APIs for SwiftUI apps, multi-sce
 - `ForeverAlonePokerTests/Features/SkinStore/PurchaseHelpModelTests`:
   - requesting a refund presents the sheet for that transaction and marks it `.requesting`;
   - a refunded row presents nothing;
-  - closing the sheet with submitted, cancelled or failed sets the matching state and clears `presentedRefund`.
+  - closing the sheet with submitted, cancelled or failed sets the matching state and clears `presentedRefund`;
+  - the result still lands when the binding cleared `presentedRefund` first.
 - `ForeverAlonePokerTests/Shared/Skins/SkinStoreTests`: the purchase tests pass `PurchaseSheet.unused` (`Support/SkinFakes.swift`), which records an issue if anything ever presents it.
 - Manual, with `StoreKit/SkinStore.storekit` active:
   - on iPad, open two windows side by side, buy from the right-hand one, and check that the sheet appears over that window;

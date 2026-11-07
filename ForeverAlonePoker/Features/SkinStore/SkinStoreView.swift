@@ -9,6 +9,10 @@ import SkinKit
 struct SkinStoreView: View {
     @Environment(SkinStore.self) private var store
     @State private var preview: SkinPreview?
+    /// Help is pushed through `navigationDestination`: a view-destination link
+    /// in the toolbar or a list footer can lose its pushed screens when a sheet
+    /// (Apple's refund sheet) is presented from deeper in the stack.
+    @State private var showsHelp = false
 
     var body: some View {
         List {
@@ -57,8 +61,8 @@ struct SkinStoreView: View {
                         // HIG: explain a store that cannot take payments.
                         Label("Purchases are turned off on this device (Screen Time or parental controls). You can still use skins you already own.", systemImage: "lock")
                     }
-                    NavigationLink("Need help with a purchase?") {
-                        PurchaseHelpView()
+                    Button("Need help with a purchase?") {
+                        showsHelp = true
                     }
                     .font(.footnote.weight(.semibold))
                     if let error = store.lastError {
@@ -69,11 +73,14 @@ struct SkinStoreView: View {
             }
         }
         .skinPreview($preview)
+        .navigationDestination(isPresented: $showsHelp) {
+            PurchaseHelpView()
+        }
         .navigationTitle("Card store")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                NavigationLink {
-                    PurchaseHelpView()
+                Button {
+                    showsHelp = true
                 } label: {
                     Label("Help", systemImage: "questionmark.circle")
                 }

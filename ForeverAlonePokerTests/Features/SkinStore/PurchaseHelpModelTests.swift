@@ -104,7 +104,7 @@ struct PurchaseHelpModelTests {
         let row = fixture.model.rows[0]
         fixture.model.requestRefund(row)
 
-        fixture.model.refundSheetClosed(for: 4, with: .success(.submitted))
+        fixture.model.refundSheetClosed(with: .success(.submitted))
 
         #expect(fixture.model.presentedRefund == nil)
         #expect(fixture.model.refundStates[4] == .submitted)
@@ -120,11 +120,25 @@ struct PurchaseHelpModelTests {
         let row = fixture.model.rows[0]
         fixture.model.requestRefund(row)
 
-        fixture.model.refundSheetClosed(for: 5, with: .success(.cancelled))
+        fixture.model.refundSheetClosed(with: .success(.cancelled))
 
         #expect(fixture.model.presentedRefund == nil)
         #expect(fixture.model.refundStates[5] == nil)
         #expect(fixture.model.canRequestRefund(row))
+    }
+
+    @Test("the result still lands when the sheet's binding was cleared first")
+    func bindingClearedFirst() async {
+        let fixture = Fixture()
+        await fixture.store.start()
+        fixture.purchases.history = [Fixture.record(8, ProductIDs.single("red_check"), daysAgo: 1)]
+        await fixture.model.load()
+        fixture.model.requestRefund(fixture.model.rows[0])
+
+        fixture.model.presentedRefund = nil
+        fixture.model.refundSheetClosed(with: .success(.submitted))
+
+        #expect(fixture.model.refundStates[8] == .submitted)
     }
 
     @Test("a refund the App Store will not open shows a message and can be retried")
@@ -136,7 +150,7 @@ struct PurchaseHelpModelTests {
         let row = fixture.model.rows[0]
         fixture.model.requestRefund(row)
 
-        fixture.model.refundSheetClosed(for: 6, with: .failure(.refundUnavailable))
+        fixture.model.refundSheetClosed(with: .failure(.refundUnavailable))
 
         guard case .failed = fixture.model.refundStates[6] else {
             Issue.record("expected a failure, got \(String(describing: fixture.model.refundStates[6]))")
