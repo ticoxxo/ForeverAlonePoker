@@ -162,7 +162,7 @@ enum PreviewSkins {
         let catalogProducts: [StoreProduct]
         let entitlements: Set<String>
         func products(for ids: [String]) async throws -> [StoreProduct] { catalogProducts.filter { ids.contains($0.id) } }
-        func purchase(_ productID: String, accountToken: UUID) async throws -> PurchaseOutcome { .cancelled }
+        func purchase(_ productID: String, accountToken: UUID, sheet: PurchaseSheet) async throws -> PurchaseOutcome { .cancelled }
         func currentEntitlements() async -> Set<String> { entitlements }
         func sync() async throws {}
         var updates: AsyncStream<EntitlementUpdate> { AsyncStream { $0.finish() } }
@@ -175,8 +175,6 @@ enum PreviewSkins {
                 PurchaseRecord(id: UInt64(index + 1), productID: id, purchaseDate: .now.addingTimeInterval(-86_400 * Double(index + 1)), isRevoked: false)
             }
         }
-
-        func requestRefund(for transactionID: UInt64) async throws -> RefundOutcome { .cancelled }
     }
 }
 

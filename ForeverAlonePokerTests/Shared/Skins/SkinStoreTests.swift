@@ -94,7 +94,7 @@ struct SkinStoreTests {
     func equipOwnedSet() async {
         let fixture = Fixture()
         await fixture.store.start()
-        await fixture.store.purchase(ProductIDs.set("spanish_001"))
+        await fixture.store.purchase(ProductIDs.set("spanish_001"), sheet: .unused)
 
         fixture.store.equipAll(Fixture.spanish)
 
@@ -128,7 +128,7 @@ struct SkinStoreTests {
         let fixture = Fixture()
         await fixture.store.start()
 
-        await fixture.store.purchase(ProductIDs.single("red_check"))
+        await fixture.store.purchase(ProductIDs.single("red_check"), sheet: .unused)
 
         #expect(fixture.store.owns(.cardBack, of: Fixture.redCheck))
         #expect(fixture.purchases.finishedTransactions == [ProductIDs.single("red_check")])
@@ -143,7 +143,7 @@ struct SkinStoreTests {
         await fixture.store.start()
         fixture.purchases.listsPurchasesImmediately = false
 
-        await fixture.store.purchase(ProductIDs.single("red_check"))
+        await fixture.store.purchase(ProductIDs.single("red_check"), sheet: .unused)
 
         #expect(fixture.store.owns(.cardBack, of: Fixture.redCheck))
         #expect(fixture.store.installed.contains(AssetKey(item: "red_check", slot: .cardBack)))
@@ -155,7 +155,7 @@ struct SkinStoreTests {
         await fixture.store.start()
         fixture.purchases.listsPurchasesImmediately = false
 
-        await fixture.store.purchase(ProductIDs.set("spanish_001"))
+        await fixture.store.purchase(ProductIDs.set("spanish_001"), sheet: .unused)
 
         #expect(fixture.store.ownsAll(of: Fixture.spanish))
         #expect(fixture.store.installed.count == 52)
@@ -166,7 +166,7 @@ struct SkinStoreTests {
         let fixture = Fixture()
         await fixture.store.start()
 
-        await fixture.store.purchase(ProductIDs.set("spanish_001"))
+        await fixture.store.purchase(ProductIDs.set("spanish_001"), sheet: .unused)
 
         #expect(fixture.store.isShowing(Fixture.spanish, in: ace))
         #expect(fixture.store.myCardSkin.source(for: king) == .file(URL(filePath: "/skins/spanish_001/front.Kd.png"), fallback: "skin-default-front-Kd"))
@@ -177,7 +177,7 @@ struct SkinStoreTests {
         let fixture = Fixture()
         await fixture.store.start()
 
-        await fixture.store.purchase(ProductIDs.single("red_check"))
+        await fixture.store.purchase(ProductIDs.single("red_check"), sheet: .unused)
 
         let unlock = try #require(fixture.store.lastUnlock)
         #expect(unlock.productID == ProductIDs.single("red_check"))
@@ -192,7 +192,7 @@ struct SkinStoreTests {
         await fixture.store.start()
         for outcome in [FakePurchases.PurchaseOutcomeScript.cancel, .fail, .pending] {
             fixture.purchases.nextOutcome = outcome
-            await fixture.store.purchase(ProductIDs.single("red_check"))
+            await fixture.store.purchase(ProductIDs.single("red_check"), sheet: .unused)
         }
         #expect(fixture.store.lastUnlock == nil)
     }
@@ -215,7 +215,7 @@ struct SkinStoreTests {
         let fixture = Fixture()
         await fixture.store.start()
         fixture.purchases.listsPurchasesImmediately = false
-        await fixture.store.purchase(ProductIDs.single("red_check"))
+        await fixture.store.purchase(ProductIDs.single("red_check"), sheet: .unused)
         let observing = Task { await fixture.store.observeTransactions() }
         defer { observing.cancel() }
 
@@ -230,7 +230,7 @@ struct SkinStoreTests {
         await fixture.store.start()
         fixture.purchases.nextOutcome = .pending
 
-        await fixture.store.purchase(ProductIDs.single("red_check"))
+        await fixture.store.purchase(ProductIDs.single("red_check"), sheet: .unused)
         #expect(fixture.store.purchaseStates[ProductIDs.single("red_check")] == .pending)
         #expect(!fixture.store.owns(.cardBack, of: Fixture.redCheck))
 
@@ -247,11 +247,11 @@ struct SkinStoreTests {
         let fixture = Fixture()
         await fixture.store.start()
         fixture.purchases.nextOutcome = .cancel
-        await fixture.store.purchase(ProductIDs.single("red_check"))
+        await fixture.store.purchase(ProductIDs.single("red_check"), sheet: .unused)
         #expect(fixture.store.purchaseStates.isEmpty)
 
         fixture.purchases.nextOutcome = .fail
-        await fixture.store.purchase(ProductIDs.single("red_check"))
+        await fixture.store.purchase(ProductIDs.single("red_check"), sheet: .unused)
         #expect({
             if case .failed = fixture.store.purchaseStates[ProductIDs.single("red_check")] { return true }
             return false
@@ -366,7 +366,7 @@ struct SkinStoreChipTests {
         let fixture = makeFixture()
         await fixture.store.start()
 
-        await fixture.store.purchase(ProductIDs.set("premium_01_chips"))
+        await fixture.store.purchase(ProductIDs.set("premium_01_chips"), sheet: .unused)
 
         #expect(fixture.store.ownsAll(of: Self.premium))
         #expect(fixture.store.installed.count == CosmeticSlot.allChips.count)
@@ -380,7 +380,7 @@ struct SkinStoreChipTests {
         await fixture.assets.fail(AssetKey(item: "premium_01_chips", slot: hundred))
         await fixture.store.start()
 
-        await fixture.store.purchase(ProductIDs.set("premium_01_chips"))
+        await fixture.store.purchase(ProductIDs.set("premium_01_chips"), sheet: .unused)
 
         #expect(fixture.store.myCardSkin.source(for: hundred) == .bundled("skin-classic_chips-chips-100-top-small"))
     }

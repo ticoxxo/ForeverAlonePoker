@@ -1,6 +1,6 @@
 # 0012. Sell skins with StoreKit 2 and deliver them through a signed remote catalog
 
-- **Status:** Accepted (opponent loadout over the protocol: planned, see 6). Amended 2026-10-15: card fronts are sold only as whole sets.
+- **Status:** Accepted (opponent loadout over the protocol: planned, see 6). Amended 2026-10-15: card fronts are sold only as whole sets. How the purchase sheet is presented is superseded by 0036.
 - **Date:** 2026-10-11
 - **Feature / area:** `ForeverAlonePoker/Shared/Skins`, `ForeverAlonePoker/Features/SkinStore`, `Server/Sources/PokerServerCore/Store`, `Server/Sources/SkinPublisher`, `Server/SkinAssets`, `StoreKit/SkinStore.storekit`
 

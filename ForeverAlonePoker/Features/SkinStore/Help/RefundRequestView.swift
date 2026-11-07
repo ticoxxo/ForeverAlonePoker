@@ -1,10 +1,12 @@
 import SwiftUI
+import StoreKit
 import PokerCore
 import SkinKit
 
 /// "Request a Refund" (tdr/0022): recent purchases with their art, name and
 /// purchase date. Tapping one opens Apple's refund sheet directly; Apple's
-/// sheet and its confirmation are never imitated or wrapped.
+/// sheet and its confirmation are never imitated or wrapped. Each row presents
+/// the sheet itself, so it appears in the window the player is using (tdr/0036).
 struct RefundRequestView: View {
     let model: PurchaseHelpModel
 
@@ -47,7 +49,7 @@ private struct RefundRow: View {
 
     var body: some View {
         Button {
-            Task { await model.requestRefund(row) }
+            model.requestRefund(row)
         } label: {
             HStack(spacing: Theme.Spacing.medium) {
                 thumbnail
@@ -72,6 +74,21 @@ private struct RefundRow: View {
         }
         .disabled(!model.canRequestRefund(row))
         .accessibilityHint(model.canRequestRefund(row) ? Text("Opens the App Store refund request") : Text(""))
+        .refundRequestSheet(for: row.id, isPresented: isPresentingRefund) { result in
+            model.refundSheetClosed(
+                for: row.id,
+                with: result.map(RefundOutcome.init).mapError { _ in .refundUnavailable }
+            )
+        }
+    }
+
+    private var isPresentingRefund: Binding<Bool> {
+        Binding(
+            get: { model.presentedRefund == row.id },
+            set: { isPresented in
+                if !isPresented, model.presentedRefund == row.id { model.presentedRefund = nil }
+            }
+        )
     }
 
     @ViewBuilder

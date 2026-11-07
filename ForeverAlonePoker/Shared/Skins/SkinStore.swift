@@ -289,11 +289,12 @@ final class SkinStore {
 
     // MARK: - Buying
 
-    func purchase(_ productID: String) async {
+    /// `sheet` confirms the purchase in the window of the Buy button.
+    func purchase(_ productID: String, sheet: PurchaseSheet) async {
         guard purchaseStates[productID] != .purchasing else { return }
         purchaseStates[productID] = .purchasing
         do {
-            switch try await purchases.purchase(productID, accountToken: accountToken) {
+            switch try await purchases.purchase(productID, accountToken: accountToken, sheet: sheet) {
             case .purchased(let finish):
                 unlistedPurchases.insert(productID)
                 await refreshEntitlements()
@@ -345,12 +346,6 @@ final class SkinStore {
     /// The latest transaction of each product, newest first, refunds included.
     func purchaseHistory() async -> [PurchaseRecord] {
         await purchases.purchaseHistory()
-    }
-
-    /// Opens the system refund sheet. Ownership does not change here: a
-    /// granted refund arrives later through `observeTransactions`.
-    func requestRefund(for transactionID: UInt64) async throws -> RefundOutcome {
-        try await purchases.requestRefund(for: transactionID)
     }
 
     private func apply(_ remote: SkinCatalog) {

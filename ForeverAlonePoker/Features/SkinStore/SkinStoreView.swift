@@ -1,4 +1,5 @@
 import SwiftUI
+import StoreKit
 import PokerCore
 import SkinKit
 
@@ -321,10 +322,20 @@ private struct ChipSetRow: View {
     }
 }
 
+extension PurchaseSheet {
+    /// The purchase action from the environment of the view that asked to buy.
+    @MainActor
+    init(_ action: PurchaseAction) {
+        self.init { product, options in try await action(product, options: options) }
+    }
+}
+
 /// Buys one product, showing its App Store price. The label morphs from the
 /// price to a spinner while the App Store sheet is up.
 struct BuyButton: View {
     @Environment(SkinStore.self) private var store
+    /// Presents the App Store sheet in this button's window (tdr/0036).
+    @Environment(\.purchase) private var purchase
     let productID: String
     /// What VoiceOver says is being bought: "Buy Red check for $0.99".
     var itemName: String = ""
@@ -340,7 +351,7 @@ struct BuyButton: View {
         let state = store.purchaseStates[productID]
         let price = store.product(productID)?.displayPrice
         return Button {
-            Task { await store.purchase(productID) }
+            Task { await store.purchase(productID, sheet: PurchaseSheet(purchase)) }
         } label: {
             ZStack {
                 if state == .purchasing {

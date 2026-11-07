@@ -28,6 +28,9 @@ final class PurchaseHelpModel {
 
     private(set) var rows: [Row] = []
     private(set) var refundStates: [UInt64: RefundState] = [:]
+    /// The transaction whose system refund sheet is up, if any. The sheet's
+    /// binding clears it on dismissal.
+    var presentedRefund: UInt64?
     private(set) var isLoading = false
     private(set) var hasLoaded = false
 
@@ -58,17 +61,22 @@ final class PurchaseHelpModel {
     }
 
     /// Opens the system refund sheet straight away: no confirmation of our
-    /// own stands between the player and the request (HIG).
-    func requestRefund(_ row: Row) async {
+    /// own stands between the player and the request (HIG). The view shows
+    /// it with `refundRequestSheet` while `presentedRefund` is set (tdr/0036).
+    func requestRefund(_ row: Row) {
         guard canRequestRefund(row) else { return }
         refundStates[row.id] = .requesting
-        do {
-            switch try await store.requestRefund(for: row.id) {
-            case .submitted: refundStates[row.id] = .submitted
-            case .cancelled: refundStates[row.id] = nil
-            }
-        } catch {
-            refundStates[row.id] = .failed(String(localized: "The refund request could not be opened. You can also request one at reportaproblem.apple.com."))
+        presentedRefund = row.id
+    }
+
+    /// Apple's refund sheet for `transactionID` was dismissed with `result`.
+    func refundSheetClosed(for transactionID: UInt64, with result: Result<RefundOutcome, PurchaseError>) {
+        if presentedRefund == transactionID { presentedRefund = nil }
+        switch result {
+        case .success(.submitted): refundStates[transactionID] = .submitted
+        case .success(.cancelled): refundStates[transactionID] = nil
+        case .failure:
+            refundStates[transactionID] = .failed(String(localized: "The refund request could not be opened. You can also request one at reportaproblem.apple.com."))
         }
     }
 
