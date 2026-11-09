@@ -35,3 +35,4 @@ The policy, the manifest and the App Store privacy label must stay in step. Chan
 ## Notes
 
 - **2026-11-06:** The policy promises that server logs carry no IP address, name or game content and are kept 7 days (Fly.io log search retention). At `info` level the server logs only startup, rejected tokens and failures, none with player data; `LogRequestsMiddleware` runs at `debug`. Keep it that way, or update the policy with the change.
+- 2026-11-09: the server also serves `/support` (`SupportPage.swift`), the Support URL App Store Connect requires (it must be a web page, not an email). It gives the support email and points to Restore purchases, Apple's refund page, blocking and reporting, and deleting the ranked account. App Store Connect: Privacy Policy URL `https://forever-alone-poker.fly.dev/privacy`, Support URL `https://forever-alone-poker.fly.dev/support`.

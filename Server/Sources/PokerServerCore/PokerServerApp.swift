@@ -187,6 +187,15 @@ public func buildApplication(
         )
     }
 
+    // The Support URL of the App Store listing (tdr/0035).
+    router.get("support") { _, _ -> Response in
+        Response(
+            status: .ok,
+            headers: [.contentType: "text/html; charset=utf-8", .cacheControl: "max-age=3600"],
+            body: .init(byteBuffer: ByteBuffer(string: SupportPage.html))
+        )
+    }
+
     // Skin catalog (tdr/0012): the manifest as signed bytes. Clients revalidate
     // with If-None-Match; publishing a new manifest needs no restart.
     router.get("store/catalog") { request, context -> Response in

@@ -39,12 +39,14 @@ nonisolated struct HTTPRoomService: RoomService {
         self.session = session
     }
 
-    /// Default server: the local development server in debug builds, Fly.io
-    /// in release (tdr/0032). IPv4 loopback on purpose: `localhost` resolves
-    /// to `::1` first on the simulator while the server listens on IPv4,
-    /// costing a refused connection before the fallback.
+    /// Default server: the Fly.io dev app (CloudKit Development) in debug
+    /// builds, the production app (CloudKit Production) in release, which is
+    /// what TestFlight and the App Store run (tdr/0032). For a server on this
+    /// Mac, type `http://127.0.0.1:8080` in Profile > Game server: IPv4
+    /// loopback on purpose, since `localhost` resolves to `::1` first on the
+    /// simulator while the server listens on IPv4.
     #if DEBUG
-    static let defaultBaseURL = URL(string: "http://127.0.0.1:8080")!
+    static let defaultBaseURL = URL(string: "https://forever-alone-poker-dev.fly.dev")!
     #else
     static let defaultBaseURL = URL(string: "https://forever-alone-poker.fly.dev")!
     #endif
