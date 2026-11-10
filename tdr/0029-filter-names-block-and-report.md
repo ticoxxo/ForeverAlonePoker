@@ -82,3 +82,4 @@ Constraints:
 ## Notes
 
 - **2026-11-05:** Report at the table now checks whether Mail opened. When the device has no mail account, an alert gives the support address and copies the report details, so reporting works on every device (App Review tests on devices without Mail).
+- **2026-11-10:** The unreleased first version left four record types in the CloudKit public database, in both Development and Production: `ModeratedProfile` (`displayName`, `countryCode`, `avatar`, `moderatedAt`, a moderated copy of the old `PublicProfile`), `ModerationIncident`, `PlayerReport` and `Ban`. No code reads or writes them, and nothing in git ever did. CloudKit can't delete a record type once it is in Production, so they stay as dead types. Both environments were checked: they hold no records and give no permissions to `_world`, `_icloud` or `_creator`. Keep it that way. Never grant them a role, and never reuse these names for a new feature.
